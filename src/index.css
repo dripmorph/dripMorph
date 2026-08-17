@@ -182,14 +182,20 @@ body {
 
 /* Overlay content structure */
 .post-overlay {
-  position: relative;
-  z-index: 3;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
   width: 100%;
-  /* Bottom padding buffer so CTAs do not overlap fixed bottom nav */
-  padding: 12px 16px 80px !important;
+  /* Right padding buffer prevents any overlap with right-actions-stack */
+  padding: 14px 14px 18px 16px;
+  padding-right: 70px !important;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+  box-sizing: border-box;
+  pointer-events: auto;
 }
 
 /* Profile details and AI Fit Score */
@@ -197,22 +203,25 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 4px;
+  gap: 8px;
+  margin-bottom: 2px;
 }
 
 .user-info {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  min-width: 0;
 }
 
 .avatar-wrapper {
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   overflow: hidden;
   border: 2px solid var(--accent-solid);
   box-shadow: 0 0 10px var(--shadow-accent);
+  flex-shrink: 0;
 }
 
 .avatar-img {
@@ -224,34 +233,39 @@ body {
 .user-text {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .username {
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   color: #ffffff;
   letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .location {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: rgba(255, 255, 255, 0.7);
 }
 
 /* AI Fit Score badge */
 .ai-badge {
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  padding: 6px 12px;
-  border-radius: 20px;
+  padding: 4px 8px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
   color: #ffffff;
+  flex-shrink: 0;
 }
 
 .ai-badge .star-icon {
@@ -261,72 +275,82 @@ body {
 
 .ai-badge .label {
   color: rgba(255, 255, 255, 0.7);
-  font-weight: 400;
+  font-weight: 500;
+}
+
+.post-caption {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.35;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
 }
 
 /* Action buttons at bottom */
 .buttons-container {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
-  /* Ensure 12-16px clearance above floating bottom nav */
-  padding-bottom: 0;
+  margin-top: 2px;
 }
 
 .btn-primary {
-  background: var(--accent-lime);
-  color: #121214;
+  flex: 1;
+  background: var(--accent-lime, #a6fc29);
+  color: #0d0d0f;
   border: none;
-  font-weight: 700;
-  font-size: 14px;
-  letter-spacing: 0.8px;
-  /* Compact: fixed 44px height, 12px radius, margin for visual breathing room */
-  height: 44px;
-  padding: 0 20px;
+  font-weight: 800;
+  font-size: 0.78rem;
+  letter-spacing: 0.4px;
+  height: 38px;
+  padding: 0 14px;
   margin: 0;
-  border-radius: 12px;
+  border-radius: 10px;
   cursor: pointer;
-  width: 100%;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 15px var(--shadow-accent);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 14px rgba(166, 252, 41, 0.3);
   text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
+  white-space: nowrap;
 }
 
 .btn-primary:hover {
   background: var(--accent-hover);
+  transform: translateY(-1px);
 }
 
 .btn-primary:active {
   transform: scale(0.98);
-  box-shadow: 0 2px 8px var(--shadow-color);
 }
 
 .btn-secondary {
-  background: transparent;
-  color: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.5);
+  color: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   font-weight: 600;
-  font-size: 13px;
+  font-size: 0.75rem;
   height: 38px;
-  padding: 0 20px;
+  padding: 0 10px;
   border-radius: 10px;
   cursor: pointer;
-  width: 100%;
   transition: all 0.2s ease;
   text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  white-space: nowrap;
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
   border-color: rgba(255, 255, 255, 0.4);
 }
 
@@ -334,46 +358,53 @@ body {
   transform: scale(0.98);
 }
 
-/* Right-side interaction stack — anchored above the SHOP THE LOOK button area */
+/* Right-side vertical interaction stack */
 .right-actions-stack {
   position: absolute;
-  right: 16px;
-  bottom: 120px;
+  right: 12px;
+  bottom: 20px;
   z-index: 10;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .action-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
 }
 
 .action-btn {
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  background: rgba(18, 18, 20, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #ffffff;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
-.action-btn.active,
-.like-btn.liked {
-  color: #a6fc29 !important;
-  fill: #a6fc29 !important;
-  filter: drop-shadow(0 0 4px rgba(166, 252, 41, 0.4));
+.action-btn:hover {
+  transform: scale(1.08);
+  background: rgba(25, 25, 28, 0.85);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.action-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
 }
 
 .action-btn.active svg,
@@ -5416,21 +5447,28 @@ body {
   .desktop-layout-container {
     display: flex;
     justify-content: center;
-    align-items: flex-start;
+    align-items: stretch;
     min-height: 100vh;
     background-color: var(--bg-color);
     width: 100%;
-    max-width: 1380px;
+    max-width: 1400px;
     margin: 0 auto;
     position: relative;
+    box-sizing: border-box;
   }
 
   .desktop-center-content {
     flex: 1;
-    max-width: 640px;
-    margin: 0 auto;
-    border-left: 1px solid var(--border-color);
+    max-width: 720px;
+    min-width: 0;
+    margin: 0;
+    border-left: none;
     border-right: 1px solid var(--border-color);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
   }
 
   /* Left Sidebar (260px Fixed Width) */
@@ -5866,21 +5904,22 @@ body {
 
   .post-card {
     width: 100%;
-    max-width: 460px;
+    max-width: 480px;
     height: auto;
     aspect-ratio: 9 / 16;
-    max-height: 820px;
+    max-height: 82vh;
     min-height: 520px;
-    margin-bottom: 32px;
+    margin: 0 auto 32px;
     scroll-snap-align: start;
     scroll-snap-stop: always;
-    border-radius: 16px;
+    border-radius: 20px;
     position: relative;
     overflow: hidden;
     box-sizing: border-box;
     border: 1px solid var(--border-color);
-    background-color: var(--card-bg, #121214);
+    background-color: #000000;
     flex-shrink: 0;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   }
 
   .post-image {
@@ -5892,15 +5931,35 @@ body {
     max-height: 100%;
     object-fit: cover;
     object-position: center top;
-    border-radius: 16px;
+    border-radius: 20px;
   }
 
   .overlay-gradient-bottom {
-    height: 200px;
+    height: 220px;
   }
 
   .post-overlay {
-    padding: 16px 20px 20px;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 16px 16px 20px;
+    padding-right: 70px !important;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-sizing: border-box;
+  }
+
+  .right-actions-stack {
+    position: absolute;
+    right: 12px;
+    bottom: 20px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
   }
 
   /* Desktop Modal Responsiveness Refactor */

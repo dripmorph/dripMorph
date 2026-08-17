@@ -270,9 +270,9 @@ export default function PostCard({ post, onShopClick, onFitClick, onShareClick, 
           
           {/* AI Fit Score Badge */}
           <div className="ai-badge" onClick={(e) => e.stopPropagation()}>
-            <span className="score-value">{post.aiScore}</span>
-            <Star size={12} className="star-icon" />
-            <span className="label">AI Ave</span>
+            <span className="score-value">{post.aiScore || (post.overall_score ? `${post.overall_score}/10` : (post.score ? `${post.score}/10` : '8.0/10'))}</span>
+            <Star size={11} className="star-icon" />
+            <span className="label">AI</span>
           </div>
         </div>
 
