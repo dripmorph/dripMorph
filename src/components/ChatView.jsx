@@ -10,12 +10,21 @@ export default function ChatView({ onBack }) {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const textInputRef = useRef(null);
 
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [conv?.messages]);
+
+  // When keyboard opens on mobile, scroll so the input bar stays visible
+  const handleInputFocus = () => {
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      textInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 350);
+  };
 
   const handleSend = () => {
     if (!input.trim() || !activeChatId) return;
@@ -153,12 +162,15 @@ export default function ChatView({ onBack }) {
           <Image size={20} />
         </button>
         <input
+          ref={textInputRef}
           type="text"
+          inputMode="text"
           className="chat-text-input"
           placeholder={isPending && isInitiator ? "Message request sent..." : "Type a message..."}
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSend()}
+          onFocus={handleInputFocus}
           disabled={isPending && isInitiator}
         />
         <button

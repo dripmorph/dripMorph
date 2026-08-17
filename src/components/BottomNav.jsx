@@ -1,7 +1,7 @@
 import React from 'react';
 import { Layers, Trophy, PlusSquare, MessageSquare, User } from 'lucide-react';
 
-export default function BottomNav({ activeTab = 'feed', onTabChange }) {
+export default function BottomNav({ activeTab = 'feed', onTabChange, hiddenOnMobile = false }) {
   const currentTab = activeTab || 'feed';
   const tabs = [
     { id: 'feed', name: 'Feed', icon: Layers },
@@ -12,7 +12,7 @@ export default function BottomNav({ activeTab = 'feed', onTabChange }) {
   ];
 
   return (
-    <nav className="app-bottom-nav bottom-nav-dock">
+    <nav className={`app-bottom-nav bottom-nav-dock${hiddenOnMobile ? ' nav-hidden-mobile' : ''}`}>
       {tabs.map((tab) => {
         const IconComponent = tab.icon;
         const isActive = currentTab === tab.id;

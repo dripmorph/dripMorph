@@ -1027,7 +1027,7 @@ export default function App() {
       </Suspense>
 
       {/* Mobile Bottom Navigation (hidden on desktop screens >=1024px) */}
-      <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
+      <BottomNav activeTab={activeTab} onTabChange={handleTabChange} hiddenOnMobile={!!activeChatId} />
     </div>
   );
 }

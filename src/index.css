@@ -4006,7 +4006,7 @@ body {
 /* Mobile Responsive Handling for 2-Column Messaging */
 @media (max-width: 768px) {
   .messages-container {
-    height: calc(100vh - 110px);
+    height: calc(100dvh - 110px);
     border-radius: 0;
     border: none;
   }
@@ -4028,6 +4028,36 @@ body {
 
   .messages-container:not(.has-active-chat) .chat-view {
     display: none;
+  }
+
+  /* When a chat is open: expand to fill the full screen (nav is hidden) */
+  .messages-container.has-active-chat {
+    height: 100dvh;
+  }
+
+  .messages-container.has-active-chat .chat-view {
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Messages scroll area fills remaining space */
+  .messages-container.has-active-chat .chat-messages {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+  }
+
+  /* Input bar never shrinks and respects iPhone notch */
+  .messages-container.has-active-chat .chat-input-bar {
+    flex-shrink: 0;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  /* Hide bottom nav on mobile when chat is open */
+  .nav-hidden-mobile {
+    display: none !important;
   }
 }
 
