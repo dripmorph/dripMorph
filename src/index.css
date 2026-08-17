@@ -1203,53 +1203,72 @@ body {
 
 .profile-buttons-row {
   display: flex;
+  align-items: center;
+  justify-content: center;
   gap: 10px;
   margin-top: 16px;
   width: 100%;
-  justify-content: center;
 }
 
 .btn-edit-profile {
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
   color: var(--text-primary);
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 10px 20px;
+  padding: 10px 22px;
+  height: 42px;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-edit-profile:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.18);
+  transform: translateY(-1px);
 }
 
 .btn-edit-profile:active {
   transform: scale(0.96);
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.18);
 }
 
 .btn-edit-profile .edit-icon {
   color: var(--text-secondary);
 }
 
+.btn-link-shopping,
 .btn-link-instagram {
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
   color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
 }
 
+.btn-link-shopping:hover,
+.btn-link-instagram:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.btn-link-shopping:active,
 .btn-link-instagram:active {
-  transform: scale(0.96);
-  background: rgba(255, 255, 255, 0.12);
+  transform: scale(0.94);
+  background: rgba(255, 255, 255, 0.18);
 }
 
 .top-fits-section {

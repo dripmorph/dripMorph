@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, User, Edit2, Star, ShoppingBag, MoreVertical, Camera, ArrowLeft, X } from 'lucide-react';
+import { MapPin, User, Edit2, Star, ShoppingBag, ShoppingBasket, MoreVertical, Camera, ArrowLeft, X } from 'lucide-react';
 import { TbRuler2 } from 'react-icons/tb';
 import { FaStar } from 'react-icons/fa';
 import { useChat } from '../context/ChatContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { fetchUserOutfits, uploadAvatarImage, fetchUserProfile } from '../lib/outfitService';
+import ProfileShoppingModal from './ProfileShoppingModal';
 
 // Import our local premium outfit images
 import techwearImg from '../assets/techwear_look.png';
@@ -152,6 +153,7 @@ export default function UserProfile({
   const [activeFitMenuId, setActiveFitMenuId] = useState(null);
   const [activeRecentMenuId, setActiveRecentMenuId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isShoppingModalOpen, setIsShoppingModalOpen] = useState(false);
 
   const fileInputRef = useRef(null);
   const [avatarUrl, setAvatarUrl] = useState(avatar);
@@ -623,8 +625,19 @@ export default function UserProfile({
           <span className="profile-followers-label">Followers</span>
         </div>
 
-        {/* Edit and link buttons */}
+        {/* Symmetrical profile action buttons: [ Shopping ] [ Edit Profile / Follow ] [ Instagram ] */}
         <div className="profile-buttons-row">
+          {/* Left Shopping Basket Button */}
+          <button 
+            className="btn-link-shopping" 
+            onClick={() => setIsShoppingModalOpen(true)} 
+            aria-label="Shopping & Wardrobe Links"
+            title="Shopping & Wardrobe Links"
+          >
+            <ShoppingBasket size={18} color="#a6fc29" />
+          </button>
+
+          {/* Middle: Edit Profile or Follow/Message */}
           {isOwnProfile ? (
             <button className="btn-edit-profile" onClick={handleEditProfile}>
               <Edit2 size={16} className="edit-icon" />
@@ -643,7 +656,9 @@ export default function UserProfile({
               </button>
             </>
           )}
-          <button className="btn-link-instagram" onClick={handleLinkClick} aria-label="Instagram">
+
+          {/* Right: Instagram Button */}
+          <button className="btn-link-instagram" onClick={handleLinkClick} aria-label="Instagram" title="Instagram">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <defs>
                 <radialGradient id="ig-grad" cx="30%" cy="107%" r="150%">
@@ -898,6 +913,17 @@ export default function UserProfile({
           }}
         />
       )}
+
+      {/* Profile Shopping & Wardrobe Links Modal */}
+      <ProfileShoppingModal
+        isOpen={isShoppingModalOpen}
+        onClose={() => setIsShoppingModalOpen(false)}
+        isOwnProfile={isOwnProfile}
+        userId={isOwnProfile ? user?.id : fetchedProfile?.id}
+        username={displayUsername}
+        userOutfits={userOutfits || []}
+        showToast={showToast}
+      />
     </div>
   );
 }
