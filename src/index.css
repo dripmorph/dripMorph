@@ -6024,6 +6024,67 @@ body {
   text-align: center;
 }
 
+/* Search result avatar */
+.search-result-avatar-wrap {
+  flex-shrink: 0;
+}
+
+.search-result-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid var(--border-color);
+}
+
+.search-result-avatar-placeholder {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--surface-secondary);
+  border: 1.5px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+
+.search-result-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.search-result-username {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-result-city {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.search-result-item:hover .search-result-username {
+  color: var(--accent-solid);
+}
+
+/* Spinning loader in search icon area */
+@keyframes search-spin {
+  to { transform: rotate(360deg); }
+}
+
+.search-spinner {
+  animation: search-spin 0.7s linear infinite;
+  opacity: 0.6;
+}
+
 [data-theme='light'] .dripmorph-logo-svg {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
 }

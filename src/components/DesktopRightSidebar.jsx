@@ -1,26 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { Flame, Trophy, Star, ArrowUpRight, Sparkles, Search } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Flame, Trophy, Star, ArrowUpRight, Sparkles, Search, User, Loader } from 'lucide-react';
 import { fetchTrendingFits, fetchTopCreatorsByCity } from '../lib/outfitService';
-
-const MOCK_SEARCH_INDEX = [
-  { type: 'user', name: '@streetstyle_icon' },
-  { type: 'user', name: '@neon_wanderer' },
-  { type: 'user', name: '@brutal_aesthetic' },
-  { type: 'user', name: '@cyber_ninja' },
-  { type: 'user', name: '@tokyo_tide' },
-  { type: 'user', name: '@berlin_minimalist' },
-  { type: 'tag', name: '#techwear' },
-  { type: 'tag', name: '#cyberpunk' },
-  { type: 'tag', name: '#minimalist' },
-  { type: 'tag', name: '#streetwear' }
-];
+import { supabase } from '../lib/supabaseClient';
 
 export default function DesktopRightSidebar({ onUserClick, onFitClick, userCity = 'Seattle', refreshTrigger = 0 }) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [trendingFits, setTrendingFits] = useState([]);
   const [topCreators, setTopCreators] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const debounceRef = useRef(null);
+  const containerRef = useRef(null);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setSearchQuery('');
+        setSearchResults([]);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  // Load sidebar widgets
   useEffect(() => {
     let isMounted = true;
     async function loadSidebarData() {
@@ -44,49 +49,102 @@ export default function DesktopRightSidebar({ onUserClick, onFitClick, userCity 
     return () => { isMounted = false; };
   }, [userCity, refreshTrigger]);
 
-  const handleResultClick = (item) => {
-    if (item.type === 'user') {
-      if (onUserClick) onUserClick(item.name);
+  // Debounced live search against Supabase profiles table
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (!q) {
+      setSearchResults([]);
+      return;
     }
+
+    // Debounce: wait 300ms after the user stops typing
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url, city')
+          .ilike('username', `%${q}%`)
+          .limit(8);
+
+        if (!error && data) {
+          setSearchResults(data);
+        } else {
+          setSearchResults([]);
+        }
+      } catch (err) {
+        console.error('[Search] error:', err);
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(debounceRef.current);
+  }, [searchQuery]);
+
+  const handleResultClick = (username) => {
+    if (onUserClick) onUserClick(`@${username}`);
     setSearchQuery('');
+    setSearchResults([]);
   };
 
   const showDropdown = searchQuery.trim().length > 0;
-  const filteredResults = showDropdown
-    ? MOCK_SEARCH_INDEX.filter(item =>
-        item.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
-      )
-    : [];
 
   return (
     <aside className="desktop-sidebar-right">
-      {/* Search Bar Container */}
-      <div className="search-container">
-        <Search size={16} className="search-icon" />
+      {/* Search Bar */}
+      <div className="search-container" ref={containerRef}>
+        {searchLoading
+          ? <Loader size={15} className="search-icon search-spinner" />
+          : <Search size={16} className="search-icon" />
+        }
         <input
           type="text"
           className="search-input"
           placeholder="Search creators, fits, or tags..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
+          autoComplete="off"
         />
-        
+
         {showDropdown && (
           <div className="search-dropdown">
-            {filteredResults.length > 0 ? (
-              filteredResults.map((item) => (
+            {searchLoading && searchResults.length === 0 ? (
+              <div className="search-no-results">Searching...</div>
+            ) : searchResults.length > 0 ? (
+              searchResults.map((profile) => (
                 <button
-                  key={item.name}
+                  key={profile.id}
                   type="button"
                   className="search-result-item"
-                  onClick={() => handleResultClick(item)}
+                  onClick={() => handleResultClick(profile.username)}
                 >
-                  <span>{item.name}</span>
-                  <span className="search-result-type-badge">{item.type}</span>
+                  <div className="search-result-avatar-wrap">
+                    {profile.avatar_url ? (
+                      <img
+                        src={profile.avatar_url}
+                        alt={profile.username}
+                        className="search-result-avatar"
+                      />
+                    ) : (
+                      <div className="search-result-avatar-placeholder">
+                        <User size={14} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="search-result-info">
+                    <span className="search-result-username">@{profile.username}</span>
+                    {profile.city && (
+                      <span className="search-result-city">{profile.city}</span>
+                    )}
+                  </div>
+                  <span className="search-result-type-badge">user</span>
                 </button>
               ))
             ) : (
-              <div className="search-no-results">No results for "{searchQuery}"</div>
+              <div className="search-no-results">No users found for "{searchQuery}"</div>
             )}
           </div>
         )}
