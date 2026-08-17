@@ -768,13 +768,6 @@ export default function UserProfile({
                     <span className="fit-card-title">{fit.title}</span>
                     <span className="fit-card-brands">{fit.brands}</span>
                   </div>
-                  <button 
-                    className="fit-card-bag-btn" 
-                    onClick={(e) => handleFitProductClick(e, fit)}
-                    aria-label="Shop look"
-                  >
-                    <ShoppingBag size={14} />
-                  </button>
                 </div>
               </div>
             ))}
