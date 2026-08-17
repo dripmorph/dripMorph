@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, User, Edit2, Link2, Star, ShoppingBag, MoreVertical, Camera, ArrowLeft, X } from 'lucide-react';
+import { MapPin, User, Edit2, Star, ShoppingBag, MoreVertical, Camera, ArrowLeft, X } from 'lucide-react';
 import { TbRuler2 } from 'react-icons/tb';
 import { FaStar } from 'react-icons/fa';
 import { useChat } from '../context/ChatContext';
@@ -575,8 +575,21 @@ export default function UserProfile({
               </button>
             </>
           )}
-          <button className="btn-link-instagram" onClick={handleLinkClick} aria-label="Instagram Link">
-            <Link2 size={18} />
+          <button className="btn-link-instagram" onClick={handleLinkClick} aria-label="Instagram">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <radialGradient id="ig-grad" cx="30%" cy="107%" r="150%">
+                  <stop offset="0%" stopColor="#fdf497"/>
+                  <stop offset="5%" stopColor="#fdf497"/>
+                  <stop offset="45%" stopColor="#fd5949"/>
+                  <stop offset="60%" stopColor="#d6249f"/>
+                  <stop offset="90%" stopColor="#285AEB"/>
+                </radialGradient>
+              </defs>
+              <rect x="2" y="2" width="20" height="20" rx="6" ry="6" fill="url(#ig-grad)"/>
+              <circle cx="12" cy="12" r="4.5" stroke="white" strokeWidth="1.8" fill="none"/>
+              <circle cx="17.5" cy="6.5" r="1.2" fill="white"/>
+            </svg>
           </button>
         </div>
       </div>
