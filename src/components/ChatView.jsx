@@ -1,7 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useChat } from '../context/ChatContext';
 import { useAuth } from '../context/AuthContext';
-import { ArrowLeft, Send, Image, Smile, MessageSquare, Loader } from 'lucide-react';
+import { ArrowLeft, Send, Smile, MessageSquare, Loader } from 'lucide-react';
+
+// Common emojis for the picker
+const EMOJI_LIST = [
+  '😀','😂','🥲','😍','🥰','😎','🤩','🥳','😏','😢','😭','😤','🤯','🥶','😴',
+  '👀','🔥','💯','✨','🎉','💀','👑','🫶','❤️','🧡','💚','💙','💜','🖤','🤍',
+  '👍','👎','🙌','🤝','💪','🫡','🤙','👏','🙏','✌️','🤞','🫰','💅','🤌','👌',
+  '😮','😱','🥱','🤔','🫠','😈','👾','💩','🤡','👻','💫','⭐','🌙','☀️','🌈',
+];
 
 export default function ChatView({ onBack }) {
   const {
@@ -16,17 +24,32 @@ export default function ChatView({ onBack }) {
 
   const conv = conversations.find(c => c.id === activeChatId);
   const [input, setInput] = useState('');
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const messagesEndRef = useRef(null);
-  const fileInputRef = useRef(null);
   const textInputRef = useRef(null);
+  const emojiPickerRef = useRef(null);
 
   // Scroll to bottom whenever messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [conv?.messages]);
 
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target)) {
+        setShowEmojiPicker(false);
+      }
+    };
+    if (showEmojiPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showEmojiPicker]);
+
   // When keyboard opens on mobile, scroll input into view
   const handleInputFocus = () => {
+    setShowEmojiPicker(false);
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       textInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -37,17 +60,12 @@ export default function ChatView({ onBack }) {
     if (!input.trim() || !activeChatId) return;
     sendMessage(activeChatId, input.trim(), 'text');
     setInput('');
+    setShowEmojiPicker(false);
   };
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file && activeChatId) {
-      const reader = new FileReader();
-      reader.onload = (uploadEvent) => {
-        sendMessage(activeChatId, uploadEvent.target.result, 'image');
-      };
-      reader.readAsDataURL(file);
-    }
+  const handleEmojiClick = (emoji) => {
+    setInput(prev => prev + emoji);
+    textInputRef.current?.focus();
   };
 
   // ── Empty state when no conversation is selected ───────────────────────────
@@ -131,21 +149,17 @@ export default function ChatView({ onBack }) {
               className="chat-no-messages-avatar"
             />
             <h4>Say hi to {conv.user.username}!</h4>
-            <p>Start the conversation with a message or fit check.</p>
+            <p>Start the conversation with a message.</p>
           </div>
         ) : (
           conv.messages.map(msg => {
-            // Support both new Supabase format (sender_id) and legacy format (sender)
             const isSent = user
               ? msg.sender_id === user.id || msg.sender === user.username
               : false;
 
             const ts = msg.created_at || msg.timestamp;
             const timeStr = ts
-              ? new Date(ts).toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
+              ? new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
               : '';
 
             return (
@@ -155,7 +169,7 @@ export default function ChatView({ onBack }) {
               >
                 <div className={`chat-bubble ${isSent ? 'sent' : 'received'}`}>
                   {msg.type === 'image' ? (
-                    <img src={msg.content} alt="Sent fit" className="chat-image" />
+                    <img src={msg.content} alt="Sent image" className="chat-image" />
                   ) : (
                     <span>{msg.content}</span>
                   )}
@@ -170,25 +184,32 @@ export default function ChatView({ onBack }) {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Emoji Picker */}
+      {showEmojiPicker && (
+        <div className="emoji-picker" ref={emojiPickerRef}>
+          {EMOJI_LIST.map(emoji => (
+            <button
+              key={emoji}
+              className="emoji-btn"
+              onClick={() => handleEmojiClick(emoji)}
+              type="button"
+              aria-label={emoji}
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Input Bar */}
       <div className="chat-input-bar">
-        <input
-          type="file"
-          ref={fileInputRef}
-          accept="image/*"
-          onChange={handleImageUpload}
-          style={{ display: 'none' }}
-        />
-        <button type="button" className="chat-action-btn" aria-label="Emoji">
-          <Smile size={20} />
-        </button>
         <button
           type="button"
-          className="chat-action-btn"
-          aria-label="Attach Image"
-          onClick={() => fileInputRef.current?.click()}
+          className={`chat-action-btn${showEmojiPicker ? ' active' : ''}`}
+          aria-label="Emoji"
+          onClick={() => setShowEmojiPicker(v => !v)}
         >
-          <Image size={20} />
+          <Smile size={20} />
         </button>
         <input
           ref={textInputRef}
@@ -196,9 +217,7 @@ export default function ChatView({ onBack }) {
           inputMode="text"
           className="chat-text-input"
           placeholder={
-            isPending && isInitiator
-              ? 'Message request sent...'
-              : 'Type a message...'
+            isPending && isInitiator ? 'Message request sent...' : 'Type a message...'
           }
           value={input}
           onChange={e => setInput(e.target.value)}

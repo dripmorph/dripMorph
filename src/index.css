@@ -3953,6 +3953,49 @@ body {
   cursor: pointer;
 }
 
+/* Emoji Picker */
+.emoji-picker {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px;
+  padding: 10px 12px;
+  background: var(--card-bg);
+  border-top: 1px solid var(--border-color);
+  max-height: 160px;
+  overflow-y: auto;
+  animation: slideUpFade 0.15s ease-out;
+}
+
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.emoji-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.35rem;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  line-height: 1;
+  transition: background 0.15s ease, transform 0.1s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emoji-btn:hover {
+  background: rgba(166, 252, 41, 0.12);
+  transform: scale(1.2);
+}
+
+.chat-action-btn.active {
+  color: var(--accent-solid);
+  background: rgba(166, 252, 41, 0.1);
+  border-radius: 50%;
+}
+
 /* Input Bar Styling (Pinned to bottom) */
 .chat-input-bar {
   display: flex;
