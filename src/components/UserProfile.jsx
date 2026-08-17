@@ -486,9 +486,16 @@ export default function UserProfile({
   };
 
   const handleLinkClick = () => {
-    const handle = instagramLink ? instagramLink.replace('@', '').replace('https://instagram.com/', '') : 'minimalist_enzo';
-    showToast(`Navigating to instagram.com/${handle}...`);
-    window.open(`https://instagram.com/${handle}`, '_blank', 'noopener,noreferrer');
+    const raw = displayInstagram;
+    const cleanHandle = raw 
+      ? raw.trim().replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/\/$/, '') 
+      : '';
+    if (cleanHandle) {
+      if (showToast) showToast(`Navigating to instagram.com/${cleanHandle}...`);
+      window.open(`https://instagram.com/${cleanHandle}`, '_blank', 'noopener,noreferrer');
+    } else {
+      if (showToast) showToast('No Instagram handle linked yet. Add one in Settings or Edit Profile!');
+    }
   };
 
   const handleMessageClick = (e) => {

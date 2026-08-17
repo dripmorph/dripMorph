@@ -99,12 +99,15 @@ export default function SettingsModal({ isOpen, onClose, showToast, onProfileUpd
 
   const handleSaveInstagram = async () => {
     setIsSavingInstagram(true);
+    const cleanIg = instagram.trim().replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/\/$/, '');
+    const finalIg = cleanIg ? `@${cleanIg}` : '';
     try {
       if (updateProfileDetails) {
-        await updateProfileDetails({ instagramLink: instagram });
+        await updateProfileDetails({ instagramLink: finalIg });
       }
+      setInstagram(finalIg);
       if (showToast) {
-        showToast('Linked Instagram saved successfully.');
+        showToast(finalIg ? `Linked Instagram saved: ${finalIg}` : 'Instagram handle removed.');
       }
       if (onProfileUpdate) {
         onProfileUpdate();
@@ -251,7 +254,6 @@ export default function SettingsModal({ isOpen, onClose, showToast, onProfileUpd
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleSaveInstagram();
                   }}
-                  onBlur={handleSaveInstagram}
                   disabled={isSavingInstagram}
                 />
                 <button
