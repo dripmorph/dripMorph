@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ShoppingBag, ExternalLink, Plus, Trash2, Tag, Globe, Sparkles } from 'lucide-react';
+import { X, ExternalLink, Plus, Trash2, Globe, Link2 } from 'lucide-react';
 
 export default function ProfileShoppingModal({
   isOpen,
@@ -8,53 +8,36 @@ export default function ProfileShoppingModal({
   isOwnProfile,
   userId,
   username,
-  userOutfits = [],
   showToast
 }) {
-  const storageKey = `dripmorph_shop_links_${userId || username || 'default'}`;
+  const storageKey = `dripmorph_profile_links_${userId || username || 'default'}`;
 
-  const [shopLinks, setShopLinks] = useState(() => {
+  const [links, setLinks] = useState(() => {
     try {
       const saved = localStorage.getItem(storageKey);
       if (saved) return JSON.parse(saved);
     } catch (e) {
-      console.warn('Failed to parse saved shop links:', e);
+      console.warn('Failed to parse saved links:', e);
     }
-    // Default initial links for demonstration if owner
     return [
       {
         id: 'init-1',
-        name: 'Oversized Boxy Tee',
-        brand: 'Represent Clo',
-        url: 'https://representclo.com',
-        price: '$95.00'
-      },
-      {
-        id: 'init-2',
-        name: 'Tactical Cargo Pants',
-        brand: 'Acronym',
-        url: 'https://acrnm.com',
-        price: '$240.00'
+        url: 'https://instagram.com'
       }
     ];
   });
 
   const [isAdding, setIsAdding] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    brand: '',
-    url: '',
-    price: ''
-  });
+  const [linkInput, setLinkInput] = useState('');
 
   // Save to localStorage on change
   useEffect(() => {
     try {
-      localStorage.setItem(storageKey, JSON.stringify(shopLinks));
+      localStorage.setItem(storageKey, JSON.stringify(links));
     } catch (e) {
-      console.warn('Failed to persist shop links:', e);
+      console.warn('Failed to persist links:', e);
     }
-  }, [shopLinks, storageKey]);
+  }, [links, storageKey]);
 
   if (!isOpen) return null;
 
@@ -69,28 +52,35 @@ export default function ProfileShoppingModal({
 
   const handleAddSubmit = (e) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.url.trim()) {
-      if (showToast) showToast('Please enter an item name and store link');
+    const cleanUrl = linkInput.trim();
+    if (!cleanUrl) {
+      if (showToast) showToast('Please enter a link');
       return;
     }
 
     const newLink = {
-      id: `shop-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-      name: formData.name.trim(),
-      brand: formData.brand.trim() || 'Custom Find',
-      url: formData.url.trim(),
-      price: formData.price.trim() || ''
+      id: `link-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      url: cleanUrl
     };
 
-    setShopLinks(prev => [newLink, ...prev]);
-    setFormData({ name: '', brand: '', url: '', price: '' });
+    setLinks(prev => [newLink, ...prev]);
+    setLinkInput('');
     setIsAdding(false);
-    if (showToast) showToast('Shopping link added to your wardrobe!');
+    if (showToast) showToast('Link added successfully!');
   };
 
   const handleDelete = (id) => {
-    setShopLinks(prev => prev.filter(l => l.id !== id));
+    setLinks(prev => prev.filter(l => l.id !== id));
     if (showToast) showToast('Link removed');
+  };
+
+  // Helper to format clean display label from URL
+  const formatDisplayUrl = (url) => {
+    try {
+      return url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+    } catch {
+      return url;
+    }
   };
 
   const modalContent = (
@@ -115,7 +105,7 @@ export default function ProfileShoppingModal({
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%',
-          maxWidth: '460px',
+          maxWidth: '440px',
           maxHeight: '85vh',
           borderRadius: '24px',
           backgroundColor: '#16161a',
@@ -142,14 +132,14 @@ export default function ProfileShoppingModal({
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <ShoppingBag size={18} color="#a6fc29" />
+              <Link2 size={18} color="#a6fc29" />
             </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '800', color: '#ffffff' }}>
-                {isOwnProfile ? 'My Wardrobe & Shop Links' : `${username}'s Shop Links`}
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#ffffff' }}>
+                Links
               </h3>
               <p style={{ margin: 0, fontSize: '12px', color: '#a0a0a0' }}>
-                {isOwnProfile ? 'Add links to your clothing, accessories & stores' : 'Curated fashion & store finds'}
+                {isOwnProfile ? 'Add and manage your links' : `${username}'s Links`}
               </p>
             </div>
           </div>
@@ -187,7 +177,7 @@ export default function ProfileShoppingModal({
                   transition: 'all 0.2s ease'
                 }}
               >
-                <Plus size={16} /> Add New Shopping Link
+                <Plus size={16} /> Add New Link
               </button>
             ) : (
               <form 
@@ -195,25 +185,26 @@ export default function ProfileShoppingModal({
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '10px',
-                  padding: '14px',
+                  gap: '12px',
+                  padding: '16px',
                   borderRadius: '14px',
                   backgroundColor: 'rgba(255, 255, 255, 0.04)',
                   border: '1px solid rgba(255, 255, 255, 0.1)'
                 }}
               >
-                <span style={{ fontSize: '13px', fontWeight: '700', color: '#a6fc29' }}>New Wardrobe Item</span>
+                <span style={{ fontSize: '14px', fontWeight: '800', color: '#a6fc29' }}>Links</span>
                 
                 <input
                   type="text"
-                  placeholder="Item Name (e.g. Vintage Leather Jacket) *"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Enter link (e.g. https://... or website.com)"
+                  value={linkInput}
+                  onChange={(e) => setLinkInput(e.target.value)}
+                  autoFocus
                   style={{
                     backgroundColor: '#0d0d10',
-                    border: '1px solid rgba(255, 255, 255, 0.12)',
-                    borderRadius: '10px',
-                    padding: '10px 12px',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    borderRadius: '12px',
+                    padding: '12px 14px',
                     color: '#ffffff',
                     fontSize: '13px',
                     outline: 'none'
@@ -221,63 +212,16 @@ export default function ProfileShoppingModal({
                   required
                 />
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                  <input
-                    type="text"
-                    placeholder="Brand / Store (e.g. Zara)"
-                    value={formData.brand}
-                    onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                    style={{
-                      backgroundColor: '#0d0d10',
-                      border: '1px solid rgba(255, 255, 255, 0.12)',
-                      borderRadius: '10px',
-                      padding: '10px 12px',
-                      color: '#ffffff',
-                      fontSize: '13px',
-                      outline: 'none'
-                    }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Price (e.g. $120)"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    style={{
-                      backgroundColor: '#0d0d10',
-                      border: '1px solid rgba(255, 255, 255, 0.12)',
-                      borderRadius: '10px',
-                      padding: '10px 12px',
-                      color: '#ffffff',
-                      fontSize: '13px',
-                      outline: 'none'
-                    }}
-                  />
-                </div>
-
-                <input
-                  type="text"
-                  placeholder="Store Link / URL (e.g. https://... or store.com) *"
-                  value={formData.url}
-                  onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-                  style={{
-                    backgroundColor: '#0d0d10',
-                    border: '1px solid rgba(255, 255, 255, 0.12)',
-                    borderRadius: '10px',
-                    padding: '10px 12px',
-                    color: '#ffffff',
-                    fontSize: '13px',
-                    outline: 'none'
-                  }}
-                  required
-                />
-
-                <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
                   <button
                     type="button"
-                    onClick={() => setIsAdding(false)}
+                    onClick={() => {
+                      setIsAdding(false);
+                      setLinkInput('');
+                    }}
                     style={{
                       flex: 1,
-                      padding: '9px',
+                      padding: '10px',
                       borderRadius: '10px',
                       backgroundColor: 'rgba(255, 255, 255, 0.08)',
                       border: 'none',
@@ -293,7 +237,7 @@ export default function ProfileShoppingModal({
                     type="submit"
                     style={{
                       flex: 1,
-                      padding: '9px',
+                      padding: '10px',
                       borderRadius: '10px',
                       backgroundColor: '#a6fc29',
                       border: 'none',
@@ -313,10 +257,10 @@ export default function ProfileShoppingModal({
 
         {/* Links List */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {shopLinks.length === 0 ? (
+          {links.length === 0 ? (
             <div style={{
               textAlign: 'center',
-              padding: '30px 16px',
+              padding: '32px 16px',
               borderRadius: '16px',
               backgroundColor: 'rgba(255, 255, 255, 0.03)',
               border: '1px solid rgba(255, 255, 255, 0.06)',
@@ -325,18 +269,18 @@ export default function ProfileShoppingModal({
               alignItems: 'center',
               gap: '8px'
             }}>
-              <ShoppingBag size={32} color="#71717a" />
+              <Globe size={32} color="#71717a" />
               <p style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: '#a0a0a0' }}>
-                No shopping links added yet.
+                No links added yet.
               </p>
               {isOwnProfile && (
                 <p style={{ margin: 0, fontSize: '12px', color: '#71717a' }}>
-                  Click "+ Add New Shopping Link" above to share where you get your drip!
+                  Click "+ Add New Link" above to add your first link!
                 </p>
               )}
             </div>
           ) : (
-            shopLinks.map((item) => (
+            links.map((item) => (
               <div
                 key={item.id}
                 style={{
@@ -351,30 +295,31 @@ export default function ProfileShoppingModal({
                   transition: 'all 0.2s ease'
                 }}
               >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '14px', fontWeight: '700', color: '#ffffff' }}>
-                      {item.name}
-                    </span>
-                    {item.price && (
-                      <span style={{
-                        fontSize: '11px',
-                        fontWeight: '700',
-                        color: '#a6fc29',
-                        backgroundColor: 'rgba(166, 252, 41, 0.12)',
-                        padding: '2px 6px',
-                        borderRadius: '6px'
-                      }}>
-                        {item.price}
-                      </span>
-                    )}
-                  </div>
-                  <span style={{ fontSize: '12px', color: '#a0a0a0', display: 'block', marginTop: '2px' }}>
-                    {item.brand}
+                <div 
+                  onClick={() => handleOpenLink(item.url)}
+                  style={{ 
+                    flex: 1, 
+                    minWidth: 0, 
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <Globe size={15} color="#a0a0a0" style={{ flexShrink: 0 }} />
+                  <span style={{ 
+                    fontSize: '13px', 
+                    fontWeight: '600', 
+                    color: '#ffffff',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {formatDisplayUrl(item.url)}
                   </span>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                   {/* Visit Link Button */}
                   <button
                     type="button"
@@ -382,8 +327,8 @@ export default function ProfileShoppingModal({
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '6px',
-                      padding: '8px 14px',
+                      gap: '5px',
+                      padding: '8px 12px',
                       borderRadius: '10px',
                       backgroundColor: 'rgba(166, 252, 41, 0.14)',
                       border: '1px solid rgba(166, 252, 41, 0.4)',
@@ -394,7 +339,7 @@ export default function ProfileShoppingModal({
                       transition: 'all 0.15s ease'
                     }}
                   >
-                    <span>Shop</span>
+                    <span>Open</span>
                     <ExternalLink size={13} />
                   </button>
 

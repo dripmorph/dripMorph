@@ -627,7 +627,7 @@ export default function UserProfile({
 
         {/* Symmetrical profile action buttons: [ Shopping ] [ Edit Profile / Follow ] [ Instagram ] */}
         <div className="profile-buttons-row">
-          {/* Left Shopping Basket Button */}
+          {/* Left Links Button */}
           <button 
             type="button"
             className="btn-link-shopping" 
@@ -636,8 +636,8 @@ export default function UserProfile({
               e.stopPropagation();
               setIsShoppingModalOpen(true);
             }} 
-            aria-label="Shopping & Wardrobe Links"
-            title="Shopping & Wardrobe Links"
+            aria-label="Links"
+            title="Links"
           >
             <ShoppingBasket size={18} color="#a6fc29" />
           </button>
