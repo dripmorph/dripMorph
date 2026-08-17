@@ -629,8 +629,13 @@ export default function UserProfile({
         <div className="profile-buttons-row">
           {/* Left Shopping Basket Button */}
           <button 
+            type="button"
             className="btn-link-shopping" 
-            onClick={() => setIsShoppingModalOpen(true)} 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsShoppingModalOpen(true);
+            }} 
             aria-label="Shopping & Wardrobe Links"
             title="Shopping & Wardrobe Links"
           >

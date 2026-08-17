@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ShoppingBag, ExternalLink, Plus, Trash2, Tag, Globe, Sparkles } from 'lucide-react';
 
 export default function ProfileShoppingModal({
@@ -92,28 +93,25 @@ export default function ProfileShoppingModal({
     if (showToast) showToast('Link removed');
   };
 
-  // Collect any tagged products from user's outfits
-  const taggedOutfitProducts = [];
-  if (Array.isArray(userOutfits)) {
-    userOutfits.forEach(outfit => {
-      if (Array.isArray(outfit.products)) {
-        outfit.products.forEach(p => {
-          if (p && p.name) {
-            taggedOutfitProducts.push({
-              ...p,
-              outfitImage: outfit.image || outfit.image_url,
-              outfitScore: outfit.overall_score || outfit.score
-            });
-          }
-        });
-      }
-    });
-  }
-
-  return (
-    <div className="share-modal-overlay" onClick={onClose}>
+  const modalContent = (
+    <div 
+      className="profile-shop-modal-overlay" 
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 99999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.85)',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+        padding: '16px'
+      }}
+    >
       <div 
-        className="share-modal-card" 
+        className="profile-shop-modal-card" 
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%',
@@ -127,7 +125,8 @@ export default function ProfileShoppingModal({
           display: 'flex',
           flexDirection: 'column',
           gap: '16px',
-          overflowY: 'auto'
+          overflowY: 'auto',
+          position: 'relative'
         }}
       >
         {/* Modal Header */}
@@ -431,4 +430,8 @@ export default function ProfileShoppingModal({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined'
+    ? createPortal(modalContent, document.body)
+    : modalContent;
 }
