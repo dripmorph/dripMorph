@@ -156,17 +156,66 @@ export default function UserProfile({
   const fileInputRef = useRef(null);
   const [avatarUrl, setAvatarUrl] = useState(avatar);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
   const { openChat } = useChat();
   const { user, updateProfileDetails } = useAuth();
 
   useEffect(() => {
     setAvatarUrl(avatar);
-    setIsFollowing(false); // Reset follow state when switching profiles
+    setIsFollowing(false);
   }, [avatar]);
 
-  const handleFollowClick = () => {
-    setIsFollowing(!isFollowing);
-    showToast(isFollowing ? `Unfollowed ${displayUsername}` : `Following ${displayUsername}`);
+  // Load follow state + followers count from Supabase when viewing another user
+  useEffect(() => {
+    if (isOwnProfile || !fetchedProfile?.id) {
+      // For own profile: just load followers count
+      if (isOwnProfile && user?.id) {
+        supabase
+          .from('follows')
+          .select('follower_id', { count: 'exact', head: true })
+          .eq('following_id', user.id)
+          .then(({ count }) => setFollowersCount(count ?? 0));
+      }
+      return;
+    }
+    const viewedId = fetchedProfile.id;
+    // Check if current user follows this profile
+    if (user?.id) {
+      supabase
+        .from('follows')
+        .select('follower_id', { count: 'exact', head: true })
+        .eq('follower_id', user.id)
+        .eq('following_id', viewedId)
+        .then(({ count }) => setIsFollowing((count ?? 0) > 0));
+    }
+    // Get total followers count for this profile
+    supabase
+      .from('follows')
+      .select('follower_id', { count: 'exact', head: true })
+      .eq('following_id', viewedId)
+      .then(({ count }) => setFollowersCount(count ?? 0));
+  }, [fetchedProfile?.id, user?.id, isOwnProfile]);
+
+  const handleFollowClick = async () => {
+    if (!user?.id || !fetchedProfile?.id) return;
+    const viewedId = fetchedProfile.id;
+    if (isFollowing) {
+      await supabase
+        .from('follows')
+        .delete()
+        .eq('follower_id', user.id)
+        .eq('following_id', viewedId);
+      setIsFollowing(false);
+      setFollowersCount(prev => Math.max(0, prev - 1));
+      showToast(`Unfollowed ${displayUsername}`);
+    } else {
+      await supabase
+        .from('follows')
+        .insert({ follower_id: user.id, following_id: viewedId });
+      setIsFollowing(true);
+      setFollowersCount(prev => prev + 1);
+      showToast(`Following ${displayUsername}`);
+    }
   };
 
   useEffect(() => {
@@ -555,6 +604,12 @@ export default function UserProfile({
           </div>
         )}
 
+        {/* Followers count */}
+        <div className="profile-followers-stat">
+          <span className="profile-followers-count">{followersCount}</span>
+          <span className="profile-followers-label">Followers</span>
+        </div>
+
         {/* Edit and link buttons */}
         <div className="profile-buttons-row">
           {isOwnProfile ? (
@@ -614,7 +669,6 @@ export default function UserProfile({
               margin: '10px 0',
             }}
           >
-            <span style={{ fontSize: '1.8rem', display: 'block', marginBottom: '6px' }}>🔥</span>
             <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>No fits posted yet</h4>
             <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
               Scan and publish your outfit to see your top ranked fits here!
