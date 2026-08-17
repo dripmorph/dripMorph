@@ -1,24 +1,31 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useChat } from '../context/ChatContext';
 import { useAuth } from '../context/AuthContext';
-import { ArrowLeft, Send, Image, Smile, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Send, Image, Smile, MessageSquare, Loader } from 'lucide-react';
 
 export default function ChatView({ onBack }) {
-  const { conversations, activeChatId, sendMessage, acceptConversation, declineConversation } = useChat();
+  const {
+    conversations,
+    activeChatId,
+    sendMessage,
+    loadingMessages,
+    acceptConversation,
+    declineConversation,
+  } = useChat();
   const { user } = useAuth();
+
   const conv = conversations.find(c => c.id === activeChatId);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const textInputRef = useRef(null);
 
+  // Scroll to bottom whenever messages change
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [conv?.messages]);
 
-  // When keyboard opens on mobile, scroll so the input bar stays visible
+  // When keyboard opens on mobile, scroll input into view
   const handleInputFocus = () => {
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -28,13 +35,7 @@ export default function ChatView({ onBack }) {
 
   const handleSend = () => {
     if (!input.trim() || !activeChatId) return;
-    const msg = {
-      sender: user?.username || '@minimalist_enzo',
-      content: input.trim(),
-      type: 'text',
-      timestamp: new Date().toISOString()
-    };
-    sendMessage(activeChatId, msg);
+    sendMessage(activeChatId, input.trim(), 'text');
     setInput('');
   };
 
@@ -43,19 +44,13 @@ export default function ChatView({ onBack }) {
     if (file && activeChatId) {
       const reader = new FileReader();
       reader.onload = (uploadEvent) => {
-        const msg = {
-          sender: user?.username || '@minimalist_enzo',
-          content: uploadEvent.target.result,
-          type: 'image',
-          timestamp: new Date().toISOString()
-        };
-        sendMessage(activeChatId, msg);
+        sendMessage(activeChatId, uploadEvent.target.result, 'image');
       };
       reader.readAsDataURL(file);
     }
   };
 
-  // Empty state when no conversation is selected
+  // ── Empty state when no conversation is selected ───────────────────────────
   if (!conv) {
     return (
       <div className="chat-view chat-empty-container">
@@ -64,26 +59,32 @@ export default function ChatView({ onBack }) {
             <MessageSquare size={36} className="chat-empty-icon" />
           </div>
           <h3 className="chat-empty-title">Your Messages</h3>
-          <p className="chat-empty-subtitle">Select a conversation from the list to start messaging</p>
+          <p className="chat-empty-subtitle">
+            Select a conversation from the list to start messaging
+          </p>
         </div>
       </div>
     );
   }
 
   const isPending = conv.status === 'pending';
-  const isRecipient = user && conv.user.username === user.username;
+  const isRecipient = user && conv.user.id === user.id;
   const isInitiator = !isRecipient;
 
   return (
     <div className="chat-view">
-      {/* Header Bar */}
+      {/* Header */}
       <div className="chat-header">
         <button className="chat-back-btn" onClick={onBack} aria-label="Back">
           <ArrowLeft size={20} />
         </button>
         <div className="chat-header-user-info">
           <div className="chat-header-avatar-wrapper">
-            <img src={conv.user.avatar} alt={conv.user.username} className="chat-header-avatar" />
+            <img
+              src={conv.user.avatar}
+              alt={conv.user.username}
+              className="chat-header-avatar"
+            />
             <span className="online-indicator-dot" />
           </div>
           <div className="chat-header-meta">
@@ -100,26 +101,52 @@ export default function ChatView({ onBack }) {
         <div className="chat-request-banner">
           <span>Do you want to chat with {conv.user.username}?</span>
           <div className="chat-request-actions">
-            <button className="btn-accept-chat" onClick={() => acceptConversation(activeChatId)}>Accept</button>
-            <button className="btn-decline-chat" onClick={() => declineConversation(activeChatId)}>Decline</button>
+            <button
+              className="btn-accept-chat"
+              onClick={() => acceptConversation(activeChatId)}
+            >
+              Accept
+            </button>
+            <button
+              className="btn-decline-chat"
+              onClick={() => declineConversation(activeChatId)}
+            >
+              Decline
+            </button>
           </div>
         </div>
       )}
 
       {/* Messages Feed */}
       <div className="chat-messages">
-        {conv.messages.length === 0 ? (
+        {loadingMessages ? (
+          <div className="chat-loading">
+            <Loader size={24} className="chat-loading-spinner" />
+          </div>
+        ) : conv.messages.length === 0 ? (
           <div className="chat-no-messages">
-            <img src={conv.user.avatar} alt={conv.user.username} className="chat-no-messages-avatar" />
+            <img
+              src={conv.user.avatar}
+              alt={conv.user.username}
+              className="chat-no-messages-avatar"
+            />
             <h4>Say hi to {conv.user.username}!</h4>
             <p>Start the conversation with a message or fit check.</p>
           </div>
         ) : (
           conv.messages.map(msg => {
-            const isSent = msg.sender === (user?.username || '@minimalist_enzo');
-            const timeStr = msg.timestamp
-              ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-              : '11:45 AM';
+            // Support both new Supabase format (sender_id) and legacy format (sender)
+            const isSent = user
+              ? msg.sender_id === user.id || msg.sender === user.username
+              : false;
+
+            const ts = msg.created_at || msg.timestamp;
+            const timeStr = ts
+              ? new Date(ts).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              : '';
 
             return (
               <div
@@ -133,7 +160,9 @@ export default function ChatView({ onBack }) {
                     <span>{msg.content}</span>
                   )}
                 </div>
-                <span className="chat-bubble-timestamp">{timeStr}</span>
+                {timeStr && (
+                  <span className="chat-bubble-timestamp">{timeStr}</span>
+                )}
               </div>
             );
           })
@@ -166,7 +195,11 @@ export default function ChatView({ onBack }) {
           type="text"
           inputMode="text"
           className="chat-text-input"
-          placeholder={isPending && isInitiator ? "Message request sent..." : "Type a message..."}
+          placeholder={
+            isPending && isInitiator
+              ? 'Message request sent...'
+              : 'Type a message...'
+          }
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSend()}

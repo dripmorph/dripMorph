@@ -3819,6 +3819,33 @@ body {
   border: 2px solid var(--accent-solid);
 }
 
+/* Loading state while fetching messages from Supabase */
+.chat-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  color: var(--text-secondary);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.chat-loading-spinner {
+  animation: spin 0.8s linear infinite;
+  opacity: 0.6;
+}
+
+/* Empty conversations list state */
+.chat-no-convs {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
 /* Message Bubble Wrapper & Alignments */
 .chat-bubble-wrapper {
   display: flex;

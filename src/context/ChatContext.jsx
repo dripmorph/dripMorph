@@ -1,145 +1,306 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-
-// Message format: { id, sender (username), content, type: 'text'|'image', timestamp }
-// Conversation format: { id, user: { username, avatar }, messages: [], unreadCount }
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { supabase } from '../lib/supabaseClient';
+import * as messageService from '../lib/messageService';
 
 const ChatContext = createContext();
-
 export const useChat = () => useContext(ChatContext);
 
-export const ChatProvider = ({ children }) => {
-  const [conversations, setConversations] = useState([]);
-  const [activeChatId, setActiveChatId] = useState(null);
+const DEFAULT_AVATAR =
+  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=240&h=240&fit=crop';
 
-  // Load mock data from localStorage or initialize defaults
+export const ChatProvider = ({ children }) => {
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [conversations, setConversations] = useState([]);
+  const [activeChatId, setActiveChatId] = useState(null); // partner's UUID
+  const [loadingMessages, setLoadingMessages] = useState(false);
+
+  // Refs to access latest values inside async callbacks without stale closures
+  const activeChatIdRef = useRef(null);
+  const currentUserIdRef = useRef(null);
+  const channelRef = useRef(null);
+
+  useEffect(() => { activeChatIdRef.current = activeChatId; }, [activeChatId]);
+  useEffect(() => { currentUserIdRef.current = currentUserId; }, [currentUserId]);
+
+  // ── Track auth state ────────────────────────────────────────────────────────
   useEffect(() => {
-    const stored = localStorage.getItem('chatData');
-    if (stored) {
-      const data = JSON.parse(stored);
-      setConversations(data.conversations || []);
-      setActiveChatId(data.activeChatId || null);
-    } else {
-      // Initialize with some mock conversations
-      const mock = [
-        {
-          id: 'c1',
-          user: { username: '@streetstyle_icon', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=240&h=240&fit=crop' },
-          messages: [
-            { id: 'm1', sender: '@streetstyle_icon', content: 'Hey! Love your latest post.', type: 'text', timestamp: new Date().toISOString() },
-            { id: 'm2', sender: '@minimalist_enzo', content: 'Thanks! Appreciate the feedback.', type: 'text', timestamp: new Date().toISOString() }
-          ],
-          unreadCount: 0,
-          status: 'accepted'
-        },
-        {
-          id: 'c2',
-          user: { username: '@neon_wanderer', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=240&h=240&fit=crop' },
-          messages: [],
-          unreadCount: 0,
-          status: 'accepted'
-        }
-      ];
-      setConversations(mock);
-    }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setCurrentUserId(session?.user?.id ?? null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setCurrentUserId(session?.user?.id ?? null);
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
-  // Persist to localStorage on changes
+  // ── Load conversations + subscribe to realtime when user logs in ────────────
   useEffect(() => {
-    const data = { conversations, activeChatId };
-    localStorage.setItem('chatData', JSON.stringify(data));
-  }, [conversations, activeChatId]);
+    if (!currentUserId) {
+      setConversations([]);
+      setActiveChatId(null);
+      cleanupChannel();
+      return;
+    }
+    loadConversations(currentUserId);
+    setupRealtimeSubscription(currentUserId);
+    return cleanupChannel;
+  }, [currentUserId]);
 
-  const openChat = (target, avatarUrl = null) => {
-    let targetId = null;
-    let targetUsername = null;
-    let targetAvatar = avatarUrl;
+  const cleanupChannel = () => {
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+  };
 
-    if (typeof target === 'object' && target !== null) {
-      targetUsername = target.username;
-      targetId = target.id;
-      if (target.avatar) targetAvatar = target.avatar;
-    } else if (typeof target === 'string') {
-      if (target.startsWith('c') && conversations.some(c => c.id === target)) {
-        targetId = target;
+  // ── Load all conversations from Supabase ────────────────────────────────────
+  const loadConversations = async (userId) => {
+    try {
+      const convData = await messageService.fetchConversations(userId);
+      if (convData.length === 0) { setConversations([]); return; }
+
+      const partnerIds = convData.map(c => c.partnerId);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', partnerIds);
+
+      const profileMap = {};
+      for (const p of (profiles || [])) profileMap[p.id] = p;
+
+      setConversations(
+        convData.map(c => {
+          const profile = profileMap[c.partnerId];
+          return {
+            id: c.partnerId,
+            partnerId: c.partnerId,
+            user: {
+              id: c.partnerId,
+              username: profile?.username ? `@${profile.username}` : '...',
+              avatar: profile?.avatar_url || DEFAULT_AVATAR,
+            },
+            messages: [],          // lazy-loaded when chat is opened
+            lastMessage: c.lastMessage,
+            unreadCount: c.unreadCount,
+            status: 'accepted',
+          };
+        })
+      );
+    } catch (err) {
+      console.error('[Chat] loadConversations error:', err);
+    }
+  };
+
+  // ── Supabase Realtime subscription for incoming messages ────────────────────
+  const setupRealtimeSubscription = (userId) => {
+    cleanupChannel();
+    channelRef.current = supabase
+      .channel(`inbox:${userId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `recipient_id=eq.${userId}` },
+        handleIncomingMessage
+      )
+      .subscribe();
+  };
+
+  const handleIncomingMessage = async (payload) => {
+    const newMsg = payload.new || payload;
+    const partnerId = newMsg.sender_id;
+    const isActive = activeChatIdRef.current === partnerId;
+
+    setConversations(prev => {
+      const exists = prev.find(c => c.partnerId === partnerId);
+      if (exists) {
+        return prev.map(c => {
+          if (c.partnerId !== partnerId) return c;
+          return {
+            ...c,
+            // Only append to messages array if it was already loaded (length > 0)
+            messages: c.messages.length > 0 ? [...c.messages, newMsg] : c.messages,
+            lastMessage: newMsg,
+            unreadCount: isActive ? 0 : c.unreadCount + 1,
+          };
+        });
       } else {
-        targetUsername = target;
+        // New conversation from someone new — load their profile asynchronously
+        loadNewConversation(partnerId, newMsg);
+        return prev;
       }
-    }
+    });
 
-    // 1. If targetId matches an existing conversation
-    if (targetId) {
-      setActiveChatId(targetId);
-      setConversations(prev => prev.map(c => c.id === targetId ? { ...c, unreadCount: 0 } : c));
-      return targetId;
-    }
-
-    // 2. If targetUsername matches an existing conversation
-    if (targetUsername) {
-      const existing = conversations.find(c => c.user.username.toLowerCase() === targetUsername.toLowerCase());
-      if (existing) {
-        setActiveChatId(existing.id);
-        setConversations(prev => prev.map(c => c.id === existing.id ? { ...c, unreadCount: 0 } : c));
-        return existing.id;
-      }
-
-      // 3. Create new conversation if not found
-      const newId = `c${Date.now()}`;
-      const newConv = {
-        id: newId,
-        user: {
-          username: targetUsername,
-          avatar: targetAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=240&h=240&fit=crop'
-        },
-        messages: [],
-        unreadCount: 0,
-        status: 'accepted'
-      };
-      setConversations(prev => [newConv, ...prev]);
-      setActiveChatId(newId);
-      return newId;
+    // Mark as read immediately if we're currently in that chat
+    if (isActive && currentUserIdRef.current) {
+      await messageService.markMessagesRead(currentUserIdRef.current, partnerId);
     }
   };
 
-  const sendMessage = (chatId, message) => {
-    const newMsg = { ...message, id: `m${Date.now()}`, timestamp: new Date().toISOString() };
-    setConversations(prev => prev.map(c => {
-      if (c.id === chatId) {
-        return { ...c, messages: [...c.messages, newMsg] };
-      }
-      return c;
-    }));
-  };
-
-  const addConversation = (user) => {
-    // Avoid duplicate chats
-    if (conversations.find(c => c.user.username === user.username)) return;
+  const loadNewConversation = async (partnerId, firstMsg) => {
+    const profile = await messageService.fetchProfile(partnerId);
     const newConv = {
-      id: `c${Date.now()}`,
-      user,
-      messages: [],
-      unreadCount: 0,
-      status: 'pending'
+      id: partnerId,
+      partnerId,
+      user: {
+        id: partnerId,
+        username: profile?.username ? `@${profile.username}` : '...',
+        avatar: profile?.avatar_url || DEFAULT_AVATAR,
+      },
+      messages: [firstMsg],
+      lastMessage: firstMsg,
+      unreadCount: activeChatIdRef.current === partnerId ? 0 : 1,
+      status: 'accepted',
     };
-    setConversations(prev => [newConv, ...prev]);
-    setActiveChatId(newConv.id);
+    setConversations(prev => {
+      if (prev.find(c => c.partnerId === partnerId)) return prev;
+      return [newConv, ...prev];
+    });
   };
 
-  const acceptConversation = (chatId) => {
-    setConversations(prev => prev.map(c => c.id === chatId ? { ...c, status: 'accepted' } : c));
+  // ── Open a chat ─────────────────────────────────────────────────────────────
+  const openChat = async (target, avatarUrl = null) => {
+    const userId = currentUserIdRef.current;
+    if (!userId) return;
+
+    let partnerId = null;
+    let partnerUsername = null;
+    let partnerAvatar = avatarUrl;
+
+    // Resolve target → partnerId
+    if (typeof target === 'string' && conversations.some(c => c.id === target)) {
+      // Already a partnerId UUID (from ChatList)
+      partnerId = target;
+    } else if (typeof target === 'object' && target?.id && String(target.id).includes('-')) {
+      // User object with UUID id
+      partnerId = target.id;
+      partnerUsername = target.username;
+      partnerAvatar = target.avatar || avatarUrl;
+    } else {
+      // Look up by username
+      const uname = typeof target === 'string' ? target : target?.username;
+      partnerUsername = uname;
+      partnerAvatar = target?.avatar || avatarUrl;
+      if (!uname) return;
+
+      const profile = await messageService.findUserByUsername(uname);
+      if (!profile) {
+        console.warn('[Chat] User not found:', uname);
+        return;
+      }
+      partnerId = profile.id;
+      partnerAvatar = partnerAvatar || profile.avatar_url;
+      partnerUsername = partnerUsername || `@${profile.username}`;
+    }
+
+    if (!partnerId) return;
+
+    setActiveChatId(partnerId);
+
+    // Ensure conversation entry exists in local state
+    const exists = conversations.find(c => c.id === partnerId);
+    if (!exists) {
+      setConversations(prev => [
+        {
+          id: partnerId,
+          partnerId,
+          user: {
+            id: partnerId,
+            username: partnerUsername || '...',
+            avatar: partnerAvatar || DEFAULT_AVATAR,
+          },
+          messages: [],
+          lastMessage: null,
+          unreadCount: 0,
+          status: 'accepted',
+        },
+        ...prev,
+      ]);
+    }
+
+    // Fetch messages from Supabase
+    setLoadingMessages(true);
+    try {
+      const msgs = await messageService.fetchMessages(userId, partnerId);
+      setConversations(prev =>
+        prev.map(c => c.id === partnerId ? { ...c, messages: msgs, unreadCount: 0 } : c)
+      );
+      await messageService.markMessagesRead(userId, partnerId);
+    } catch (err) {
+      console.error('[Chat] fetchMessages error:', err);
+    } finally {
+      setLoadingMessages(false);
+    }
+
+    return partnerId;
   };
 
-  const declineConversation = (chatId) => {
-    // Remove the conversation entirely
-    setConversations(prev => prev.filter(c => c.id !== chatId));
-    if (activeChatId === chatId) setActiveChatId(null);
+  // ── Send a message ──────────────────────────────────────────────────────────
+  const sendMessage = async (partnerId, content, type = 'text') => {
+    const userId = currentUserIdRef.current;
+    if (!userId || !partnerId || !String(content || '').trim()) return;
+
+    const tempId = `temp-${Date.now()}`;
+    const tempMsg = {
+      id: tempId,
+      sender_id: userId,
+      recipient_id: partnerId,
+      content: String(content).trim(),
+      type,
+      read: false,
+      created_at: new Date().toISOString(),
+    };
+
+    // Optimistic update
+    setConversations(prev =>
+      prev.map(c =>
+        c.id === partnerId
+          ? { ...c, messages: [...c.messages, tempMsg], lastMessage: tempMsg }
+          : c
+      )
+    );
+
+    try {
+      const saved = await messageService.sendMessage(userId, partnerId, String(content).trim(), type);
+      // Replace temp with real DB record
+      setConversations(prev =>
+        prev.map(c => {
+          if (c.id !== partnerId) return c;
+          return {
+            ...c,
+            messages: c.messages.map(m => m.id === tempId ? saved : m),
+            lastMessage: saved,
+          };
+        })
+      );
+    } catch (err) {
+      console.error('[Chat] sendMessage error:', err);
+      // Remove failed optimistic message
+      setConversations(prev =>
+        prev.map(c => {
+          if (c.id !== partnerId) return c;
+          return { ...c, messages: c.messages.filter(m => m.id !== tempId) };
+        })
+      );
+    }
   };
 
-  const closeChat = () => {
-    setActiveChatId(null);
-  };
+  const closeChat = () => setActiveChatId(null);
 
   return (
-    <ChatContext.Provider value={{ conversations, activeChatId, openChat, sendMessage, addConversation, acceptConversation, declineConversation, closeChat }}>
+    <ChatContext.Provider
+      value={{
+        conversations,
+        activeChatId,
+        loadingMessages,
+        openChat,
+        sendMessage,
+        closeChat,
+        // Legacy compatibility for any existing call sites
+        addConversation: (user) => openChat(user),
+        acceptConversation: () => {},
+        declineConversation: (id) =>
+          setConversations(prev => prev.filter(c => c.id !== id)),
+      }}
+    >
       {children}
     </ChatContext.Provider>
   );

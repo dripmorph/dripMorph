@@ -36,10 +36,29 @@ export default function ChatList({ onSelectChat }) {
         </div>
       </div>
       <div className="chat-conversations">
+        {filtered.length === 0 && (
+          <div className="chat-no-convs">
+            <p>No messages yet. Message someone from their profile!</p>
+          </div>
+        )}
         {filtered.map(conv => {
-          const lastMsg = conv.messages[conv.messages.length - 1];
-          const snippet = lastMsg ? (lastMsg.type === 'image' ? '📷 Image' : lastMsg.content) : 'Started a conversation';
-          const time = lastMsg && lastMsg.timestamp ? new Date(lastMsg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+          // Use lastMessage (from DB summary) or fall back to last in messages array
+          const lastMsg =
+            conv.lastMessage || conv.messages[conv.messages.length - 1];
+          const snippet = lastMsg
+            ? lastMsg.type === 'image'
+              ? '📷 Image'
+              : lastMsg.content
+            : 'Start a conversation';
+
+          const ts = lastMsg?.created_at || lastMsg?.timestamp;
+          const time = ts
+            ? new Date(ts).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : '';
+
           const isActive = conv.id === activeChatId;
 
           return (
@@ -49,7 +68,11 @@ export default function ChatList({ onSelectChat }) {
               onClick={() => handleOpen(conv.id)}
             >
               <div className="chat-avatar-container">
-                <img src={conv.user.avatar} alt={conv.user.username} className="chat-avatar" />
+                <img
+                  src={conv.user.avatar}
+                  alt={conv.user.username}
+                  className="chat-avatar"
+                />
                 <span className="online-indicator-dot" />
               </div>
               <div className="chat-info">
@@ -59,7 +82,9 @@ export default function ChatList({ onSelectChat }) {
                 </div>
                 <div className="chat-item-bottom-row">
                   <span className="chat-snippet">{snippet}</span>
-                  {conv.unreadCount > 0 && <span className="chat-unread">{conv.unreadCount}</span>}
+                  {conv.unreadCount > 0 && (
+                    <span className="chat-unread">{conv.unreadCount}</span>
+                  )}
                 </div>
               </div>
             </div>
