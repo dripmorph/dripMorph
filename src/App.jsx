@@ -607,23 +607,6 @@ export default function App() {
   };
 
   const handlePostCreated = (newPostData) => {
-    const defaultProducts = [
-      {
-        id: `p-${Date.now()}-1`,
-        name: 'Cyberpunk Tailored Coat',
-        price: '$299.00',
-        brand: 'Yohji Yamamoto',
-        image: newPostData.image || newPostData.image_url
-      },
-      {
-        id: `p-${Date.now()}-2`,
-        name: 'Structured Wide Pants',
-        price: '$180.00',
-        brand: 'Acronym',
-        image: newPostData.image || newPostData.image_url
-      }
-    ];
-
     const authorUsername = newPostData.username || user?.username || user?.email?.split('@')[0] || '@minimalist_enzo';
     const authorAvatar = newPostData.user_avatar || newPostData.avatar || user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop';
     const authorLocation = newPostData.location || user?.city || 'Kolkata';
@@ -643,7 +626,7 @@ export default function App() {
       caption: newPostData.caption || 'New streetwear fit check.',
       postedAt: newPostData.created_at || new Date().toISOString(),
       created_at: newPostData.created_at || new Date().toISOString(),
-      products: newPostData.products || defaultProducts
+      products: Array.isArray(newPostData.products) ? newPostData.products : []
     };
 
     // Prepend to feed posts
@@ -656,7 +639,7 @@ export default function App() {
     const newFit = {
       id: newPost.id,
       title: newPost.caption,
-      brands: newPost.products.map(p => p.brand || p.name).join(' / '),
+      brands: Array.isArray(newPost.products) && newPost.products.length > 0 ? newPost.products.map(p => p.brand || p.name).join(' / ') : 'DripMorph Fit',
       score: parsedScore.toFixed(1),
       image: newPost.image,
       postedAt: newPost.postedAt,
@@ -1024,9 +1007,25 @@ export default function App() {
 
 function EditPostModal({ post, onClose, onSave }) {
   const [caption, setCaption] = useState(post.caption || post.title || '');
+  const [enableTagging, setEnableTagging] = useState(
+    Array.isArray(post.products) && post.products.length > 0
+  );
   const [products, setProducts] = useState(
     post.products ? post.products.map(p => ({ ...p })) : []
   );
+
+  const toggleTagging = () => {
+    if (!enableTagging && products.length === 0) {
+      setProducts([{
+        id: `p-edit-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        name: '',
+        brand: '',
+        price: '',
+        image: post.image
+      }]);
+    }
+    setEnableTagging(!enableTagging);
+  };
 
   const handleProductChange = (id, field, value) => {
     setProducts(prev => prev.map(p => {
@@ -1054,10 +1053,13 @@ function EditPostModal({ post, onClose, onSave }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const validProducts = enableTagging 
+      ? products.filter(p => p && p.name && p.name.trim() !== '')
+      : [];
     onSave({
       ...post,
       caption,
-      products
+      products: validProducts
     });
   };
 
@@ -1099,66 +1101,76 @@ function EditPostModal({ post, onClose, onSave }) {
             />
           </div>
 
-          {/* Tagged Products list */}
+          {/* Tagged Products Section (Optional) */}
           <div className="stl-form-row">
-            <span className="edit-section-title">Shop the Look Items</span>
-            <div className="edit-tagged-list">
-              {products.map((prod, idx) => (
-                <div key={prod.id} className="edit-tagged-item-card">
-                  <span className="edit-modal-locked-label">ITEM #{idx + 1}</span>
-                  
-                  {products.length > 1 && (
-                    <button 
-                      type="button" 
-                      className="btn-remove-tagged"
-                      onClick={() => handleRemoveProduct(prod.id)}
-                      aria-label="Remove item"
-                    >
-                      <X size={14} />
-                    </button>
-                  )}
-
-                  <div className="edit-tagged-row-inputs">
-                    <input
-                      type="text"
-                      className="stl-input"
-                      placeholder="Item Name"
-                      value={prod.name}
-                      onChange={(e) => handleProductChange(prod.id, 'name', e.target.value)}
-                      required
-                    />
-                    <div className="edit-tagged-input-group">
-                      <input
-                        type="text"
-                        className="stl-input"
-                        placeholder="Brand"
-                        value={prod.brand}
-                        onChange={(e) => handleProductChange(prod.id, 'brand', e.target.value)}
-                        required
-                      />
-                      <input
-                        type="text"
-                        className="stl-input"
-                        placeholder="Price"
-                        value={prod.price}
-                        onChange={(e) => handleProductChange(prod.id, 'price', e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div className="tag-items-section-header" style={{ marginBottom: '10px' }}>
+              <span className="edit-section-title" style={{ margin: 0 }}>Shop the Look Items</span>
+              <button
+                type="button"
+                className={`tag-toggle-btn ${enableTagging ? 'active' : ''}`}
+                onClick={toggleTagging}
+              >
+                {enableTagging ? "✕ Don't Tag Items" : '+ Tag Items'}
+              </button>
             </div>
-          </div>
 
-          {/* Add Item Button */}
-          <button 
-            type="button" 
-            className="btn-add-tagged-dashed"
-            onClick={handleAddProduct}
-          >
-            <span>+ Tag Another Item</span>
-          </button>
+            {enableTagging && (
+              <div className="tag-items-dropdown-container">
+                <div className="edit-tagged-list">
+                  {products.map((prod, idx) => (
+                    <div key={prod.id} className="edit-tagged-item-card">
+                      <span className="edit-modal-locked-label">ITEM #{idx + 1}</span>
+                      
+                      {products.length > 1 && (
+                        <button 
+                          type="button" 
+                          className="btn-remove-tagged"
+                          onClick={() => handleRemoveProduct(prod.id)}
+                          aria-label="Remove item"
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+
+                      <div className="edit-tagged-row-inputs">
+                        <input
+                          type="text"
+                          className="stl-input"
+                          placeholder="Item Name"
+                          value={prod.name}
+                          onChange={(e) => handleProductChange(prod.id, 'name', e.target.value)}
+                        />
+                        <div className="edit-tagged-input-group">
+                          <input
+                            type="text"
+                            className="stl-input"
+                            placeholder="Brand"
+                            value={prod.brand}
+                            onChange={(e) => handleProductChange(prod.id, 'brand', e.target.value)}
+                          />
+                          <input
+                            type="text"
+                            className="stl-input"
+                            placeholder="Price"
+                            value={prod.price}
+                            onChange={(e) => handleProductChange(prod.id, 'price', e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <button 
+                  type="button" 
+                  className="btn-add-tagged-dashed"
+                  onClick={handleAddProduct}
+                >
+                  <span>+ Tag Another Item</span>
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Form Actions */}
           <div className="stl-form-buttons" style={{ marginTop: '10px' }}>

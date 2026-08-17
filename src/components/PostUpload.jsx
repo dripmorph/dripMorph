@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Sparkles, Upload, RefreshCw, Trash2, Plus } from 'lucide-react';
+import { Sparkles, Upload, RefreshCw, Trash2, Plus, X, Tag } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { uploadOutfitImage, moderateImage, rateOutfit, publishOutfit } from '../lib/outfitService';
 
@@ -40,6 +40,7 @@ export default function PostUpload({ showToast, onPostCreated }) {
   const [caption, setCaption]     = useState('');
   const [isDragOver, setIsDragOver] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [enableTagging, setEnableTagging] = useState(false);
   const [taggedItems, setTaggedItems] = useState([
     { id: Date.now(), category: '', name: '', price: '', link: '' },
   ]);
@@ -47,6 +48,13 @@ export default function PostUpload({ showToast, onPostCreated }) {
   const fileInputRef = useRef(null);
 
   // ── Tagged item helpers ──────────────────────────────────────────────────────
+  const toggleTagging = () => {
+    if (!enableTagging && taggedItems.length === 0) {
+      setTaggedItems([{ id: Date.now(), category: '', name: '', price: '', link: '' }]);
+    }
+    setEnableTagging(!enableTagging);
+  };
+
   const handleTaggedItemChange = (id, field, value) => {
     setTaggedItems(prev =>
       prev.map(item => (item.id === id ? { ...item, [field]: value } : item)),
@@ -210,6 +218,10 @@ export default function PostUpload({ showToast, onPostCreated }) {
     setIsPublishing(true);
     try {
       console.log('[PostUpload] Calling publishOutfit()...');
+      const validTaggedItems = enableTagging
+        ? taggedItems.filter(item => item && item.name && item.name.trim() !== '')
+        : [];
+
       const outfit = await publishOutfit({
         userId: user.id,
         imageUrl: uploadedUrl,
@@ -217,23 +229,21 @@ export default function PostUpload({ showToast, onPostCreated }) {
         city: user.city || null,
         caption: caption || null,
         rating: analysisResult._raw,
-        taggedItems: taggedItems,
+        taggedItems: validTaggedItems,
       });
 
       console.log('[PostUpload] publishOutfit() SUCCESS, returned outfit:', outfit);
 
       // Build the post object that App.jsx's handlePostCreated expects
       const aiScoreStr = `${analysisResult.overall}/10`;
-      const products = taggedItems
-        .filter(item => item.name.trim() !== '')
-        .map(item => ({
-          id: `p-${item.id}`,
-          name: item.name,
-          price: item.price || '$0.00',
-          brand: item.category || 'Uncategorized',
-          link: item.link || '',
-          image: uploadedUrl,
-        }));
+      const products = validTaggedItems.map(item => ({
+        id: `p-${item.id}`,
+        name: item.name,
+        price: item.price || '$0.00',
+        brand: item.category || 'Uncategorized',
+        link: item.link || '',
+        image: uploadedUrl,
+      }));
 
       if (onPostCreated) {
         console.log('[PostUpload] Calling onPostCreated() handler in App.jsx...');
@@ -254,8 +264,8 @@ export default function PostUpload({ showToast, onPostCreated }) {
           comments: 0,
           caption: caption,
           created_at: new Date().toISOString(),
-          products: products.length > 0 ? products : undefined,
-          taggedItems: taggedItems.filter(item => item.name.trim() !== ''),
+          products: products.length > 0 ? products : [],
+          taggedItems: validTaggedItems,
         });
       } else {
         console.warn('[PostUpload] Warning: onPostCreated prop is undefined!');
@@ -271,6 +281,7 @@ export default function PostUpload({ showToast, onPostCreated }) {
       setAnalysisResult(null);
       setAnalysisError(null);
       setCaption('');
+      setEnableTagging(false);
       setTaggedItems([{ id: Date.now(), category: '', name: '', price: '', link: '' }]);
       showToast('Outfit shared to your DripMorph Feed!');
     } catch (err) {
@@ -507,68 +518,95 @@ export default function PostUpload({ showToast, onPostCreated }) {
               />
             </div>
 
-            {/* Tag Outfit Items */}
+            {/* Tag Outfit Items Section (Optional Toggle) */}
             <div className="tag-items-section">
-              <h4 className="tag-items-heading">Tag Items / Add Affiliate Links</h4>
-              <div className="tag-items-list">
-                {taggedItems.map((item, idx) => (
-                  <div key={item.id} className="tag-item-row">
-                    <div className="tag-item-row-header">
-                      <span className="tag-item-row-num">Item {idx + 1}</span>
-                      {taggedItems.length > 1 && (
-                        <button
-                          type="button"
-                          className="tag-item-remove-btn"
-                          onClick={() => removeTaggedItem(item.id)}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      )}
-                    </div>
-                    <div className="tag-item-fields">
-                      <select
-                        className="tag-item-select"
-                        value={item.category}
-                        onChange={(e) => handleTaggedItemChange(item.id, 'category', e.target.value)}
-                      >
-                        <option value="" disabled>Category</option>
-                        {ITEM_CATEGORIES.map(cat => (
-                          <option key={cat} value={cat}>{cat}</option>
-                        ))}
-                      </select>
-                      <input
-                        type="text"
-                        className="tag-item-input"
-                        placeholder="Item Name (e.g. Cargo Pants)"
-                        value={item.name}
-                        onChange={(e) => handleTaggedItemChange(item.id, 'name', e.target.value)}
-                      />
-                      <input
-                        type="text"
-                        className="tag-item-input tag-item-price"
-                        placeholder="Price ($/₹)"
-                        value={item.price}
-                        onChange={(e) => handleTaggedItemChange(item.id, 'price', e.target.value)}
-                      />
-                      <input
-                        type="url"
-                        className="tag-item-input tag-item-link"
-                        placeholder="Product / Affiliate Link (https://...)"
-                        value={item.link}
-                        onChange={(e) => handleTaggedItemChange(item.id, 'link', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                ))}
+              <div className="tag-items-section-header">
+                <div className="tag-items-title-group">
+                  <h4 className="tag-items-heading">Tag Items / Add Affiliate Links</h4>
+                  <span className="tag-items-subheading">Optional — lets viewers shop your look</span>
+                </div>
+                <button
+                  type="button"
+                  className={`tag-toggle-btn ${enableTagging ? 'active' : ''}`}
+                  onClick={toggleTagging}
+                >
+                  {enableTagging ? (
+                    <>
+                      <X size={14} />
+                      <span>Don't Tag Items</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={14} />
+                      <span>+ Tag Items</span>
+                    </>
+                  )}
+                </button>
               </div>
-              <button
-                type="button"
-                className="tag-item-add-btn"
-                onClick={addTaggedItem}
-              >
-                <Plus size={14} />
-                <span>Add Another Item</span>
-              </button>
+
+              {enableTagging && (
+                <div className="tag-items-dropdown-container">
+                  <div className="tag-items-list">
+                    {taggedItems.map((item, idx) => (
+                      <div key={item.id} className="tag-item-row">
+                        <div className="tag-item-row-header">
+                          <span className="tag-item-row-num">Item {idx + 1}</span>
+                          {taggedItems.length > 1 && (
+                            <button
+                              type="button"
+                              className="tag-item-remove-btn"
+                              onClick={() => removeTaggedItem(item.id)}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
+                        <div className="tag-item-fields">
+                          <select
+                            className="tag-item-select"
+                            value={item.category}
+                            onChange={(e) => handleTaggedItemChange(item.id, 'category', e.target.value)}
+                          >
+                            <option value="" disabled>Select Category</option>
+                            {ITEM_CATEGORIES.map(cat => (
+                              <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                          </select>
+                          <input
+                            type="text"
+                            className="tag-item-input"
+                            placeholder="Item Name (e.g. Cargo Pants)"
+                            value={item.name}
+                            onChange={(e) => handleTaggedItemChange(item.id, 'name', e.target.value)}
+                          />
+                          <input
+                            type="text"
+                            className="tag-item-input tag-item-price"
+                            placeholder="Price ($/₹)"
+                            value={item.price}
+                            onChange={(e) => handleTaggedItemChange(item.id, 'price', e.target.value)}
+                          />
+                          <input
+                            type="url"
+                            className="tag-item-input tag-item-link"
+                            placeholder="Product / Affiliate Link (https://...)"
+                            value={item.link}
+                            onChange={(e) => handleTaggedItemChange(item.id, 'link', e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    className="tag-item-add-btn"
+                    onClick={addTaggedItem}
+                  >
+                    <Plus size={14} />
+                    <span>Add Another Item</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Improvement Tip Card */}

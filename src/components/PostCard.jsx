@@ -282,28 +282,35 @@ export default function PostCard({ post, onShopClick, onFitClick, onShareClick, 
         )}
 
         {/* Action Buttons */}
-        <div className="buttons-container" onClick={(e) => e.stopPropagation()}>
-          <button 
-            className="btn-primary" 
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (onShopClick) onShopClick(post);
-            }}
-          >
-            SHOP THE LOOK
-          </button>
-          <button 
-            className="btn-secondary"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (onShareClick) onShareClick(post);
-            }}
-          >
-            Share to Stories
-          </button>
-        </div>
+        {(() => {
+          const hasProducts = Array.isArray(post.products) && post.products.length > 0;
+          return (
+            <div className="buttons-container" onClick={(e) => e.stopPropagation()}>
+              {hasProducts && (
+                <button 
+                  className="btn-primary" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (onShopClick) onShopClick(post);
+                  }}
+                >
+                  SHOP THE LOOK
+                </button>
+              )}
+              <button 
+                className={hasProducts ? "btn-secondary" : "btn-primary"}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (onShareClick) onShareClick(post);
+                }}
+              >
+                Share to Stories
+              </button>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
