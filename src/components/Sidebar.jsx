@@ -68,7 +68,14 @@ export default function Sidebar({ activeTab, onTabChange, theme, onToggleTheme, 
   return (
     <aside className="desktop-sidebar-left">
       {/* Logo Branding */}
-      <div className="desktop-logo-wrapper">
+      <div
+        className="desktop-logo-wrapper"
+        onClick={() => onTabChange && onTabChange('feed')}
+        style={{ cursor: 'pointer' }}
+        role="button"
+        tabIndex={0}
+        aria-label="Go to Home"
+      >
         <div className="brand-logo-badge">
           <DripMorphLogo size={28} />
           <span className="sidebar-brand-title desktop-logo-title">DRIPMORPH</span>

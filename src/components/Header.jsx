@@ -8,7 +8,14 @@ export default function Header({ onMenuClick, onBellClick, hasNotifications, onT
       <button className="header-btn" onClick={onMenuClick} aria-label="Menu">
         <Menu size={22} strokeWidth={2} />
       </button>
-      <div className="brand-logo-badge">
+      <div
+        className="brand-logo-badge"
+        onClick={() => onTabChange && onTabChange('feed')}
+        style={{ cursor: 'pointer' }}
+        role="button"
+        tabIndex={0}
+        aria-label="Go to Home"
+      >
         <DripMorphLogo size={24} />
         <span className="sidebar-brand-title">DRIPMORPH</span>
       </div>
