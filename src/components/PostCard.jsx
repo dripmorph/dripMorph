@@ -284,29 +284,18 @@ export default function PostCard({ post, onShopClick, onFitClick, onShareClick, 
         {/* Action Buttons */}
         {(() => {
           const hasProducts = Array.isArray(post.products) && post.products.length > 0;
+          if (!hasProducts) return null;
           return (
             <div className="buttons-container" onClick={(e) => e.stopPropagation()}>
-              {hasProducts && (
-                <button 
-                  className="btn-primary" 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (onShopClick) onShopClick(post);
-                  }}
-                >
-                  SHOP THE LOOK
-                </button>
-              )}
               <button 
-                className={hasProducts ? "btn-secondary" : "btn-primary"}
+                className="btn-primary" 
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  if (onShareClick) onShareClick(post);
+                  if (onShopClick) onShopClick(post);
                 }}
               >
-                Share to Stories
+                SHOP THE LOOK
               </button>
             </div>
           );
