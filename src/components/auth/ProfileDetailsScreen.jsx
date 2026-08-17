@@ -159,15 +159,15 @@ export default function ProfileDetailsScreen({ onFinishOnboarding, onSkip }) {
             </div>
           </div>
 
-          {/* Instagram Handle/Link */}
+          {/* Instagram Handle */}
           <div className="auth-field-group">
-            <label className="auth-label">Instagram Link</label>
+            <label className="auth-label">Instagram Handle</label>
             <div className="auth-input-wrapper">
               <AtSign size={18} className="auth-input-icon" />
               <input
                 type="text"
                 className="auth-input"
-                placeholder="e.g. @minimalist_enzo or instagram.com/..."
+                placeholder="e.g. @minimalist_enzo"
                 value={instagramLink}
                 onChange={(e) => {
                   setInstagramLink(e.target.value);

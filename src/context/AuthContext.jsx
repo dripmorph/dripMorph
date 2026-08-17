@@ -19,9 +19,22 @@ async function fetchProfile(userId) {
   return data;
 }
 
+export const PLACEHOLDER_USERNAME_RE = /^user_[a-f0-9]{8}$/;
+
+export const getRequiredOnboardingStep = (u) => {
+  if (!u) return 'splash';
+  // Treat placeholder usernames (Google OAuth auto-generated) the same as no username
+  if (!u.username || !u.username.trim() || PLACEHOLDER_USERNAME_RE.test(u.username.trim())) return 'username';
+  if (!u.city || !u.city.trim()) return 'city';
+  // ProfileDetails is optional — not a blocking onboarding requirement
+  return 'complete';
+};
+
+export const isUserFullyOnboarded = (u) => getRequiredOnboardingStep(u) === 'complete';
+
 // ─── Helper: map a Supabase auth user + profiles row into the app user shape ──
 function buildAppUser(authUser, profile) {
-  return {
+  const userObj = {
     id: authUser.id,
     email: authUser.email,
     username: profile?.username ?? null,
@@ -31,13 +44,10 @@ function buildAppUser(authUser, profile) {
     gender: profile?.gender ?? null,
     instagramLink: profile?.instagram_link ?? null,
     ageVerified: profile?.age_verified ?? false,
-    hasCompletedOnboarding: !!(
-      profile?.username &&
-      profile?.city &&
-      profile?.height &&
-      profile?.gender &&
-      profile?.instagram_link
-    ),
+  };
+  return {
+    ...userObj,
+    hasCompletedOnboarding: isUserFullyOnboarded(userObj),
   };
 }
 

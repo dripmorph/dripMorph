@@ -1001,10 +1001,11 @@ export async function fetchTopCreatorsByCity(city, limit = 50) {
       username: usernameStr,
       avatar: avatarUrl,
       city: profile.city || city || '',
+      fitsCount: count,
       avgScoreNum,
       score: `${avgScoreNum > 0 ? avgScoreNum.toFixed(1) : '0.0'}/10`,
     };
-  });
+  }).filter(creator => creator.fitsCount > 0 && creator.avgScoreNum > 0);
 
   creators.sort((a, b) => b.avgScoreNum - a.avgScoreNum);
 
@@ -1187,6 +1188,7 @@ export async function fetchLeaderboard(cityOrOptions = null, limitParam = 50) {
         image_url,
         created_at,
         poster_id,
+        city,
         profiles:poster_id (id, username, avatar_url, city),
         outfit_ratings (overall_score)
       `)
@@ -1198,17 +1200,18 @@ export async function fetchLeaderboard(cityOrOptions = null, limitParam = 50) {
       return [];
     }
 
-    // Robust city filtering logic
+    // Robust city filtering logic: check submission-locked outfit city first, then profile city
     let filteredOutfits = outfits;
     if (city && city.trim() !== '') {
       const searchCity = city.trim().toLowerCase();
       filteredOutfits = outfits.filter(o => {
+        const outfitCity = o.city ? o.city.trim().toLowerCase() : '';
         const prof = Array.isArray(o.profiles) ? o.profiles[0] : o.profiles;
-        return prof && prof.city && prof.city.toLowerCase().includes(searchCity);
+        const profileCity = prof?.city ? prof.city.trim().toLowerCase() : '';
+        return outfitCity.includes(searchCity) || profileCity.includes(searchCity);
       });
       
-      // CRITICAL FIX: Fallback to all outfits globally if no outfits found in specific city
-      // This matches exactly what fetchTopCreatorsByCity does for the sidebar!
+      // Fallback to all outfits globally only if zero outfits found in specific city
       if (filteredOutfits.length === 0) {
         filteredOutfits = outfits;
       }

@@ -5,7 +5,7 @@ import DesktopSidebar from './components/DesktopSidebar';
 import DesktopRightSidebar from './components/DesktopRightSidebar';
 import { X, Star, Sun, Moon, MapPin } from 'lucide-react';
 import { useChat } from './context/ChatContext';
-import { useAuth } from './context/AuthContext';
+import { useAuth, isUserFullyOnboarded } from './context/AuthContext';
 import DripMorphLogo from './components/DripMorphLogo';
 import techwearImg from './assets/techwear_look.png';
 import cyberpunkImg from './assets/cyberpunk_look.png';
@@ -757,18 +757,6 @@ export default function App() {
       setIsAuthCompleted(false);
     }
   }, [user]);
-
-  // Matches auto-generated placeholder usernames set by the DB trigger for Google OAuth users.
-  // Must stay in sync with PLACEHOLDER_USERNAME_RE in AuthFlow.jsx.
-  const isPlaceholderUsername = (u) => /^user_[a-f0-9]{8}$/.test(u?.trim() ?? '');
-
-  const isUserFullyOnboarded = (u) => {
-    return Boolean(
-      u &&
-      u.username && !isPlaceholderUsername(u.username) &&  // real username, not OAuth placeholder
-      u.city                                               // city selected — matches getRequiredOnboardingStep gate
-    );
-  };
 
   const isAuthReady = Boolean(user && (isUserFullyOnboarded(user) || isAuthCompleted));
 

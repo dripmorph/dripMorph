@@ -949,13 +949,13 @@ function EditProfileModal({ isOpen, onClose, currentData, onSave }) {
             </select>
           </div>
 
-          {/* Instagram Handle / Link */}
+          {/* Instagram Handle */}
           <div className="stl-form-row">
-            <span className="edit-section-title">Instagram Link</span>
+            <span className="edit-section-title">Instagram Handle</span>
             <input
               type="text"
               className="stl-input"
-              placeholder="e.g. @minimalist_enzo or instagram.com/..."
+              placeholder="e.g. @minimalist_enzo"
               value={instagramLink}
               onChange={(e) => setInstagramLink(e.target.value)}
             />

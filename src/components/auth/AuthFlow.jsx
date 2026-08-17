@@ -1,5 +1,5 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, getRequiredOnboardingStep } from '../../context/AuthContext';
 
 // Lazily load auth screen components for code-splitting
 const SplashScreen = lazy(() => import('./SplashScreen'));
@@ -17,20 +17,6 @@ const AuthFallback = () => (
     </div>
   </div>
 );
-
-// Matches auto-generated placeholders created by the handle_new_user() trigger
-// for Google OAuth users: 'user_' + 8 hex chars (e.g. 'user_a1b2c3d4').
-const PLACEHOLDER_USERNAME_RE = /^user_[a-f0-9]{8}$/;
-
-// Helper function to evaluate required onboarding step
-export const getRequiredOnboardingStep = (u) => {
-  if (!u) return 'splash';
-  // Treat placeholder usernames (Google OAuth auto-generated) the same as no username
-  if (!u.username || !u.username.trim() || PLACEHOLDER_USERNAME_RE.test(u.username.trim())) return 'username';
-  if (!u.city || !u.city.trim()) return 'city';
-  // ProfileDetails is optional — not a blocking onboarding requirement
-  return 'complete';
-};
 
 export default function AuthFlow({ onAuthComplete }) {
   const { user } = useAuth();
