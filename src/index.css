@@ -5999,53 +5999,66 @@ body {
   }
 }
 /* Search Bar Styles for Right Sidebar */
+.desktop-search-container,
 .search-container {
   position: relative;
   width: 100%;
   margin-bottom: 16px;
+  display: flex;
+  align-items: center;
 }
 
+.desktop-search-icon,
 .search-icon {
   position: absolute;
   left: 14px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--text-secondary);
+  color: var(--text-secondary, #9ca3af);
   pointer-events: none;
   transition: color 0.2s ease;
-  opacity: 0.7;
+  opacity: 0.75;
+  z-index: 2;
 }
 
+.desktop-search-input,
 .search-input {
-  background: var(--card-bg);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 24px;
-  padding: 10px 16px 10px 40px;
-  color: var(--text-primary);
-  width: 100%;
-  font-family: var(--font-family);
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
+  background: var(--card-bg, #18181c) !important;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1)) !important;
+  border-radius: 20px !important;
+  padding: 10px 16px 10px 42px !important; /* Clean 42px left offset ensures zero overlap with search icon */
+  color: var(--text-primary, #ffffff) !important;
+  width: 100% !important;
+  font-family: var(--font-family, inherit) !important;
+  font-size: 0.88rem !important;
+  transition: all 0.2s ease !important;
+  box-sizing: border-box !important;
+  outline: none !important;
 }
 
+[data-theme='light'] .desktop-search-input,
 [data-theme='light'] .search-input {
-  border: 1px solid rgba(0, 0, 0, 0.15);
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  color: #111827 !important;
 }
 
+.desktop-search-input::placeholder,
 .search-input::placeholder {
-  color: var(--text-secondary);
-  opacity: 0.6;
+  color: var(--text-secondary, #9ca3af) !important;
+  opacity: 0.65 !important;
 }
 
+.desktop-search-input:focus,
 .search-input:focus {
-  border-color: #a6fc29;
-  outline: none;
-  box-shadow: 0 0 8px rgba(166, 252, 41, 0.2);
+  border-color: #a6fc29 !important;
+  box-shadow: 0 0 10px rgba(166, 252, 41, 0.2) !important;
 }
 
+.desktop-search-container:focus-within .desktop-search-icon,
 .search-input:focus + .search-icon {
-  color: #a6fc29;
-  opacity: 1;
+  color: #a6fc29 !important;
+  opacity: 1 !important;
 }
 
 /* Floating Results Dropdown Overlay */

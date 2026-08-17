@@ -95,14 +95,14 @@ export default function DesktopRightSidebar({ onUserClick, onFitClick, userCity 
   return (
     <aside className="desktop-sidebar-right">
       {/* Search Bar */}
-      <div className="search-container" ref={containerRef}>
+      <div className="desktop-search-container" ref={containerRef}>
         {searchLoading
-          ? <Loader size={15} className="search-icon search-spinner" />
-          : <Search size={16} className="search-icon" />
+          ? <Loader size={15} className="desktop-search-icon search-spinner" />
+          : <Search size={16} className="desktop-search-icon" />
         }
         <input
           type="text"
-          className="search-input"
+          className="desktop-search-input"
           placeholder="Search creators, fits, or tags..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
