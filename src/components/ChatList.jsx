@@ -3,15 +3,19 @@ import { useChat } from '../context/ChatContext';
 import { MessageSquare, Search } from 'lucide-react';
 
 export default function ChatList({ onSelectChat }) {
-  const { conversations, activeChatId, openChat } = useChat();
+  const { conversations = [], activeChatId, openChat } = useChat();
   const [search, setSearch] = useState('');
 
-  const filtered = conversations.filter(c =>
-    c.user.username.toLowerCase().includes(search.toLowerCase())
-  );
+  const convList = Array.isArray(conversations) ? conversations : [];
+
+  const filtered = convList.filter(c => {
+    if (!c) return false;
+    const uname = c.user?.username || '';
+    return uname.toLowerCase().includes(search.toLowerCase());
+  });
 
   const handleOpen = (chatId) => {
-    openChat(chatId);
+    if (openChat) openChat(chatId);
     if (onSelectChat) onSelectChat();
   };
 
@@ -42,13 +46,17 @@ export default function ChatList({ onSelectChat }) {
           </div>
         )}
         {filtered.map(conv => {
+          if (!conv) return null;
+          const userObj = conv.user || {};
+          const username = userObj.username || '@user';
+          const avatar = userObj.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=240&h=240&fit=crop';
+
           // Use lastMessage (from DB summary) or fall back to last in messages array
-          const lastMsg =
-            conv.lastMessage || conv.messages[conv.messages.length - 1];
+          const msgList = Array.isArray(conv.messages) ? conv.messages : [];
+          const lastMsg = conv.lastMessage || (msgList.length > 0 ? msgList[msgList.length - 1] : null);
+
           const snippet = lastMsg
-            ? lastMsg.type === 'image'
-              ? '📷 Image'
-              : lastMsg.content
+            ? (lastMsg.type === 'image' ? '📷 Image' : (lastMsg.content || ''))
             : 'Start a conversation';
 
           const ts = lastMsg?.created_at || lastMsg?.timestamp;
@@ -63,21 +71,24 @@ export default function ChatList({ onSelectChat }) {
 
           return (
             <div
-              key={conv.id}
+              key={conv.id || username}
               className={`chat-item ${isActive ? 'active' : ''}`}
               onClick={() => handleOpen(conv.id)}
             >
               <div className="chat-avatar-container">
                 <img
-                  src={conv.user.avatar}
-                  alt={conv.user.username}
+                  src={avatar}
+                  alt={username}
                   className="chat-avatar"
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=240&h=240&fit=crop';
+                  }}
                 />
                 <span className="online-indicator-dot" />
               </div>
               <div className="chat-info">
                 <div className="chat-item-top-row">
-                  <span className="chat-username">{conv.user.username}</span>
+                  <span className="chat-username">{username}</span>
                   {time && <span className="chat-time">{time}</span>}
                 </div>
                 <div className="chat-item-bottom-row">

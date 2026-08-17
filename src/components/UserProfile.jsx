@@ -174,7 +174,10 @@ export default function UserProfile({
           .from('follows')
           .select('follower_id', { count: 'exact', head: true })
           .eq('following_id', user.id)
-          .then(({ count }) => setFollowersCount(count ?? 0));
+          .then(({ count, error }) => {
+            if (!error && count !== null) setFollowersCount(count);
+          })
+          .catch((err) => console.warn('[UserProfile] follows count error:', err));
       }
       return;
     }
@@ -186,35 +189,45 @@ export default function UserProfile({
         .select('follower_id', { count: 'exact', head: true })
         .eq('follower_id', user.id)
         .eq('following_id', viewedId)
-        .then(({ count }) => setIsFollowing((count ?? 0) > 0));
+        .then(({ count, error }) => {
+          if (!error && count !== null) setIsFollowing(count > 0);
+        })
+        .catch((err) => console.warn('[UserProfile] check following error:', err));
     }
     // Get total followers count for this profile
     supabase
       .from('follows')
       .select('follower_id', { count: 'exact', head: true })
       .eq('following_id', viewedId)
-      .then(({ count }) => setFollowersCount(count ?? 0));
+      .then(({ count, error }) => {
+        if (!error && count !== null) setFollowersCount(count);
+      })
+      .catch((err) => console.warn('[UserProfile] profile followers count error:', err));
   }, [fetchedProfile?.id, user?.id, isOwnProfile]);
 
   const handleFollowClick = async () => {
     if (!user?.id || !fetchedProfile?.id) return;
     const viewedId = fetchedProfile.id;
-    if (isFollowing) {
-      await supabase
-        .from('follows')
-        .delete()
-        .eq('follower_id', user.id)
-        .eq('following_id', viewedId);
-      setIsFollowing(false);
-      setFollowersCount(prev => Math.max(0, prev - 1));
-      showToast(`Unfollowed ${displayUsername}`);
-    } else {
-      await supabase
-        .from('follows')
-        .insert({ follower_id: user.id, following_id: viewedId });
-      setIsFollowing(true);
-      setFollowersCount(prev => prev + 1);
-      showToast(`Following ${displayUsername}`);
+    try {
+      if (isFollowing) {
+        await supabase
+          .from('follows')
+          .delete()
+          .eq('follower_id', user.id)
+          .eq('following_id', viewedId);
+        setIsFollowing(false);
+        setFollowersCount(prev => Math.max(0, prev - 1));
+        showToast(`Unfollowed ${displayUsername}`);
+      } else {
+        await supabase
+          .from('follows')
+          .insert({ follower_id: user.id, following_id: viewedId });
+        setIsFollowing(true);
+        setFollowersCount(prev => prev + 1);
+        showToast(`Following ${displayUsername}`);
+      }
+    } catch (err) {
+      console.error('[UserProfile] handleFollowClick error:', err);
     }
   };
 

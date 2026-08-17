@@ -32,12 +32,12 @@ export default function DesktopRightSidebar({ onUserClick, onFitClick, userCity 
       setIsLoading(true);
       try {
         const [fits, creators] = await Promise.all([
-          fetchTrendingFits(3),
-          fetchTopCreatorsByCity(userCity, 3),
+          fetchTrendingFits(3).catch(() => []),
+          fetchTopCreatorsByCity(userCity, 3).catch(() => []),
         ]);
         if (isMounted) {
-          setTrendingFits(fits || []);
-          setTopCreators(creators || []);
+          setTrendingFits(Array.isArray(fits) ? fits : []);
+          setTopCreators(Array.isArray(creators) ? creators : []);
         }
       } catch (err) {
         console.error('[DesktopRightSidebar] Error loading sidebar data:', err);
@@ -68,7 +68,7 @@ export default function DesktopRightSidebar({ onUserClick, onFitClick, userCity 
           .ilike('username', `%${q}%`)
           .limit(8);
 
-        if (!error && data) {
+        if (!error && Array.isArray(data)) {
           setSearchResults(data);
         } else {
           setSearchResults([]);
@@ -85,7 +85,7 @@ export default function DesktopRightSidebar({ onUserClick, onFitClick, userCity 
   }, [searchQuery]);
 
   const handleResultClick = (username) => {
-    if (onUserClick) onUserClick(`@${username}`);
+    if (onUserClick && username) onUserClick(`@${username.replace(/^@/, '')}`);
     setSearchQuery('');
     setSearchResults([]);
   };
@@ -114,35 +114,47 @@ export default function DesktopRightSidebar({ onUserClick, onFitClick, userCity 
             {searchLoading && searchResults.length === 0 ? (
               <div className="search-no-results">Searching...</div>
             ) : searchResults.length > 0 ? (
-              searchResults.map((profile) => (
-                <button
-                  key={profile.id}
-                  type="button"
-                  className="search-result-item"
-                  onClick={() => handleResultClick(profile.username)}
-                >
-                  <div className="search-result-avatar-wrap">
-                    {profile.avatar_url ? (
-                      <img
-                        src={profile.avatar_url}
-                        alt={profile.username}
-                        className="search-result-avatar"
-                      />
-                    ) : (
-                      <div className="search-result-avatar-placeholder">
+              searchResults.map((profile) => {
+                if (!profile) return null;
+                const uname = profile.username || 'user';
+                return (
+                  <button
+                    key={profile.id || uname}
+                    type="button"
+                    className="search-result-item"
+                    onClick={() => handleResultClick(profile.username)}
+                  >
+                    <div className="search-result-avatar-wrap">
+                      {profile.avatar_url ? (
+                        <img
+                          src={profile.avatar_url}
+                          alt={uname}
+                          className="search-result-avatar"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            if (e.currentTarget.nextElementSibling) {
+                              e.currentTarget.nextElementSibling.style.display = 'flex';
+                            }
+                          }}
+                        />
+                      ) : null}
+                      <div
+                        className="search-result-avatar-placeholder"
+                        style={{ display: profile.avatar_url ? 'none' : 'flex' }}
+                      >
                         <User size={14} />
                       </div>
-                    )}
-                  </div>
-                  <div className="search-result-info">
-                    <span className="search-result-username">@{profile.username}</span>
-                    {profile.city && (
-                      <span className="search-result-city">{profile.city}</span>
-                    )}
-                  </div>
-                  <span className="search-result-type-badge">user</span>
-                </button>
-              ))
+                    </div>
+                    <div className="search-result-info">
+                      <span className="search-result-username">@{uname}</span>
+                      {profile.city && (
+                        <span className="search-result-city">{profile.city}</span>
+                      )}
+                    </div>
+                    <span className="search-result-type-badge">user</span>
+                  </button>
+                );
+              })
             ) : (
               <div className="search-no-results">No users found for "{searchQuery}"</div>
             )}
@@ -168,14 +180,14 @@ export default function DesktopRightSidebar({ onUserClick, onFitClick, userCity 
           ) : (
             trendingFits.map((fit) => (
               <div key={fit.id} className="trending-fit-item" onClick={() => onFitClick && onFitClick(fit)}>
-                <img src={fit.image} alt={fit.title} className="trending-fit-img" />
+                <img src={fit.image} alt={fit.title || 'fit'} className="trending-fit-img" />
                 <div className="trending-fit-info">
-                  <span className="trending-fit-title">{fit.title}</span>
-                  <span className="trending-fit-user">{fit.username}</span>
+                  <span className="trending-fit-title">{fit.title || 'Outfit'}</span>
+                  <span className="trending-fit-user">{fit.username || '@creator'}</span>
                 </div>
                 <div className="trending-score-badge">
                   <Star size={10} fill="currentColor" />
-                  <span>{fit.score}</span>
+                  <span>{fit.score || '8.0'}</span>
                 </div>
               </div>
             ))
@@ -201,9 +213,9 @@ export default function DesktopRightSidebar({ onUserClick, onFitClick, userCity 
             topCreators.map((creator) => (
               <div key={creator.username} className="creator-row-item" onClick={() => onUserClick && onUserClick(creator.username)}>
                 <div className="creator-rank-num">#{creator.rank}</div>
-                <img src={creator.avatar} alt={creator.username} className="creator-avatar-thumb" />
+                <img src={creator.avatar} alt={creator.username || 'creator'} className="creator-avatar-thumb" />
                 <div className="creator-meta">
-                  <span className="creator-handle">{creator.username}</span>
+                  <span className="creator-handle">{creator.username || '@creator'}</span>
                   <span className="creator-score-text">{creator.score} AI Score</span>
                 </div>
                 <ArrowUpRight size={16} className="creator-arrow-icon" />

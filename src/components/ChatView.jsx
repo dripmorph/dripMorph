@@ -13,16 +13,17 @@ const EMOJI_LIST = [
 
 export default function ChatView({ onBack }) {
   const {
-    conversations,
+    conversations = [],
     activeChatId,
     sendMessage,
     loadingMessages,
     acceptConversation,
     declineConversation,
-  } = useChat();
-  const { user } = useAuth();
+  } = useChat() || {};
+  const { user } = useAuth() || {};
 
-  const conv = conversations.find(c => c.id === activeChatId);
+  const convList = Array.isArray(conversations) ? conversations : [];
+  const conv = convList.find(c => c?.id === activeChatId);
   const [input, setInput] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const messagesEndRef = useRef(null);
@@ -31,7 +32,9 @@ export default function ChatView({ onBack }) {
 
   // Scroll to bottom whenever messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (conv?.messages) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [conv?.messages]);
 
   // Close emoji picker when clicking outside
@@ -57,7 +60,7 @@ export default function ChatView({ onBack }) {
   };
 
   const handleSend = () => {
-    if (!input.trim() || !activeChatId) return;
+    if (!input.trim() || !activeChatId || !sendMessage) return;
     sendMessage(activeChatId, input.trim(), 'text');
     setInput('');
     setShowEmojiPicker(false);
@@ -85,9 +88,13 @@ export default function ChatView({ onBack }) {
     );
   }
 
+  const userObj = conv.user || {};
+  const convUsername = userObj.username || '@user';
+  const convAvatar = userObj.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=240&h=240&fit=crop';
   const isPending = conv.status === 'pending';
-  const isRecipient = user && conv.user.id === user.id;
+  const isRecipient = user && userObj.id === user.id;
   const isInitiator = !isRecipient;
+  const msgList = Array.isArray(conv.messages) ? conv.messages : [];
 
   return (
     <div className="chat-view">
@@ -99,14 +106,17 @@ export default function ChatView({ onBack }) {
         <div className="chat-header-user-info">
           <div className="chat-header-avatar-wrapper">
             <img
-              src={conv.user.avatar}
-              alt={conv.user.username}
+              src={convAvatar}
+              alt={convUsername}
               className="chat-header-avatar"
+              onError={(e) => {
+                e.currentTarget.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=240&h=240&fit=crop';
+              }}
             />
             <span className="online-indicator-dot" />
           </div>
           <div className="chat-header-meta">
-            <span className="chat-header-username">{conv.user.username}</span>
+            <span className="chat-header-username">{convUsername}</span>
             <span className="chat-header-status">
               <span className="status-dot">●</span> Active now
             </span>
@@ -117,17 +127,17 @@ export default function ChatView({ onBack }) {
       {/* Pending request banner */}
       {isPending && isRecipient && (
         <div className="chat-request-banner">
-          <span>Do you want to chat with {conv.user.username}?</span>
+          <span>Do you want to chat with {convUsername}?</span>
           <div className="chat-request-actions">
             <button
               className="btn-accept-chat"
-              onClick={() => acceptConversation(activeChatId)}
+              onClick={() => acceptConversation && acceptConversation(activeChatId)}
             >
               Accept
             </button>
             <button
               className="btn-decline-chat"
-              onClick={() => declineConversation(activeChatId)}
+              onClick={() => declineConversation && declineConversation(activeChatId)}
             >
               Decline
             </button>
@@ -141,18 +151,22 @@ export default function ChatView({ onBack }) {
           <div className="chat-loading">
             <Loader size={24} className="chat-loading-spinner" />
           </div>
-        ) : conv.messages.length === 0 ? (
+        ) : msgList.length === 0 ? (
           <div className="chat-no-messages">
             <img
-              src={conv.user.avatar}
-              alt={conv.user.username}
+              src={convAvatar}
+              alt={convUsername}
               className="chat-no-messages-avatar"
+              onError={(e) => {
+                e.currentTarget.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=240&h=240&fit=crop';
+              }}
             />
-            <h4>Say hi to {conv.user.username}!</h4>
+            <h4>Say hi to {convUsername}!</h4>
             <p>Start the conversation with a message.</p>
           </div>
         ) : (
-          conv.messages.map(msg => {
+          msgList.map(msg => {
+            if (!msg) return null;
             const isSent = user
               ? msg.sender_id === user.id || msg.sender === user.username
               : false;
@@ -164,7 +178,7 @@ export default function ChatView({ onBack }) {
 
             return (
               <div
-                key={msg.id}
+                key={msg.id || `${msg.sender_id}-${ts}`}
                 className={`chat-bubble-wrapper ${isSent ? 'sent-wrapper' : 'received-wrapper'}`}
               >
                 <div className={`chat-bubble ${isSent ? 'sent' : 'received'}`}>
