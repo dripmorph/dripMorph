@@ -157,6 +157,9 @@ export default function UserProfile({
   const [avatarUrl, setAvatarUrl] = useState(avatar);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
+  const [userOutfits, setUserOutfits] = useState(null);
+  const [fetchedProfile, setFetchedProfile] = useState(null);
+
   const { openChat } = useChat();
   const { user, updateProfileDetails } = useAuth();
 
@@ -237,9 +240,6 @@ export default function UserProfile({
     document.addEventListener('click', closeMenu);
     return () => document.removeEventListener('click', closeMenu);
   }, [activeFitMenuId, activeRecentMenuId]);
-
-  const [userOutfits, setUserOutfits] = useState(null);
-  const [fetchedProfile, setFetchedProfile] = useState(null);
 
   // Optimistically remove deleted outfit immediately from userOutfits local state
   useEffect(() => {
