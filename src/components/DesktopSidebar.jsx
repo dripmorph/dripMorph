@@ -5,4 +5,3 @@ export default function DesktopSidebar(props) {
   return <Sidebar {...props} />;
 }
 
-export { Sidebar };

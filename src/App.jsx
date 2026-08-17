@@ -840,23 +840,11 @@ export default function App() {
               <UserProfile 
                 showToast={showToast} 
                 viewedUser={viewedProfileUser}
+                isOwnProfile={isUserSelf(viewedProfileUser)}
                 onShopClick={handleOpenShopModal} 
                 onFitClick={(fit) => setSelectedFitForDetail(fit)}
-                profileFits={getProfileForUser(viewedProfileUser).profileFits}
-                fitsCount={getProfileForUser(viewedProfileUser).fitsCount}
-                avgScore={getProfileForUser(viewedProfileUser).avgScore}
                 onEditFit={(fit) => setEditingPost(fit)}
                 onDeleteFit={(fit) => setDeletingPost(fit)}
-                recentPosts={getProfileForUser(viewedProfileUser).recentPosts}
-                weekLabel={currentWeekLabel}
-                username={getProfileForUser(viewedProfileUser).username}
-                avatar={getProfileForUser(viewedProfileUser).avatar}
-                city={getProfileForUser(viewedProfileUser).city}
-                height={getProfileForUser(viewedProfileUser).height}
-                gender={getProfileForUser(viewedProfileUser).gender}
-                instagramLink={getProfileForUser(viewedProfileUser).instagramLink}
-                bio={getProfileForUser(viewedProfileUser).bio}
-                isOwnProfile={getProfileForUser(viewedProfileUser).isOwnProfile}
                 onBackClick={profileBackStack.length > 0 ? handleBackNavigation : null}
                 onAvatarChange={handleAvatarChange}
                 onNavigateToChat={handleTabChange}

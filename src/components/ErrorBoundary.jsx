@@ -62,9 +62,28 @@ export default class ErrorBoundary extends React.Component {
             Something went wrong
           </h2>
 
-          <p style={{ fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.6)', maxWidth: '420px', margin: '0 0 24px 0', lineHeight: 1.5 }}>
-            {this.state.error?.message || 'An unexpected error occurred while loading this view.'}
+          <p style={{ fontSize: '0.9rem', color: '#ff8080', maxWidth: '540px', margin: '0 0 12px 0', lineHeight: 1.5, fontFamily: 'monospace' }}>
+            {this.state.error?.message || 'An unexpected error occurred.'}
           </p>
+
+          {this.state.error?.stack && (
+            <pre style={{
+              fontSize: '0.75rem',
+              color: 'rgba(255,255,255,0.6)',
+              backgroundColor: '#18181b',
+              padding: '12px',
+              borderRadius: '8px',
+              maxWidth: '600px',
+              maxHeight: '150px',
+              overflow: 'auto',
+              textAlign: 'left',
+              marginBottom: '20px',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-all'
+            }}>
+              {this.state.error.stack}
+            </pre>
+          )}
 
           <div style={{ display: 'flex', gap: '12px' }}>
             <button
