@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { MapPin, ChevronDown, Trophy, X, Loader2, Sparkles, User } from 'lucide-react';
 import { FiSearch } from 'react-icons/fi';
 import { fetchLeaderboard } from '../lib/outfitService';
 import { supabase } from '../lib/supabaseClient';
-
-const CITIES = ['Kolkata', 'Mumbai', 'Delhi'];
+import { useAuth } from '../context/AuthContext';
+import { INDIAN_CITIES, normalizeCityName } from '../lib/cities';
 
 {/* Robust Avatar Component with Initial Fallback */}
 const renderAvatar = (avatarUrl, username, size = 'w-12 h-12', textSize = 'text-base') => {
@@ -37,10 +37,13 @@ const renderAvatar = (avatarUrl, username, size = 'w-12 h-12', textSize = 'text-
 };
 
 export default function Leaderboard({ onUserClick, onFitClick, showToast, refreshTrigger = 0 }) {
+  const { user } = useAuth();
   const [scope, setScope] = useState('local'); // 'global' or 'local'
-  const [selectedCity, setSelectedCity] = useState('Kolkata');
+  const userCity = user?.city ? normalizeCityName(user.city) : 'Kolkata';
+  const [selectedCity, setSelectedCity] = useState(userCity);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
 
+  const cityDropdownRef = useRef(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -50,12 +53,34 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
   const [creators, setCreators] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Close search dropdown when clicking outside
+  // Sync selectedCity when user logs in or profile city changes
+  useEffect(() => {
+    if (user?.city) {
+      setSelectedCity(normalizeCityName(user.city));
+    }
+  }, [user?.city]);
+
+  // Combined city list prioritizing Indian major cities and current user city
+  const cityList = useMemo(() => {
+    const list = [...INDIAN_CITIES];
+    if (user?.city) {
+      const norm = normalizeCityName(user.city);
+      if (!list.includes(norm)) {
+        list.unshift(norm);
+      }
+    }
+    return list;
+  }, [user?.city]);
+
+  // Close search dropdown and city dropdown when clicking outside
   useEffect(() => {
     const handleClick = (e) => {
       if (searchContainerRef.current && !searchContainerRef.current.contains(e.target)) {
         setSearchQuery('');
         setSearchResults([]);
+      }
+      if (cityDropdownRef.current && !cityDropdownRef.current.contains(e.target)) {
+        setShowCityDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClick);
@@ -492,8 +517,9 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
 
         {/* City Selector Dropdown (Shown only when scope === 'local') */}
         {scope === 'local' && (
-          <div style={{ position: 'relative', width: 'fit-content' }}>
+          <div ref={cityDropdownRef} style={{ position: 'relative', width: 'fit-content' }}>
             <button
+              className="leaderboard-city-trigger-btn"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -516,31 +542,34 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
 
             {showCityDropdown && (
               <div
+                className="leaderboard-city-dropdown-menu custom-scrollbar"
                 style={{
                   position: 'absolute',
                   top: '100%',
                   marginTop: '8px',
-                  width: '176px',
+                  width: '190px',
+                  maxHeight: '260px',
+                  overflowY: 'auto',
                   backgroundColor: '#1c1c1e',
                   border: '1px solid rgba(63, 63, 70, 0.8)',
                   borderRadius: '16px',
                   boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
                   zIndex: 30,
                   paddingTop: '6px',
-                  paddingBottom: '6px',
-                  overflow: 'hidden'
+                  paddingBottom: '6px'
                 }}
               >
-                {CITIES.map((city) => (
+                {cityList.map((city) => (
                   <button
                     key={city}
+                    className="leaderboard-city-option-btn"
                     style={{
                       width: '100%',
                       textAlign: 'left',
                       padding: '10px 16px',
                       fontSize: '13px',
                       fontWeight: '600',
-                      color: city === selectedCity ? '#a6fc29' : '#d4d4d8',
+                      color: city === selectedCity ? '#a6fc29' : 'var(--text-primary, #d4d4d8)',
                       backgroundColor: city === selectedCity ? 'rgba(166, 252, 41, 0.1)' : 'transparent',
                       border: 'none',
                       cursor: 'pointer',
@@ -551,7 +580,7 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
                     onClick={() => handleCitySelect(city)}
                   >
                     <span>{city}</span>
-                    {city === selectedCity && <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#a6fc29' }} />}
+                    {city === selectedCity && <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#a6fc29', flexShrink: 0 }} />}
                   </button>
                 ))}
               </div>

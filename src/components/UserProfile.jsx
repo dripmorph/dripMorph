@@ -6,6 +6,7 @@ import { useChat } from '../context/ChatContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { fetchUserOutfits, uploadAvatarImage, fetchUserProfile } from '../lib/outfitService';
+import { INDIAN_CITIES } from '../lib/cities';
 import ProfileShoppingModal from './ProfileShoppingModal';
 
 // Import our local premium outfit images
@@ -971,8 +972,8 @@ function EditProfileModal({ isOpen, onClose, currentData, onSave }) {
   };
 
   const citiesList = [
-    'Kolkata', 'Mumbai', 'Delhi NCR', 'Bangalore', 'Hyderabad', 'Chennai', 'Pune', 'Ahmedabad',
-    'Jaipur', 'Chandigarh', 'Kochi', 'Goa', 'Tokyo', 'Seoul', 'London', 'New York', 'Seattle', 'Berlin', 'Paris'
+    ...INDIAN_CITIES,
+    'Tokyo', 'Seoul', 'London', 'New York', 'Seattle', 'Berlin', 'Paris', 'Los Angeles'
   ];
 
   return (

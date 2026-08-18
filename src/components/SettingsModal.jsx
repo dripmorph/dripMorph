@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, X, User, Shield, Bell, Lock, CheckCircle2, ChevronRight, Sliders, Globe, AlertTriangle, LifeBuoy } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { INDIAN_CITIES, normalizeCityName } from '../lib/cities';
 import ChangePasswordModal from './ChangePasswordModal';
 import DeleteAccountModal from './DeleteAccountModal';
 import ReportProblemModal from './ReportProblemModal';
@@ -301,10 +302,9 @@ export default function SettingsModal({ isOpen, onClose, showToast, onProfileUpd
                 value={primaryCity}
                 onChange={handleCityChange}
               >
-                <option value="Kolkata">Kolkata</option>
-                <option value="Mumbai">Mumbai</option>
-                <option value="Delhi NCR">Delhi NCR</option>
-                <option value="Bangalore">Bangalore</option>
+                {INDIAN_CITIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
               </select>
             </div>
           </div>

@@ -1,32 +1,7 @@
 import React, { useState } from 'react';
 import { MapPin, Search, Check, ArrowRight, Compass } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-
-const CITIES = [
-  // Indian Metro & Major Cities
-  { name: 'Kolkata', country: 'India', flag: '🇮🇳', region: 'West Bengal' },
-  { name: 'Mumbai', country: 'India', flag: '🇮🇳', region: 'Maharashtra' },
-  { name: 'Delhi NCR', country: 'India', flag: '🇮🇳', region: 'Delhi' },
-  { name: 'Bangalore', country: 'India', flag: '🇮🇳', region: 'Karnataka' },
-  { name: 'Hyderabad', country: 'India', flag: '🇮🇳', region: 'Telangana' },
-  { name: 'Chennai', country: 'India', flag: '🇮🇳', region: 'Tamil Nadu' },
-  { name: 'Pune', country: 'India', flag: '🇮🇳', region: 'Maharashtra' },
-  { name: 'Ahmedabad', country: 'India', flag: '🇮🇳', region: 'Gujarat' },
-  { name: 'Jaipur', country: 'India', flag: '🇮🇳', region: 'Rajasthan' },
-  { name: 'Chandigarh', country: 'India', flag: '🇮🇳', region: 'Punjab/Haryana' },
-  { name: 'Kochi', country: 'India', flag: '🇮🇳', region: 'Kerala' },
-  { name: 'Goa', country: 'India', flag: '🇮🇳', region: 'Goa' },
-
-  // Global Fashion & Techwear Hubs
-  { name: 'Tokyo', country: 'Japan', flag: '🇯🇵', region: 'Kanto' },
-  { name: 'Seoul', country: 'South Korea', flag: '🇰🇷', region: 'Gyeonggi' },
-  { name: 'London', country: 'United Kingdom', flag: '🇬🇧', region: 'England' },
-  { name: 'New York', country: 'United States', flag: '🇺🇸', region: 'New York' },
-  { name: 'Seattle', country: 'United States', flag: '🇺🇸', region: 'Washington' },
-  { name: 'Berlin', country: 'Germany', flag: '🇩🇪', region: 'Berlin' },
-  { name: 'Paris', country: 'France', flag: '🇫🇷', region: 'Île-de-France' },
-  { name: 'Los Angeles', country: 'United States', flag: '🇺🇸', region: 'California' }
-];
+import { CITIES_METADATA as CITIES } from '../../lib/cities';
 
 export default function CitySelectionScreen({ onCitySelected }) {
   const { updateCity } = useAuth();
