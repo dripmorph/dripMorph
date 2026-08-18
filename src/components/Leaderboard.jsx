@@ -175,6 +175,150 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
     }
   };
 
+  const renderRankCard = (rankNumber, player) => {
+    const outfitPhoto = player ? (player.outfit_image || player.image_url || player.image || player.avatar_url) : null;
+    const initial = player ? (player.username || 'U').replace(/^@/, '').charAt(0).toUpperCase() : '';
+    const displayUsername = player ? (player.username ? player.username.replace(/^@/, '') : 'creator') : 'Unranked';
+    const displayScore = player ? (player.avg_score || player.score || '0.0') : '—';
+
+    return (
+      <div 
+        key={`rank-${rankNumber}`}
+        className="leaderboard-rank-card"
+        style={{ 
+          backgroundColor: '#1f1f22', 
+          border: '1px solid rgba(63, 63, 70, 0.6)', 
+          borderRadius: '18px', 
+          padding: '12px', 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '10px', 
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
+          minWidth: 0
+        }}
+      >
+        {/* Left Thumbnail: Small Tall Outfit Preview */}
+        {player ? (
+          <div 
+            style={{ 
+              width: '44px', 
+              height: '56px', 
+              borderRadius: '10px', 
+              overflow: 'hidden', 
+              backgroundColor: '#18181b', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              flexShrink: 0,
+              cursor: 'pointer'
+            }}
+            className="hover:opacity-90 transition-opacity"
+            onClick={(e) => handleOutfitClick(e, player)}
+            title="Click to view outfit"
+          >
+            {outfitPhoto ? (
+              <img 
+                src={outfitPhoto} 
+                alt={displayUsername} 
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  if (e.currentTarget.nextElementSibling) {
+                    e.currentTarget.nextElementSibling.style.display = 'flex';
+                  }
+                }}
+              />
+            ) : null}
+            <span style={{ display: outfitPhoto ? 'none' : 'flex', fontSize: '16px', fontWeight: 'bold', color: '#a6fc29', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
+              {initial}
+            </span>
+          </div>
+        ) : (
+          <div 
+            style={{ 
+              width: '44px', 
+              height: '56px', 
+              borderRadius: '10px', 
+              backgroundColor: 'rgba(255, 255, 255, 0.03)', 
+              border: '1px dashed rgba(255, 255, 255, 0.15)',
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              flexShrink: 0
+            }}
+          >
+            <span style={{ fontSize: '13px', fontWeight: '700', color: '#71717a' }}>
+              #{rankNumber}
+            </span>
+          </div>
+        )}
+
+        {/* Right Stack */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, minWidth: 0 }}>
+          <div 
+            style={{ display: 'flex', alignItems: 'center', gap: '4px', overflow: 'hidden', cursor: player ? 'pointer' : 'default' }}
+            className={player ? "hover:opacity-80 transition-opacity" : ""}
+            onClick={(e) => player && handleProfileClick(e, player)}
+            title={player ? `View ${displayUsername}'s profile` : `Rank #${rankNumber}`}
+          >
+            <span style={{ fontSize: '12px', fontWeight: '800', color: player ? '#a1a1aa' : '#71717a', flexShrink: 0 }}>
+              #{rankNumber}
+            </span>
+            <span 
+              className="leaderboard-card-username"
+              style={{ 
+                fontSize: '12px', 
+                fontWeight: '700', 
+                color: player ? '#ffffff' : '#71717a', 
+                overflow: 'hidden', 
+                textOverflow: 'ellipsis', 
+                whiteSpace: 'nowrap' 
+              }}
+            >
+              {displayUsername}
+            </span>
+          </div>
+          {player ? (
+            <div 
+              style={{ 
+                backgroundColor: '#a6fc29', 
+                color: '#000000', 
+                padding: '3px 8px', 
+                borderRadius: '9999px', 
+                fontSize: '10px', 
+                fontWeight: '800', 
+                width: 'fit-content', 
+                whiteSpace: 'nowrap', 
+                cursor: 'pointer' 
+              }}
+              className="hover:opacity-90 transition-opacity"
+              onClick={(e) => handleOutfitClick(e, player)}
+              title="Click to view outfit"
+            >
+              DRIP SCORE: {displayScore}
+            </div>
+          ) : (
+            <div 
+              style={{ 
+                backgroundColor: 'rgba(255, 255, 255, 0.05)', 
+                color: 'var(--text-secondary, #71717a)', 
+                border: '1px solid rgba(255, 255, 255, 0.08)', 
+                padding: '3px 8px', 
+                borderRadius: '9999px', 
+                fontSize: '10px', 
+                fontWeight: '700', 
+                width: 'fit-content', 
+                whiteSpace: 'nowrap' 
+              }}
+            >
+              DRIP SCORE: —
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div style={{ width: '100%', maxWidth: '896px', marginLeft: 'auto', marginRight: 'auto', paddingLeft: '16px', paddingRight: '16px', paddingTop: '16px', paddingBottom: '16px', minHeight: '100vh', color: 'var(--text-primary, #f4f4f5)' }}>
       {/* Redesigned Header Section (Inline Styles for Guaranteed Styling) */}
@@ -607,324 +751,44 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
           )}
 
           {/* 2-Column Grid for #2 and #3 Runner-Up Cards */}
-          {(topTwo || topThree) && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', width: '100%' }}>
-              {/* #2 Runner-Up Card */}
-              {topTwo && (
-                <div 
-                  style={{ 
-                    backgroundColor: '#1f1f22', 
-                    border: '1px solid rgba(63, 63, 70, 0.6)', 
-                    borderRadius: '18px', 
-                    padding: '12px', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '10px', 
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)' 
-                  }}
-                >
-                  {/* Left Thumbnail: Small Tall Outfit Preview */}
-                  {(() => {
-                    const outfitPhoto = topTwo.outfit_image || topTwo.image_url || topTwo.image || topTwo.avatar_url;
-                    const initial = (topTwo.username || 'U').replace(/^@/, '').charAt(0).toUpperCase();
-
-                    return (
-                      <div 
-                        style={{ 
-                          width: '44px', 
-                          height: '56px', 
-                          borderRadius: '10px', 
-                          overflow: 'hidden', 
-                          backgroundColor: '#18181b', 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'center', 
-                          flexShrink: 0,
-                          cursor: 'pointer'
-                        }}
-                        className="hover:opacity-90 transition-opacity"
-                        onClick={(e) => handleOutfitClick(e, topTwo)}
-                        title="Click to view outfit"
-                      >
-                        {outfitPhoto ? (
-                          <img 
-                            src={outfitPhoto} 
-                            alt={topTwo.username} 
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                              if (e.currentTarget.nextElementSibling) {
-                                e.currentTarget.nextElementSibling.style.display = 'flex';
-                              }
-                            }}
-                          />
-                        ) : null}
-                        <span style={{ display: outfitPhoto ? 'none' : 'flex', fontSize: '16px', fontWeight: 'bold', color: '#a6fc29', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
-                          {initial}
-                        </span>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Right Stack */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, minWidth: 0 }}>
-                    <div 
-                      style={{ display: 'flex', alignItems: 'center', gap: '4px', overflow: 'hidden', cursor: 'pointer' }}
-                      className="hover:opacity-80 transition-opacity"
-                      onClick={(e) => handleProfileClick(e, topTwo)}
-                      title={`View ${topTwo.username}'s profile`}
-                    >
-                      <span style={{ fontSize: '12px', fontWeight: '800', color: '#a1a1aa', flexShrink: 0 }}>#2</span>
-                      <span style={{ fontSize: '12px', fontWeight: '700', color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {topTwo.username ? topTwo.username.replace(/^@/, '') : 'creator'}
-                      </span>
-                    </div>
-                    <div 
-                      style={{ backgroundColor: '#a6fc29', color: '#000000', padding: '3px 8px', borderRadius: '9999px', fontSize: '10px', fontWeight: '800', width: 'fit-content', whiteSpace: 'nowrap', cursor: 'pointer' }}
-                      className="hover:opacity-90 transition-opacity"
-                      onClick={(e) => handleOutfitClick(e, topTwo)}
-                      title="Click to view outfit"
-                    >
-                      DRIP SCORE: {topTwo.avg_score || topTwo.score || '5.9'}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* #3 Runner-Up Card */}
-              {topThree && (
-                <div 
-                  style={{ 
-                    backgroundColor: '#1f1f22', 
-                    border: '1px solid rgba(63, 63, 70, 0.6)', 
-                    borderRadius: '18px', 
-                    padding: '12px', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '10px', 
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)' 
-                  }}
-                >
-                  {/* Left Thumbnail: Small Tall Outfit Preview */}
-                  {(() => {
-                    const outfitPhoto = topThree.outfit_image || topThree.image_url || topThree.image || topThree.avatar_url;
-                    const initial = (topThree.username || 'U').replace(/^@/, '').charAt(0).toUpperCase();
-
-                    return (
-                      <div 
-                        style={{ 
-                          width: '44px', 
-                          height: '56px', 
-                          borderRadius: '10px', 
-                          overflow: 'hidden', 
-                          backgroundColor: '#18181b', 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'center', 
-                          flexShrink: 0,
-                          cursor: 'pointer'
-                        }}
-                        className="hover:opacity-90 transition-opacity"
-                        onClick={(e) => handleOutfitClick(e, topThree)}
-                        title="Click to view outfit"
-                      >
-                        {outfitPhoto ? (
-                          <img 
-                            src={outfitPhoto} 
-                            alt={topThree.username} 
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                              if (e.currentTarget.nextElementSibling) {
-                                e.currentTarget.nextElementSibling.style.display = 'flex';
-                              }
-                            }}
-                          />
-                        ) : null}
-                        <span style={{ display: outfitPhoto ? 'none' : 'flex', fontSize: '16px', fontWeight: 'bold', color: '#a6fc29', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
-                          {initial}
-                        </span>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Right Stack */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, minWidth: 0 }}>
-                    <div 
-                      style={{ display: 'flex', alignItems: 'center', gap: '4px', overflow: 'hidden', cursor: 'pointer' }}
-                      className="hover:opacity-80 transition-opacity"
-                      onClick={(e) => handleProfileClick(e, topThree)}
-                      title={`View ${topThree.username}'s profile`}
-                    >
-                      <span style={{ fontSize: '12px', fontWeight: '800', color: '#a1a1aa', flexShrink: 0 }}>#3</span>
-                      <span style={{ fontSize: '12px', fontWeight: '700', color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {topThree.username ? topThree.username.replace(/^@/, '') : 'creator'}
-                      </span>
-                    </div>
-                    <div 
-                      style={{ backgroundColor: '#a6fc29', color: '#000000', padding: '3px 8px', borderRadius: '9999px', fontSize: '10px', fontWeight: '800', width: 'fit-content', whiteSpace: 'nowrap', cursor: 'pointer' }}
-                      className="hover:opacity-90 transition-opacity"
-                      onClick={(e) => handleOutfitClick(e, topThree)}
-                      title="Click to view outfit"
-                    >
-                      DRIP SCORE: {topThree.avg_score || topThree.score || '5.8'}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', width: '100%' }}>
+            {renderRankCard(2, topTwo)}
+            {renderRankCard(3, topThree)}
+          </div>
 
           {/* Top 10 Section Grid (#4 to #10) */}
           {(() => {
             const othersList = creators.filter(p => p !== topOne && p !== topTwo && p !== topThree);
-            const topTenList = othersList.slice(0, 7);
+            const topTenSlots = [4, 5, 6, 7, 8, 9, 10];
             const remainingList = othersList.slice(7);
 
             return (
               <div style={{ width: '100%', marginTop: '8px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text-primary, #ffffff)', marginBottom: '12px' }}>
-                  Top 10 {scope === 'local' ? 'Local' : 'Global'}
-                </h3>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text-primary, #ffffff)', margin: 0 }}>
+                    Top 10 {scope === 'local' ? 'Local' : 'Global'}
+                  </h3>
+                  <span style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-secondary, #a1a1aa)' }}>
+                    Weekly Reset: Monday
+                  </span>
+                </div>
 
-                {topTenList.length > 0 ? (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                    {topTenList.map((player, index) => {
-                      const displayRank = player.rank || (index + 4);
-                      const avatarUrl = player.avatar_url || player.avatar || player.user_avatar;
-                      const initial = (player.username || 'U').replace(/^@/, '').charAt(0).toUpperCase();
+                {/* Exact 2-column grid for ranks #4 to #10 matching #2 and #3 */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', width: '100%' }}>
+                  {topTenSlots.map((rankNum) => {
+                    const player = othersList[rankNum - 4];
+                    return renderRankCard(rankNum, player);
+                  })}
+                </div>
 
-                      return (
-                        <div 
-                          key={player.id || displayRank} 
-                          style={{ 
-                            backgroundColor: '#1c1c1e', 
-                            border: '1px solid rgba(63, 63, 70, 0.5)', 
-                            borderRadius: '9999px', 
-                            padding: '6px 12px', 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'space-between'
-                          }}
-                        >
-                          {/* Left Info (Profile Click) */}
-                          <div 
-                            style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, cursor: 'pointer' }}
-                            className="hover:opacity-80 transition-opacity"
-                            onClick={(e) => handleProfileClick(e, player)}
-                            title={`View ${player.username}'s profile`}
-                          >
-                            <span style={{ fontSize: '11px', fontWeight: '700', color: '#a1a1aa', flexShrink: 0 }}>
-                              #{displayRank}.
-                            </span>
-                            <div style={{ width: '20px', height: '20px', borderRadius: '9999px', overflow: 'hidden', backgroundColor: '#18181b', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                              {avatarUrl ? (
-                                <img 
-                                  src={avatarUrl} 
-                                  alt={player.username} 
-                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                    if (e.currentTarget.nextElementSibling) {
-                                      e.currentTarget.nextElementSibling.style.display = 'flex';
-                                    }
-                                  }}
-                                />
-                              ) : null}
-                              <span style={{ display: avatarUrl ? 'none' : 'flex', fontSize: '9px', fontWeight: 'bold', color: '#a6fc29', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
-                                {initial}
-                              </span>
-                            </div>
-                            <span style={{ fontSize: '11px', fontWeight: '600', color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {player.username ? player.username.replace(/^@/, '') : 'user'}
-                            </span>
-                          </div>
-
-                          {/* Right Badge (Outfit Click) */}
-                          <div 
-                            style={{ backgroundColor: '#a6fc29', color: '#000000', padding: '2px 8px', borderRadius: '9999px', fontSize: '11px', fontWeight: '800', flexShrink: 0, marginLeft: '4px', cursor: 'pointer' }}
-                            className="hover:opacity-90 transition-opacity"
-                            onClick={(e) => handleOutfitClick(e, player)}
-                            title="Click to view outfit"
-                          >
-                            {player.avg_score || player.score || '5.5'}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : null}
-
-                {/* Remaining Ranked Creators (#11+) */}
+                {/* Remaining Ranked Creators (#11+) if available */}
                 {remainingList.length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '20px' }}>
-                    <h4 style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary, #a1a1aa)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '20px' }}>
+                    <h4 style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary, #a1a1aa)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
                       More Ranked Creators
                     </h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                      {remainingList.map((player, index) => {
-                        const displayRank = player.rank || (index + 11);
-                        const avatarUrl = player.avatar_url || player.avatar || player.user_avatar;
-                        const initial = (player.username || 'U').replace(/^@/, '').charAt(0).toUpperCase();
-
-                        return (
-                          <div 
-                            key={player.id || displayRank} 
-                            style={{ 
-                              backgroundColor: '#1c1c1e', 
-                              border: '1px solid rgba(63, 63, 70, 0.5)', 
-                              borderRadius: '9999px', 
-                              padding: '6px 12px', 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              justifyContent: 'space-between'
-                            }}
-                          >
-                            {/* Left Info (Profile Click) */}
-                            <div 
-                              style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, cursor: 'pointer' }}
-                              className="hover:opacity-80 transition-opacity"
-                              onClick={(e) => handleProfileClick(e, player)}
-                              title={`View ${player.username}'s profile`}
-                            >
-                              <span style={{ fontSize: '11px', fontWeight: '700', color: '#a1a1aa', flexShrink: 0 }}>
-                                #{displayRank}.
-                              </span>
-                              <div style={{ width: '20px', height: '20px', borderRadius: '9999px', overflow: 'hidden', backgroundColor: '#18181b', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                {avatarUrl ? (
-                                  <img 
-                                    src={avatarUrl} 
-                                    alt={player.username} 
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                                    onError={(e) => {
-                                      e.currentTarget.style.display = 'none';
-                                      if (e.currentTarget.nextElementSibling) {
-                                        e.currentTarget.nextElementSibling.style.display = 'flex';
-                                      }
-                                    }}
-                                  />
-                                ) : null}
-                                <span style={{ display: avatarUrl ? 'none' : 'flex', fontSize: '9px', fontWeight: 'bold', color: '#a6fc29', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
-                                  {initial}
-                                </span>
-                              </div>
-                              <span style={{ fontSize: '11px', fontWeight: '600', color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {player.username ? player.username.replace(/^@/, '') : 'user'}
-                              </span>
-                            </div>
-
-                            {/* Right Badge (Outfit Click) */}
-                            <div 
-                              style={{ backgroundColor: '#a6fc29', color: '#000000', padding: '2px 8px', borderRadius: '9999px', fontSize: '11px', fontWeight: '800', flexShrink: 0, marginLeft: '4px', cursor: 'pointer' }}
-                              className="hover:opacity-90 transition-opacity"
-                              onClick={(e) => handleOutfitClick(e, player)}
-                              title="Click to view outfit"
-                            >
-                              {player.avg_score || player.score || '5.0'}
-                            </div>
-                          </div>
-                        );
-                      })}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', width: '100%' }}>
+                      {remainingList.map((player, index) => renderRankCard(index + 11, player))}
                     </div>
                   </div>
                 )}

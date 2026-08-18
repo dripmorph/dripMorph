@@ -1140,10 +1140,24 @@ export async function deleteComment(commentId) {
   return true;
 }
 
-// ── 12. Fetch Leaderboard Creators ─────────────────────────────────────────────
+// ── 12. Fetch Leaderboard Creators (Weekly Monday Reset) ───────────────────────
+/**
+ * Calculates the UTC Date object for the current week's Monday at 00:00:00.000 UTC.
+ * Automatically refreshes and resets the leaderboard every week on Monday.
+ */
+export function getWeeklyMondayCutoff() {
+  const now = new Date();
+  const day = now.getUTCDay(); // 0 is Sunday, 1 is Monday, ..., 6 is Saturday
+  const diffToMonday = (day === 0 ? -6 : 1) - day;
+  const monday = new Date(now);
+  monday.setUTCDate(now.getUTCDate() + diffToMonday);
+  monday.setUTCHours(0, 0, 0, 0);
+  return monday;
+}
+
 /**
  * Fetches leaderboard creators ordered by avg_score DESC, then total_fits DESC.
- * Applies city filter if provided. Limits results to limit (default 50).
+ * Applies city filter if provided. Resets and refreshes every week on Monday.
  */
 export async function fetchLeaderboard(cityOrOptions = null, limitParam = 50) {
   let city = null;
@@ -1158,9 +1172,10 @@ export async function fetchLeaderboard(cityOrOptions = null, limitParam = 50) {
   }
 
   const queryLimit = Math.min(Math.max(limit, 1), 50);
+  const mondayCutoff = getWeeklyMondayCutoff().toISOString();
 
   try {
-    // Directly query outfits joined with profiles and ratings to guarantee image_url is returned
+    // Query outfits created in the current weekly cycle (since Monday 00:00:00 UTC)
     let query = supabase
       .from('outfits')
       .select(`
@@ -1172,6 +1187,7 @@ export async function fetchLeaderboard(cityOrOptions = null, limitParam = 50) {
         profiles:poster_id (id, username, avatar_url, city),
         outfit_ratings (overall_score)
       `)
+      .gte('created_at', mondayCutoff)
       .order('created_at', { ascending: false });
 
     let { data: outfits, error } = await query;
