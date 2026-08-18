@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { fetchUserOutfits, uploadAvatarImage, fetchUserProfile } from '../lib/outfitService';
 import { INDIAN_CITIES } from '../lib/cities';
+import { parseProfileLinksData, serializeProfileLinksData } from '../lib/linkUtils';
 import ProfileShoppingModal from './ProfileShoppingModal';
 
 // Import our local premium outfit images
@@ -419,9 +420,25 @@ export default function UserProfile({
   const displayGender = typeof rawGender === 'string' ? rawGender : '';
 
   const rawInstagram = isOwnProfile
-    ? (user?.instagramLink || instagramLink)
+    ? (user?.instagramLink || user?.instagram_link || instagramLink)
     : (fetchedProfile?.instagram_link || instagramLink || '');
-  const displayInstagram = typeof rawInstagram === 'string' ? rawInstagram : '';
+  
+  const parsedLinksData = parseProfileLinksData(rawInstagram);
+  const displayInstagram = typeof parsedLinksData.instagramHandle === 'string' ? parsedLinksData.instagramHandle : '';
+  const customProfileLinks = Array.isArray(parsedLinksData.customLinks) ? parsedLinksData.customLinks : [];
+
+  const handleSaveCustomLinks = async (updatedLinks) => {
+    if (!isOwnProfile || !user?.id) return;
+    try {
+      const payload = serializeProfileLinksData(displayInstagram, updatedLinks);
+      if (updateProfileDetails) {
+        await updateProfileDetails({ instagramLink: payload });
+      }
+    } catch (err) {
+      console.error('[UserProfile] Failed to save custom links:', err);
+      if (showToast) showToast('Could not save link changes');
+    }
+  };
 
   const rawBio = isOwnProfile
     ? (user?.bio || (fetchedProfile?.bio) || bio)
@@ -917,12 +934,17 @@ export default function UserProfile({
             city: user?.city || city,
             height: user?.height || height,
             gender: user?.gender || gender,
-            instagramLink: user?.instagramLink || instagramLink
+            instagramLink: displayInstagram
           }}
           onSave={(updatedFields) => {
             setAvatarUrl(updatedFields.avatar);
             if (onAvatarChange) onAvatarChange(updatedFields.avatar);
-            updateProfileDetails(updatedFields);
+            if (updatedFields.instagramLink !== undefined) {
+              const payload = serializeProfileLinksData(updatedFields.instagramLink, customProfileLinks);
+              updateProfileDetails({ ...updatedFields, instagramLink: payload });
+            } else {
+              updateProfileDetails(updatedFields);
+            }
             showToast("Profile updated successfully!");
             setIsEditing(false);
           }}
@@ -934,9 +956,10 @@ export default function UserProfile({
         isOpen={isShoppingModalOpen}
         onClose={() => setIsShoppingModalOpen(false)}
         isOwnProfile={isOwnProfile}
-        userId={isOwnProfile ? user?.id : fetchedProfile?.id}
+        userId={isOwnProfile ? user?.id : (fetchedProfile?.id || (typeof viewedUser === 'object' ? (viewedUser?.poster_id || viewedUser?.id) : null))}
         username={displayUsername}
-        userOutfits={userOutfits || []}
+        customLinks={customProfileLinks}
+        onSaveLinks={handleSaveCustomLinks}
         showToast={showToast}
       />
     </div>

@@ -8,36 +8,20 @@ export default function ProfileShoppingModal({
   isOwnProfile,
   userId,
   username,
+  customLinks = [],
+  onSaveLinks,
   showToast
 }) {
-  const storageKey = `dripmorph_profile_links_${userId || username || 'default'}`;
-
-  const [links, setLinks] = useState(() => {
-    try {
-      const saved = localStorage.getItem(storageKey);
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.warn('Failed to parse saved links:', e);
-    }
-    return [
-      {
-        id: 'init-1',
-        url: 'https://instagram.com'
-      }
-    ];
-  });
-
+  const [links, setLinks] = useState(customLinks);
   const [isAdding, setIsAdding] = useState(false);
   const [linkInput, setLinkInput] = useState('');
 
-  // Save to localStorage on change
+  // Sync internal state when external customLinks prop updates
   useEffect(() => {
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(links));
-    } catch (e) {
-      console.warn('Failed to persist links:', e);
+    if (Array.isArray(customLinks)) {
+      setLinks(customLinks);
     }
-  }, [links, storageKey]);
+  }, [customLinks]);
 
   if (!isOpen) return null;
 
@@ -50,7 +34,7 @@ export default function ProfileShoppingModal({
     window.open(target, '_blank', 'noopener,noreferrer');
   };
 
-  const handleAddSubmit = (e) => {
+  const handleAddSubmit = async (e) => {
     e.preventDefault();
     const cleanUrl = linkInput.trim();
     if (!cleanUrl) {
@@ -63,14 +47,24 @@ export default function ProfileShoppingModal({
       url: cleanUrl
     };
 
-    setLinks(prev => [newLink, ...prev]);
+    const updated = [newLink, ...links];
+    setLinks(updated);
     setLinkInput('');
     setIsAdding(false);
+
+    if (onSaveLinks) {
+      await onSaveLinks(updated);
+    }
     if (showToast) showToast('Link added successfully!');
   };
 
-  const handleDelete = (id) => {
-    setLinks(prev => prev.filter(l => l.id !== id));
+  const handleDelete = async (id) => {
+    const updated = links.filter(l => l.id !== id);
+    setLinks(updated);
+
+    if (onSaveLinks) {
+      await onSaveLinks(updated);
+    }
     if (showToast) showToast('Link removed');
   };
 
@@ -82,6 +76,8 @@ export default function ProfileShoppingModal({
       return url;
     }
   };
+
+  const displayName = (username || 'User').replace(/^@/, '');
 
   const modalContent = (
     <div 
@@ -139,7 +135,7 @@ export default function ProfileShoppingModal({
                 Links
               </h3>
               <p style={{ margin: 0, fontSize: '12px', color: '#a0a0a0' }}>
-                {isOwnProfile ? 'Add and manage your links' : `${username}'s Links`}
+                {isOwnProfile ? 'Add and manage your links' : `@${displayName}'s Links`}
               </p>
             </div>
           </div>
@@ -192,11 +188,11 @@ export default function ProfileShoppingModal({
                   border: '1px solid rgba(255, 255, 255, 0.1)'
                 }}
               >
-                <span style={{ fontSize: '14px', fontWeight: '800', color: '#a6fc29' }}>Links</span>
+                <span style={{ fontSize: '14px', fontWeight: '800', color: '#a6fc29' }}>Add Link</span>
                 
                 <input
                   type="text"
-                  placeholder="Enter link (e.g. https://... or website.com)"
+                  placeholder="Enter URL (e.g. amzn.in/... or website.com)"
                   value={linkInput}
                   onChange={(e) => setLinkInput(e.target.value)}
                   autoFocus
@@ -275,7 +271,7 @@ export default function ProfileShoppingModal({
               </p>
               {isOwnProfile && (
                 <p style={{ margin: 0, fontSize: '12px', color: '#71717a' }}>
-                  Click "+ Add New Link" above to add your first link!
+                  Click "+ Add New Link" above to add your store, shopping or social links!
                 </p>
               )}
             </div>

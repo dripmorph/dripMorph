@@ -1,6 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { Camera, Ruler, AtSign, ArrowRight, Check, Sparkles } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { parseProfileLinksData, serializeProfileLinksData } from '../../lib/linkUtils';
+
+const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=240&h=240&fit=crop';
 
 const GENDER_OPTIONS = [
   'Male',
@@ -8,8 +11,6 @@ const GENDER_OPTIONS = [
   'Non-Binary',
   'Prefer not to say'
 ];
-
-const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=240&h=240&fit=crop';
 
 export default function ProfileDetailsScreen({ onFinishOnboarding, onSkip }) {
   const { user, updateProfileDetails } = useAuth();
@@ -19,7 +20,7 @@ export default function ProfileDetailsScreen({ onFinishOnboarding, onSkip }) {
   const [avatarError, setAvatarError] = useState(false);
   const [height, setHeight] = useState(user?.height || '');
   const [gender, setGender] = useState(user?.gender || '');
-  const [instagramLink, setInstagramLink] = useState(user?.instagramLink || '');
+  const [instagramLink, setInstagramLink] = useState(() => parseProfileLinksData(user?.instagramLink).instagramHandle);
   const [error, setError] = useState('');
 
   const handleAvatarClick = () => {
@@ -46,11 +47,13 @@ export default function ProfileDetailsScreen({ onFinishOnboarding, onSkip }) {
     setIsSubmitting(true);
     try {
       const finalAvatar = avatarUrl || user?.avatar || DEFAULT_AVATAR;
+      const parsed = parseProfileLinksData(user?.instagramLink);
+      const payload = serializeProfileLinksData(instagramLink.trim(), parsed.customLinks);
       await updateProfileDetails({
         avatar: finalAvatar,
         height: height.trim(),
         gender: gender,
-        instagramLink: instagramLink.trim(),
+        instagramLink: payload,
         hasCompletedOnboarding: true
       });
       onFinishOnboarding();

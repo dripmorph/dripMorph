@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, X, User, Shield, Bell, Lock, CheckCircle2, ChevronRight, Sliders, Globe, AlertTriangle, LifeBuoy } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { INDIAN_CITIES, normalizeCityName } from '../lib/cities';
+import { parseProfileLinksData, serializeProfileLinksData } from '../lib/linkUtils';
 import ChangePasswordModal from './ChangePasswordModal';
 import DeleteAccountModal from './DeleteAccountModal';
 import ReportProblemModal from './ReportProblemModal';
@@ -23,7 +24,8 @@ export default function SettingsModal({ isOpen, onClose, showToast, onProfileUpd
     if (user) {
       const rawUserUname = user.username ? user.username.replace(/^@/, '') : '';
       setUsername(rawUserUname);
-      setInstagram(user.instagramLink || user.instagram || '');
+      const parsed = parseProfileLinksData(user.instagramLink || user.instagram || '');
+      setInstagram(parsed.instagramHandle);
       setPrimaryCity(user.city || 'Kolkata');
     }
   }, [user, isOpen]);
@@ -103,7 +105,9 @@ export default function SettingsModal({ isOpen, onClose, showToast, onProfileUpd
     const finalIg = cleanIg ? `@${cleanIg}` : '';
     try {
       if (updateProfileDetails) {
-        await updateProfileDetails({ instagramLink: finalIg });
+        const parsed = parseProfileLinksData(user?.instagramLink);
+        const payload = serializeProfileLinksData(finalIg, parsed.customLinks);
+        await updateProfileDetails({ instagramLink: payload });
       }
       setInstagram(finalIg);
       if (showToast) {
