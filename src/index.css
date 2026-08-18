@@ -6298,7 +6298,7 @@ body {
   color: #5A6560 !important;
 }
 
-/* ================= LIGHT MODE: Bottom Navigation Bar ================= */
+/* ================= LIGHT MODE: Bottom & Desktop Navigation Bar ================= */
 [data-theme='light'] .app-bottom-nav,
 [data-theme='light'] .bottom-nav-dock {
   background: #FFFFFF !important;
@@ -6315,6 +6315,26 @@ body {
 [data-theme='light'] .nav-item.active {
   background: #A6FC29 !important;
   color: #0D0D0F !important;
+}
+
+[data-theme='light'] .nav-tab.active svg,
+[data-theme='light'] .nav-item.active svg {
+  color: #0D0D0F !important;
+  stroke: #0D0D0F !important;
+}
+
+/* Desktop Sidebar Nav - Active page text & icon black in light mode */
+[data-theme='light'] .desktop-nav-item.active {
+  color: #000000 !important;
+}
+
+[data-theme='light'] .desktop-nav-item.active svg {
+  color: #000000 !important;
+  stroke: #000000 !important;
+}
+
+[data-theme='light'] .desktop-nav-item.active span {
+  color: #000000 !important;
 }
 
 /* ================= LIGHT MODE: Leaderboard #1 Podium Card ================= */
