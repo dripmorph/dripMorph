@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, X, User, Shield, Bell, Lock, CheckCircle2, ChevronRight, Sliders, Globe, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, X, User, Shield, Bell, Lock, CheckCircle2, ChevronRight, Sliders, Globe, AlertTriangle, LifeBuoy } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ChangePasswordModal from './ChangePasswordModal';
 import DeleteAccountModal from './DeleteAccountModal';
+import ReportProblemModal from './ReportProblemModal';
 
 export default function SettingsModal({ isOpen, onClose, showToast, onProfileUpdate }) {
   const { user, updateUsername, updateProfileDetails, updateCity } = useAuth();
@@ -38,6 +39,9 @@ export default function SettingsModal({ isOpen, onClose, showToast, onProfileUpd
 
   // Delete Account Modal state
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+
+  // Report a Problem Modal state
+  const [showReportProblemModal, setShowReportProblemModal] = useState(false);
 
   if (!isOpen) return null;
 
@@ -386,6 +390,47 @@ export default function SettingsModal({ isOpen, onClose, showToast, onProfileUpd
               </button>
             </div>
           </div>
+
+          {/* Section 5: Support & Report a Problem */}
+          <div className="settings-section-card">
+            <div className="settings-section-title">
+              <LifeBuoy size={16} />
+              <span>Help & Support</span>
+            </div>
+
+            {/* Report a Problem */}
+            <div 
+              className="settings-item-row"
+              onClick={() => {
+                setShowReportProblemModal(true);
+                if (showToast) showToast('send your report on dripmorph@gmail.com');
+              }}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="settings-item-info">
+                <span className="settings-item-label">Report a Problem</span>
+                <span className="settings-item-sub">Facing an issue or bug? Reach out to support</span>
+              </div>
+              <button
+                type="button"
+                className="settings-action-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowReportProblemModal(true);
+                  if (showToast) showToast('send your report on dripmorph@gmail.com');
+                }}
+              >
+                Report
+              </button>
+            </div>
+          </div>
+
+          {/* Report a Problem Modal */}
+          <ReportProblemModal
+            isOpen={showReportProblemModal}
+            onClose={() => setShowReportProblemModal(false)}
+            showToast={showToast}
+          />
 
           {/* Danger Zone Section */}
           <div className="settings-section-card danger-zone">
