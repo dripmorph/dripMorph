@@ -176,7 +176,7 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
   };
 
   return (
-    <div style={{ width: '100%', maxWidth: '896px', marginLeft: 'auto', marginRight: 'auto', paddingLeft: '16px', paddingRight: '16px', paddingTop: '16px', paddingBottom: '16px', minHeight: '100vh', color: '#f4f4f5' }}>
+    <div style={{ width: '100%', maxWidth: '896px', marginLeft: 'auto', marginRight: 'auto', paddingLeft: '16px', paddingRight: '16px', paddingTop: '16px', paddingBottom: '16px', minHeight: '100vh', color: 'var(--text-primary, #f4f4f5)' }}>
       {/* Redesigned Header Section (Inline Styles for Guaranteed Styling) */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '32px', maxWidth: '448px', marginLeft: 'auto', marginRight: 'auto', width: '100%' }}>
         {/* Search Input Container */}
@@ -354,7 +354,7 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                color: '#ffffff',
+                color: 'var(--text-primary, #ffffff)',
                 fontSize: '14px',
                 fontWeight: '600',
                 backgroundColor: 'transparent',
@@ -783,7 +783,7 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
 
             return (
               <div style={{ width: '100%', marginTop: '8px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#ffffff', marginBottom: '12px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text-primary, #ffffff)', marginBottom: '12px' }}>
                   Top 10 {scope === 'local' ? 'Local' : 'Global'}
                 </h3>
 
@@ -858,7 +858,7 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
                 {/* Remaining Ranked Creators (#11+) */}
                 {remainingList.length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '20px' }}>
-                    <h4 style={{ fontSize: '12px', fontWeight: '700', color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
+                    <h4 style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary, #a1a1aa)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
                       More Ranked Creators
                     </h4>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
