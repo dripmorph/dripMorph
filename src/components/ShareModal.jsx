@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
 import { X, Copy, Check, Send, Share2, Globe } from 'lucide-react';
-import { FaWhatsapp, FaTwitter, FaInstagram } from 'react-icons/fa';
+import { FaWhatsapp, FaInstagram } from 'react-icons/fa';
+import { FaXTwitter } from 'react-icons/fa6';
 
 export default function ShareModal({ isOpen, onClose, post, showToast }) {
   const [copied, setCopied] = useState(false);
@@ -29,8 +29,8 @@ export default function ShareModal({ isOpen, onClose, post, showToast }) {
   };
 
   const handleTwitterShare = () => {
-    const twUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
-    window.open(twUrl, '_blank');
+    const xUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+    window.open(xUrl, '_blank');
   };
 
   const handleInstagramShare = async () => {
@@ -196,17 +196,17 @@ export default function ShareModal({ isOpen, onClose, post, showToast }) {
               gap: '10px',
               padding: '12px',
               borderRadius: '12px',
-              backgroundColor: 'rgba(14, 165, 233, 0.12)',
-              border: '1px solid rgba(14, 165, 233, 0.3)',
-              color: '#38bdf8',
+              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              color: '#ffffff',
               fontSize: '13px',
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.2s ease'
             }}
           >
-            <FaTwitter size={16} />
-            X (Twitter)
+            <FaXTwitter size={16} />
+            X
           </button>
         </div>
 
