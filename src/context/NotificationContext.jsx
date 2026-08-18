@@ -148,18 +148,18 @@ export const NotificationProvider = ({ children }) => {
         .gt('created_at', cutoff)
         .order('created_at', { ascending: false });
 
-      // 2. Fetch recent follows on current user after cutoff
+      // 2. Fetch recent follows on current user after cutoff (table has no 'id' column)
       const { data: recentFollows } = await supabase
         .from('follows')
-        .select('id, follower_id, created_at')
+        .select('follower_id, following_id, created_at')
         .eq('following_id', currentUid)
         .gt('created_at', cutoff)
         .order('created_at', { ascending: false });
 
-      // 3. Fetch user's outfits to find likes on them after cutoff
+      // 3. Fetch user's outfits to find likes on them after cutoff (outfits has no 'title' column)
       const { data: myOutfits } = await supabase
         .from('outfits')
-        .select('id, title')
+        .select('id')
         .eq('poster_id', currentUid);
 
       let recentLikes = [];
@@ -222,7 +222,7 @@ export const NotificationProvider = ({ children }) => {
         const rawName = actor?.username || 'user';
         const uname = rawName.startsWith('@') ? rawName : `@${rawName}`;
         fetchedList.push({
-          id: `follow-${f.id}`,
+          id: `follow-${f.follower_id}-${f.following_id}`,
           type: 'follow',
           actorUsername: uname,
           actorAvatar: actor?.avatar_url || null,
@@ -240,7 +240,7 @@ export const NotificationProvider = ({ children }) => {
         const rawName = actor?.username || 'user';
         const uname = rawName.startsWith('@') ? rawName : `@${rawName}`;
         fetchedList.push({
-          id: `like-${l.id}`,
+          id: `like-${l.id || l.user_id + '-' + l.outfit_id}`,
           type: 'like',
           actorUsername: uname,
           actorAvatar: actor?.avatar_url || null,
@@ -346,7 +346,7 @@ export const NotificationProvider = ({ children }) => {
           const username = rawName.startsWith('@') ? rawName : `@${rawName}`;
 
           addNotification({
-            id: `follow-${payload.new.id || Date.now()}`,
+            id: `follow-${followerId}-${userId}`,
             type: 'follow',
             actorUsername: username,
             actorAvatar: profile?.avatar_url,
@@ -424,7 +424,7 @@ export const NotificationProvider = ({ children }) => {
               const username = rawName.startsWith('@') ? rawName : `@${rawName}`;
 
               addNotification({
-                id: `like-${payload.new.id || Date.now()}`,
+                id: `like-${payload.new.id || likerId + '-' + outfitId}`,
                 type: 'like',
                 actorUsername: username,
                 actorAvatar: profile?.avatar_url,
@@ -443,7 +443,13 @@ export const NotificationProvider = ({ children }) => {
 
     channelsRef.current = [followChannel, messageChannel, likeChannel];
 
+    // Background sync every 10 seconds for real-time guarantee across all tables
+    const pollInterval = setInterval(() => {
+      fetch24hNotifications(userId);
+    }, 10000);
+
     return () => {
+      clearInterval(pollInterval);
       channelsRef.current.forEach((ch) => supabase.removeChannel(ch));
       channelsRef.current = [];
     };
