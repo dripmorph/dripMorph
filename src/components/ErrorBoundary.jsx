@@ -14,13 +14,28 @@ export default class ErrorBoundary extends React.Component {
   componentDidCatch(error, errorInfo) {
     console.error('[ErrorBoundary caught an error]:', error, errorInfo);
     this.setState({ errorInfo });
+
+    const isChunkLoadError = 
+      error?.message?.includes('Failed to fetch dynamically imported module') ||
+      error?.message?.includes('error loading dynamically imported module') ||
+      error?.message?.includes('Importing a module script failed');
+
+    if (isChunkLoadError) {
+      const hasAutoReloaded = sessionStorage.getItem('drip_chunk_auto_reload');
+      if (!hasAutoReloaded) {
+        sessionStorage.setItem('drip_chunk_auto_reload', 'true');
+        window.location.reload();
+      }
+    }
   }
 
   handleReload = () => {
+    sessionStorage.removeItem('drip_chunk_auto_reload');
     window.location.reload();
   };
 
   handleReset = () => {
+    sessionStorage.removeItem('drip_chunk_auto_reload');
     this.setState({ hasError: false, error: null, errorInfo: null });
   };
 

@@ -1,8 +1,14 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Header from './components/Header';
 import BottomNav from './components/BottomNav';
 import DesktopSidebar from './components/DesktopSidebar';
 import DesktopRightSidebar from './components/DesktopRightSidebar';
+import CommentsModal from './components/CommentsModal';
+import ShareModal from './components/ShareModal';
+import FitDetailModal from './components/FitDetailModal';
+import ShopTheLookDrawer from './components/ShopTheLookDrawer';
+import SettingsModal from './components/SettingsModal';
+import ReportProblemModal from './components/ReportProblemModal';
 import { X, Star, Sun, Moon, MapPin } from 'lucide-react';
 import { useChat } from './context/ChatContext';
 import { useAuth, isUserFullyOnboarded } from './context/AuthContext';
@@ -13,23 +19,18 @@ import cyberpunkImg from './assets/cyberpunk_look.png';
 import minimalistImg from './assets/minimalist_look.png';
 import { MOCK_POSTS } from './data/mockPosts';
 import { fetchFeedOutfits, deleteOutfit } from './lib/outfitService';
+import { lazyWithRetry } from './lib/lazyWithRetry';
 
-// Code-split major screens and modals via React.lazy()
-const Feed = lazy(() => import('./components/Feed'));
-const Leaderboard = lazy(() => import('./components/Leaderboard'));
-const UserProfile = lazy(() => import('./components/UserProfile'));
-const ShopTheLookDrawer = lazy(() => import('./components/ShopTheLookDrawer'));
-const FitDetailModal = lazy(() => import('./components/FitDetailModal'));
-const PostUpload = lazy(() => import('./components/PostUpload'));
-const SettingsModal = lazy(() => import('./components/SettingsModal'));
-const ReportProblemModal = lazy(() => import('./components/ReportProblemModal'));
-const CommentsModal = lazy(() => import('./components/CommentsModal'));
-const ShareModal = lazy(() => import('./components/ShareModal'));
-const NotificationsScreen = lazy(() => import('./components/NotificationsScreen'));
-const ChatList = lazy(() => import('./components/ChatList'));
-const ChatView = lazy(() => import('./components/ChatView'));
-const AuthFlow = lazy(() => import('./components/auth/AuthFlow'));
-const CitySelectionScreen = lazy(() => import('./components/auth/CitySelectionScreen'));
+// Code-split major screens with auto-retry protection
+const Feed = lazyWithRetry(() => import('./components/Feed'));
+const Leaderboard = lazyWithRetry(() => import('./components/Leaderboard'));
+const UserProfile = lazyWithRetry(() => import('./components/UserProfile'));
+const PostUpload = lazyWithRetry(() => import('./components/PostUpload'));
+const NotificationsScreen = lazyWithRetry(() => import('./components/NotificationsScreen'));
+const ChatList = lazyWithRetry(() => import('./components/ChatList'));
+const ChatView = lazyWithRetry(() => import('./components/ChatView'));
+const AuthFlow = lazyWithRetry(() => import('./components/auth/AuthFlow'));
+const CitySelectionScreen = lazyWithRetry(() => import('./components/auth/CitySelectionScreen'));
 
 const ScreenFallback = () => (
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '280px', width: '100%', padding: '40px' }}>
