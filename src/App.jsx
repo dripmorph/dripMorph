@@ -774,6 +774,8 @@ export default function App() {
         onBellClick={handleBellClick} 
         hasNotifications={hasNotifications}
         onTabChange={handleTabChange}
+        onFitClick={(fit) => setSelectedFitForDetail(fit)}
+        refreshTrigger={refreshTrigger}
       />
 
       {/* Main Responsive 3-Column Container */}
