@@ -11,6 +11,36 @@ const EMOJI_LIST = [
   '😮','😱','🥱','🤔','🫠','😈','👾','💩','🤡','👻','💫','⭐','🌙','☀️','🌈',
 ];
 
+function formatMessageDateDivider(dateString) {
+  if (!dateString) return 'Today';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return 'Today';
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const messageDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  
+  const diffDays = Math.round((today - messageDay) / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays > 1 && diffDays < 7) {
+    return date.toLocaleDateString('en-US', { weekday: 'long' });
+  }
+  return date.toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric', 
+    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined 
+  });
+}
+
+function getDateKey(dateString) {
+  if (!dateString) return 'today';
+  const d = new Date(dateString);
+  if (isNaN(d.getTime())) return 'today';
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+}
+
 export default function ChatView({ onBack }) {
   const {
     conversations = [],
@@ -165,35 +195,69 @@ export default function ChatView({ onBack }) {
             <p>Start the conversation with a message.</p>
           </div>
         ) : (
-          msgList.map(msg => {
-            if (!msg) return null;
-            const isSent = user
-              ? msg.sender_id === user.id || msg.sender === user.username
-              : false;
+          (() => {
+            let lastDateKey = null;
+            return msgList.map((msg, index) => {
+              if (!msg) return null;
+              const isSent = user
+                ? msg.sender_id === user.id || msg.sender === user.username
+                : false;
 
-            const ts = msg.created_at || msg.timestamp;
-            const timeStr = ts
-              ? new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-              : '';
+              const ts = msg.created_at || msg.timestamp;
+              const timeStr = ts
+                ? new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : '';
 
-            return (
-              <div
-                key={msg.id || `${msg.sender_id}-${ts}`}
-                className={`chat-bubble-wrapper ${isSent ? 'sent-wrapper' : 'received-wrapper'}`}
-              >
-                <div className={`chat-bubble ${isSent ? 'sent' : 'received'}`}>
-                  {msg.type === 'image' ? (
-                    <img src={msg.content} alt="Sent image" className="chat-image" />
-                  ) : (
-                    <span>{msg.content}</span>
+              const currentDateKey = getDateKey(ts);
+              const showDateDivider = currentDateKey !== lastDateKey;
+              lastDateKey = currentDateKey;
+              const dateDividerText = showDateDivider ? formatMessageDateDivider(ts) : null;
+
+              return (
+                <React.Fragment key={msg.id || `msg-${index}-${ts}`}>
+                  {showDateDivider && (
+                    <div className="chat-date-divider-wrapper" style={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      width: '100%',
+                      margin: '18px 0 12px 0'
+                    }}>
+                      <span className="chat-date-divider-pill" style={{
+                        backgroundColor: 'rgba(30, 32, 34, 0.9)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        color: '#d4d4d8',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        padding: '4px 14px',
+                        borderRadius: '9999px',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.35)',
+                        letterSpacing: '0.03em',
+                        backdropFilter: 'blur(8px)',
+                        WebkitBackdropFilter: 'blur(8px)'
+                      }}>
+                        {dateDividerText}
+                      </span>
+                    </div>
                   )}
-                </div>
-                {timeStr && (
-                  <span className="chat-bubble-timestamp">{timeStr}</span>
-                )}
-              </div>
-            );
-          })
+                  <div
+                    className={`chat-bubble-wrapper ${isSent ? 'sent-wrapper' : 'received-wrapper'}`}
+                  >
+                    <div className={`chat-bubble ${isSent ? 'sent' : 'received'}`}>
+                      {msg.type === 'image' ? (
+                        <img src={msg.content} alt="Sent image" className="chat-image" />
+                      ) : (
+                        <span>{msg.content}</span>
+                      )}
+                    </div>
+                    {timeStr && (
+                      <span className="chat-bubble-timestamp">{timeStr}</span>
+                    )}
+                  </div>
+                </React.Fragment>
+              );
+            });
+          })()
         )}
         <div ref={messagesEndRef} />
       </div>

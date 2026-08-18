@@ -2,6 +2,27 @@ import React, { useState } from 'react';
 import { useChat } from '../context/ChatContext';
 import { MessageSquare, Search } from 'lucide-react';
 
+function formatChatListDate(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '';
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const messageDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  
+  const diffDays = Math.round((today - messageDay) / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays > 1 && diffDays < 7) {
+    return date.toLocaleDateString('en-US', { weekday: 'short' });
+  }
+  return date.toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: '2-digit' });
+}
+
 export default function ChatList({ onSelectChat }) {
   const { conversations = [], activeChatId, openChat } = useChat();
   const [search, setSearch] = useState('');
@@ -60,12 +81,7 @@ export default function ChatList({ onSelectChat }) {
             : 'Start a conversation';
 
           const ts = lastMsg?.created_at || lastMsg?.timestamp;
-          const time = ts
-            ? new Date(ts).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-              })
-            : '';
+          const time = ts ? formatChatListDate(ts) : '';
 
           const isActive = conv.id === activeChatId;
 
