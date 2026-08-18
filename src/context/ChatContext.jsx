@@ -101,7 +101,10 @@ export const ChatProvider = ({ children }) => {
   const loadConversations = async (userId) => {
     try {
       const convData = await messageService.fetchConversations(userId);
-      if (convData.length === 0) { setConversations([]); return; }
+      if (convData.length === 0) {
+        setConversations(prev => (prev.length === 0 ? [] : prev));
+        return;
+      }
 
       const partnerIds = convData.map(c => c.partnerId);
       const { data: profiles } = await supabase
@@ -112,8 +115,13 @@ export const ChatProvider = ({ children }) => {
       const profileMap = {};
       for (const p of (profiles || [])) profileMap[p.id] = p;
 
-      setConversations(
-        convData.map(c => {
+      setConversations(prev => {
+        const prevMap = {};
+        for (const p of prev) {
+          prevMap[p.id] = p;
+        }
+
+        return convData.map(c => {
           const profile = profileMap[c.partnerId];
           const clearedCutoff = getChatClearedCutoff(userId, c.partnerId, userMetadataRef.current);
           let lastMsg = c.lastMessage;
@@ -124,21 +132,24 @@ export const ChatProvider = ({ children }) => {
             }
           }
 
+          const prevConv = prevMap[c.partnerId];
+          const existingMsgs = prevConv?.messages || [];
+
           return {
             id: c.partnerId,
             partnerId: c.partnerId,
             user: {
               id: c.partnerId,
-              username: profile?.username ? `@${profile.username}` : '...',
-              avatar: profile?.avatar_url || DEFAULT_AVATAR,
+              username: profile?.username ? `@${profile.username}` : (prevConv?.user?.username || '...'),
+              avatar: profile?.avatar_url || prevConv?.user?.avatar || DEFAULT_AVATAR,
             },
-            messages: [],          // lazy-loaded when chat is opened
+            messages: existingMsgs, // Preserve already loaded active messages
             lastMessage: lastMsg,
-            unreadCount: lastMsg ? c.unreadCount : 0,
+            unreadCount: activeChatIdRef.current === c.partnerId ? 0 : (lastMsg ? c.unreadCount : 0),
             status: 'accepted',
           };
-        })
-      );
+        });
+      });
     } catch (err) {
       console.error('[Chat] loadConversations error:', err);
     }
