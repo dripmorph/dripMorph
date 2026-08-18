@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { X, Copy, Check, Send, Share2, Globe } from 'lucide-react';
 import { FaWhatsapp, FaInstagram } from 'react-icons/fa';
 import { FaXTwitter } from 'react-icons/fa6';
