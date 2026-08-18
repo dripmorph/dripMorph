@@ -199,21 +199,21 @@ export const NotificationProvider = ({ children }) => {
 
       const fetchedList = [];
 
-      // 1. Group recent messages by sender_id (bulge onto one another like Instagram)
+      // 1. Group recent UNREAD messages by sender_id (bulge onto one another like Instagram)
       const msgGroupsBySender = {};
       (recentMsgs || []).forEach((m) => {
+        // Only include UNREAD messages in notification counts
+        if (m.read) return;
+
         if (!msgGroupsBySender[m.sender_id]) {
           msgGroupsBySender[m.sender_id] = {
             sender_id: m.sender_id,
             messages: [],
             latest_created_at: m.created_at,
-            hasUnread: !m.read
+            hasUnread: true
           };
         }
         msgGroupsBySender[m.sender_id].messages.push(m);
-        if (!m.read) {
-          msgGroupsBySender[m.sender_id].hasUnread = true;
-        }
         if (new Date(m.created_at).getTime() > new Date(msgGroupsBySender[m.sender_id].latest_created_at).getTime()) {
           msgGroupsBySender[m.sender_id].latest_created_at = m.created_at;
         }
@@ -235,7 +235,7 @@ export const NotificationProvider = ({ children }) => {
           title: uname,
           text: notifText,
           created_at: group.latest_created_at,
-          unread: group.hasUnread,
+          unread: true,
           count: count,
           data: { senderId: group.sender_id, username: uname, count }
         });
@@ -279,13 +279,21 @@ export const NotificationProvider = ({ children }) => {
 
       setNotifications((prev) => {
         const map = new Map();
-        // Keep existing read states if already marked
-        prev.forEach((n) => map.set(n.id, n));
+        
+        // Add fresh database unread message notifications, follows, likes
         fetchedList.forEach((n) => {
-          if (!map.has(n.id)) {
-            map.set(n.id, n);
+          map.set(n.id, n);
+        });
+
+        // Retain non-message notifications from previous state
+        prev.forEach((n) => {
+          if (n.type !== 'message') {
+            if (!map.has(n.id)) {
+              map.set(n.id, n);
+            }
           }
         });
+
         const combined = Array.from(map.values());
         combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         return filterValidNotifications(combined, currentUid);
@@ -294,6 +302,29 @@ export const NotificationProvider = ({ children }) => {
       console.warn('[NotificationContext] fetch24hNotifications error:', err);
     }
   }, []);
+
+  // Dismiss / clear message notifications for a specific sender (e.g. when their chat is read)
+  const dismissMessageNotification = useCallback((senderId) => {
+    if (!senderId) return;
+    setNotifications((prev) => {
+      const filtered = prev.filter(
+        (n) => !(n.type === 'message' && (n.data?.senderId === senderId || n.id === `msg-group-${senderId}`))
+      );
+      return filtered;
+    });
+  }, []);
+
+  // Listen for custom event when any chat is opened or messages read
+  useEffect(() => {
+    const handleDismissEvent = (e) => {
+      const senderId = e.detail?.senderId;
+      if (senderId) {
+        dismissMessageNotification(senderId);
+      }
+    };
+    window.addEventListener('dripmorph:dismiss-message-notif', handleDismissEvent);
+    return () => window.removeEventListener('dripmorph:dismiss-message-notif', handleDismissEvent);
+  }, [dismissMessageNotification]);
 
   // Mark all notifications as read
   const markAllAsRead = useCallback(() => {
@@ -422,7 +453,8 @@ export const NotificationProvider = ({ children }) => {
 
             if (existingIdx >= 0) {
               const existing = prev[existingIdx];
-              const newCount = (existing.count || 1) + 1;
+              // If previous notification was unread, increment; if already read/opened, start fresh at 1
+              const newCount = existing.unread ? (existing.count || 0) + 1 : 1;
               const updatedItem = {
                 ...existing,
                 id: `msg-group-${senderId}`,
@@ -458,7 +490,29 @@ export const NotificationProvider = ({ children }) => {
       )
       .subscribe();
 
-    // 3. Outfit Likes Channel (strictly "@user liked your post.")
+    // 3. Messages Read UPDATE Channel (when messages are marked read in DB)
+    const messageReadChannel = supabase
+      .channel(`notifs-messages-read:${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages',
+          filter: `recipient_id=eq.${userId}`
+        },
+        (payload) => {
+          if (payload.new?.read) {
+            const senderId = payload.new?.sender_id;
+            if (senderId) {
+              dismissMessageNotification(senderId);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    // 4. Outfit Likes Channel (strictly "@user liked your post.")
     const likeChannel = supabase
       .channel(`notifs-likes:${userId}`)
       .on(
@@ -504,7 +558,7 @@ export const NotificationProvider = ({ children }) => {
       )
       .subscribe();
 
-    channelsRef.current = [followChannel, messageChannel, likeChannel];
+    channelsRef.current = [followChannel, messageChannel, messageReadChannel, likeChannel];
 
     // Background sync every 10 seconds for real-time guarantee across all tables
     const pollInterval = setInterval(() => {
@@ -516,7 +570,7 @@ export const NotificationProvider = ({ children }) => {
       channelsRef.current.forEach((ch) => supabase.removeChannel(ch));
       channelsRef.current = [];
     };
-  }, [userId, addNotification, fetch24hNotifications]);
+  }, [userId, addNotification, fetch24hNotifications, dismissMessageNotification]);
 
   const active24hNotifications = filterValidNotifications(notifications, userId, userMetadata);
   const unreadCount = active24hNotifications.filter((n) => n.unread).length;
@@ -529,6 +583,7 @@ export const NotificationProvider = ({ children }) => {
         unreadCount,
         hasNotifications,
         addNotification,
+        dismissMessageNotification,
         markAllAsRead,
         markAsRead,
         clearAll,

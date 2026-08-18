@@ -195,6 +195,9 @@ export const ChatProvider = ({ children }) => {
 
     // Mark as read immediately if we're currently in that chat
     if (isActive && currentUserIdRef.current) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('dripmorph:dismiss-message-notif', { detail: { senderId: partnerId } }));
+      }
       await messageService.markMessagesRead(currentUserIdRef.current, partnerId);
     }
   };
@@ -258,6 +261,11 @@ export const ChatProvider = ({ children }) => {
     if (!partnerId) return;
 
     setActiveChatId(partnerId);
+
+    // Dismiss message notification for this partner immediately
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('dripmorph:dismiss-message-notif', { detail: { senderId: partnerId } }));
+    }
 
     // Ensure conversation entry exists in local state
     const exists = conversations.find(c => c.id === partnerId);
