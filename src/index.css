@@ -3926,8 +3926,9 @@ body {
   padding: 20px;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
   gap: 12px;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 .chat-no-messages {
@@ -3935,7 +3936,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100%;
+  margin: auto;
   gap: 10px;
   color: var(--text-secondary);
   text-align: center;

@@ -61,14 +61,22 @@ export default function ChatView({ onBack, onUserClick }) {
   const messagesEndRef = useRef(null);
   const textInputRef = useRef(null);
   const emojiPickerRef = useRef(null);
-  const optionsMenuRef = useRef(null);
+  const prevMsgCountRef = useRef(0);
+  const prevChatIdRef = useRef(null);
 
-  // Scroll to bottom whenever messages change
+  // Scroll to bottom on initial open or when a new message is sent/received
   useEffect(() => {
-    if (conv?.messages) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const currentMsgCount = conv?.messages?.length || 0;
+    const isNewChat = prevChatIdRef.current !== activeChatId;
+    const hasNewMessage = currentMsgCount > prevMsgCountRef.current;
+
+    if (isNewChat || hasNewMessage) {
+      messagesEndRef.current?.scrollIntoView({ behavior: isNewChat ? 'auto' : 'smooth' });
     }
-  }, [conv?.messages]);
+
+    prevChatIdRef.current = activeChatId;
+    prevMsgCountRef.current = currentMsgCount;
+  }, [conv?.messages, activeChatId]);
 
   // Close emoji picker and options dropdown when clicking outside
   useEffect(() => {
