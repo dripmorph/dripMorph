@@ -76,7 +76,7 @@ export const NotificationProvider = ({ children }) => {
     return () => clearInterval(interval);
   }, []);
 
-  // Method to add a new real-time notification
+  // Method to add or merge a real-time notification
   const addNotification = useCallback((newNotif) => {
     const created_at = newNotif.created_at || new Date().toISOString();
     const item = {
@@ -87,15 +87,160 @@ export const NotificationProvider = ({ children }) => {
       actorUsername: newNotif.actorUsername || '',
       actorAvatar: newNotif.actorAvatar || null,
       created_at,
-      unread: true,
+      unread: newNotif.unread !== undefined ? newNotif.unread : true,
       data: newNotif.data || null
     };
 
     setNotifications((prev) => {
-      const existing = prev.find((n) => n.id === item.id);
-      if (existing) return prev;
+      const existingIdx = prev.findIndex((n) => n.id === item.id);
+      if (existingIdx >= 0) {
+        const updated = [...prev];
+        updated[existingIdx] = { ...updated[existingIdx], ...item };
+        return filterLast24Hours(updated);
+      }
       return [item, ...filterLast24Hours(prev)];
     });
+  }, []);
+
+  // Initial 24-hour query to fetch all recent database activity (messages, likes, follows)
+  const fetch24hNotifications = useCallback(async (currentUid) => {
+    if (!currentUid) return;
+    try {
+      const cutoff = new Date(Date.now() - ONE_DAY_MS).toISOString();
+
+      // 1. Fetch recent messages sent to current user in the last 24h
+      const { data: recentMsgs } = await supabase
+        .from('messages')
+        .select('id, sender_id, content, created_at, read')
+        .eq('recipient_id', currentUid)
+        .gte('created_at', cutoff)
+        .order('created_at', { ascending: false });
+
+      // 2. Fetch recent follows on current user in the last 24h
+      const { data: recentFollows } = await supabase
+        .from('follows')
+        .select('id, follower_id, created_at')
+        .eq('following_id', currentUid)
+        .gte('created_at', cutoff)
+        .order('created_at', { ascending: false });
+
+      // 3. Fetch user's outfits to find likes on them in the last 24h
+      const { data: myOutfits } = await supabase
+        .from('outfits')
+        .select('id, title')
+        .eq('poster_id', currentUid);
+
+      let recentLikes = [];
+      const outfitTitleMap = {};
+      if (myOutfits && myOutfits.length > 0) {
+        const outfitIds = myOutfits.map((o) => {
+          outfitTitleMap[o.id] = o.title;
+          return o.id;
+        });
+
+        const { data: likesData } = await supabase
+          .from('outfit_likes')
+          .select('id, outfit_id, user_id, created_at')
+          .in('outfit_id', outfitIds)
+          .neq('user_id', currentUid)
+          .gte('created_at', cutoff)
+          .order('created_at', { ascending: false });
+
+        recentLikes = likesData || [];
+      }
+
+      // Collect all distinct actor IDs
+      const actorIds = new Set();
+      (recentMsgs || []).forEach((m) => actorIds.add(m.sender_id));
+      (recentFollows || []).forEach((f) => actorIds.add(f.follower_id));
+      recentLikes.forEach((l) => actorIds.add(l.user_id));
+
+      const actorMap = {};
+      if (actorIds.size > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url')
+          .in('id', Array.from(actorIds));
+
+        (profiles || []).forEach((p) => {
+          actorMap[p.id] = p;
+        });
+      }
+
+      const fetchedList = [];
+
+      // Format messages
+      (recentMsgs || []).forEach((m) => {
+        const actor = actorMap[m.sender_id];
+        const rawName = actor?.username || 'user';
+        const uname = rawName.startsWith('@') ? rawName : `@${rawName}`;
+        const snippet = m.content && m.content.length > 50 ? `${m.content.slice(0, 50)}...` : m.content;
+        fetchedList.push({
+          id: `msg-${m.id}`,
+          type: 'message',
+          actorUsername: uname,
+          actorAvatar: actor?.avatar_url || null,
+          title: uname,
+          text: snippet ? `${uname}: "${snippet}"` : `${uname} sent you a message.`,
+          created_at: m.created_at,
+          unread: !m.read,
+          data: { senderId: m.sender_id, username: uname, content: m.content }
+        });
+      });
+
+      // Format follows
+      (recentFollows || []).forEach((f) => {
+        const actor = actorMap[f.follower_id];
+        const rawName = actor?.username || 'user';
+        const uname = rawName.startsWith('@') ? rawName : `@${rawName}`;
+        fetchedList.push({
+          id: `follow-${f.id}`,
+          type: 'follow',
+          actorUsername: uname,
+          actorAvatar: actor?.avatar_url || null,
+          title: uname,
+          text: `${uname} started following you.`,
+          created_at: f.created_at,
+          unread: true,
+          data: { followerId: f.follower_id, username: uname }
+        });
+      });
+
+      // Format likes
+      recentLikes.forEach((l) => {
+        const actor = actorMap[l.user_id];
+        const rawName = actor?.username || 'user';
+        const uname = rawName.startsWith('@') ? rawName : `@${rawName}`;
+        const outfitTitle = outfitTitleMap[l.outfit_id] ? `"${outfitTitleMap[l.outfit_id]}"` : 'your fit check';
+        fetchedList.push({
+          id: `like-${l.id}`,
+          type: 'like',
+          actorUsername: uname,
+          actorAvatar: actor?.avatar_url || null,
+          title: uname,
+          text: `${uname} liked ${outfitTitle}.`,
+          created_at: l.created_at,
+          unread: true,
+          data: { likerId: l.user_id, outfitId: l.outfit_id, username: uname }
+        });
+      });
+
+      setNotifications((prev) => {
+        const map = new Map();
+        // Keep existing read states if already marked
+        prev.forEach((n) => map.set(n.id, n));
+        fetchedList.forEach((n) => {
+          if (!map.has(n.id)) {
+            map.set(n.id, n);
+          }
+        });
+        const combined = Array.from(map.values());
+        combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        return filterLast24Hours(combined);
+      });
+    } catch (err) {
+      console.warn('[NotificationContext] fetch24hNotifications error:', err);
+    }
   }, []);
 
   // Mark all notifications as read
@@ -125,13 +270,15 @@ export const NotificationProvider = ({ children }) => {
   // Real-time Supabase Subscriptions for Follows, Messages, and Likes
   useEffect(() => {
     if (!userId) {
-      // Clean up channels if logged out
       channelsRef.current.forEach((ch) => supabase.removeChannel(ch));
       channelsRef.current = [];
       return;
     }
 
-    // Clean up existing channels before establishing new ones
+    // 1. Initial 24h sync from database
+    fetch24hNotifications(userId);
+
+    // 2. Clean up existing channels before establishing new ones
     channelsRef.current.forEach((ch) => supabase.removeChannel(ch));
     channelsRef.current = [];
 
@@ -166,7 +313,8 @@ export const NotificationProvider = ({ children }) => {
           if (!followerId || followerId === userId) return;
 
           const profile = await fetchUserProfile(followerId);
-          const username = profile?.username ? `@${profile.username}` : 'Someone';
+          const rawName = profile?.username || 'user';
+          const username = rawName.startsWith('@') ? rawName : `@${rawName}`;
 
           addNotification({
             id: `follow-${payload.new.id || Date.now()}`,
@@ -198,7 +346,8 @@ export const NotificationProvider = ({ children }) => {
           if (!senderId || senderId === userId) return;
 
           const profile = await fetchUserProfile(senderId);
-          const username = profile?.username ? `@${profile.username}` : 'Someone';
+          const rawName = profile?.username || 'user';
+          const username = rawName.startsWith('@') ? rawName : `@${rawName}`;
           const content = payload.new?.content || '';
           const snippet = content.length > 50 ? `${content.slice(0, 50)}...` : content;
 
@@ -232,16 +381,17 @@ export const NotificationProvider = ({ children }) => {
           if (!likerId || likerId === userId || !outfitId) return;
 
           try {
-            // Verify if this outfit belongs to the current user
+            // Verify if this outfit belongs to the current user (using poster_id!)
             const { data: outfitData } = await supabase
               .from('outfits')
-              .select('id, user_id, title')
+              .select('id, poster_id, title')
               .eq('id', outfitId)
               .single();
 
-            if (outfitData && outfitData.user_id === userId) {
+            if (outfitData && outfitData.poster_id === userId) {
               const profile = await fetchUserProfile(likerId);
-              const username = profile?.username ? `@${profile.username}` : 'Someone';
+              const rawName = profile?.username || 'user';
+              const username = rawName.startsWith('@') ? rawName : `@${rawName}`;
               const outfitTitle = outfitData.title ? `"${outfitData.title}"` : 'your fit check';
 
               addNotification({
@@ -268,7 +418,7 @@ export const NotificationProvider = ({ children }) => {
       channelsRef.current.forEach((ch) => supabase.removeChannel(ch));
       channelsRef.current = [];
     };
-  }, [userId, addNotification]);
+  }, [userId, addNotification, fetch24hNotifications]);
 
   const active24hNotifications = filterLast24Hours(notifications);
   const unreadCount = active24hNotifications.filter((n) => n.unread).length;
@@ -283,7 +433,8 @@ export const NotificationProvider = ({ children }) => {
         addNotification,
         markAllAsRead,
         markAsRead,
-        clearAll
+        clearAll,
+        refreshNotifications: () => fetch24hNotifications(userId)
       }}
     >
       {children}
