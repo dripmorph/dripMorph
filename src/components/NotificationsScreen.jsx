@@ -200,7 +200,7 @@ export default function NotificationsScreen({
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '4px 0 16px 0',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
+          borderBottom: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))'
         }}>
           <div>
             <h2 className="stl-title" style={{ margin: 0, fontSize: '20px', fontWeight: '800' }}>
@@ -281,7 +281,7 @@ export default function NotificationsScreen({
                 <Bell size={26} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#ffffff' }}>
+                <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: 'var(--text-primary, #ffffff)' }}>
                   All caught up!
                 </h4>
                 <p style={{ margin: 0, fontSize: '13px', color: '#71717a' }}>
@@ -301,8 +301,8 @@ export default function NotificationsScreen({
                   gap: '12px',
                   padding: '12px 14px',
                   borderRadius: '14px',
-                  backgroundColor: item.unread ? 'rgba(166, 252, 41, 0.06)' : 'rgba(255, 255, 255, 0.03)',
-                  border: item.unread ? '1px solid rgba(166, 252, 41, 0.25)' : '1px solid rgba(255, 255, 255, 0.06)',
+                  backgroundColor: item.unread ? 'var(--accent-light, rgba(166, 252, 41, 0.06))' : 'var(--input-bg, rgba(255, 255, 255, 0.03))',
+                  border: item.unread ? '1px solid var(--accent-light-border, rgba(166, 252, 41, 0.25))' : '1px solid var(--border-color, rgba(255, 255, 255, 0.06))',
                   cursor: (item.type === 'follow' || item.type === 'message' || item.type === 'like') ? 'pointer' : 'default',
                   transition: 'all 0.15s ease'
                 }}
@@ -312,7 +312,7 @@ export default function NotificationsScreen({
                 </div>
 
                 <div className="notification-details" style={{ flex: 1, minWidth: 0 }}>
-                  <p className="notification-text" style={{ margin: 0, fontSize: '13px', color: '#ffffff', wordBreak: 'break-word' }}>
+                  <p className="notification-text" style={{ margin: 0, fontSize: '13px', color: 'var(--text-primary, #ffffff)', wordBreak: 'break-word' }}>
                     {item.text}
                   </p>
                   <span className="notification-time" style={{ fontSize: '11px', color: '#71717a', marginTop: '2px', display: 'block' }}>
