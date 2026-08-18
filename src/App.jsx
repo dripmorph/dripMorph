@@ -6,6 +6,7 @@ import DesktopRightSidebar from './components/DesktopRightSidebar';
 import { X, Star, Sun, Moon, MapPin } from 'lucide-react';
 import { useChat } from './context/ChatContext';
 import { useAuth, isUserFullyOnboarded } from './context/AuthContext';
+import { useNotifications } from './context/NotificationContext';
 import DripMorphLogo from './components/DripMorphLogo';
 import techwearImg from './assets/techwear_look.png';
 import cyberpunkImg from './assets/cyberpunk_look.png';
@@ -23,6 +24,7 @@ const PostUpload = lazy(() => import('./components/PostUpload'));
 const SettingsModal = lazy(() => import('./components/SettingsModal'));
 const CommentsModal = lazy(() => import('./components/CommentsModal'));
 const ShareModal = lazy(() => import('./components/ShareModal'));
+const NotificationsScreen = lazy(() => import('./components/NotificationsScreen'));
 const ChatList = lazy(() => import('./components/ChatList'));
 const ChatView = lazy(() => import('./components/ChatView'));
 const AuthFlow = lazy(() => import('./components/auth/AuthFlow'));
@@ -219,7 +221,7 @@ export default function App() {
   const [profileBackStack, setProfileBackStack] = useState([]);
   const [enzoAvatar, setEnzoAvatar] = useState("https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=240&h=240&fit=crop");
   const [toast, setToast] = useState('');
-  const [hasNotifications, setHasNotifications] = useState(true);
+  const { hasNotifications } = useNotifications();
 
   // Hamburger, Settings and Notifications states
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -429,7 +431,6 @@ export default function App() {
   };
 
   const handleBellClick = () => {
-    setHasNotifications(false);
     setShowNotifications(true);
   };
 
@@ -962,6 +963,14 @@ export default function App() {
           <NotificationsScreen
             isOpen={showNotifications}
             onClose={() => setShowNotifications(false)}
+            onUserClick={handleNavigateToProfile}
+            onNavigateToChat={(target) => {
+              if (target && target !== 'chat') {
+                openChat(target);
+              }
+              handleTabChange('chat');
+            }}
+            onFitClick={(fit) => setSelectedFitForDetail(fit)}
           />
         )}
 
@@ -1279,44 +1288,6 @@ function MenuDrawer({ isOpen, onClose, onNavigateToNotifications, showToast, the
           >
             Log Out
           </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function NotificationsScreen({ isOpen, onClose }) {
-  if (!isOpen) return null;
-
-  const mockNotifications = [
-    { id: 1, text: 'Your rank moved up to #3 on the Leaderboard!', time: '2 hours ago', icon: '🏆', unread: true },
-    { id: 2, text: 'Someone shopped your look "Cyberpunk Tailoring"!', time: '4 hours ago', icon: '🛍️', unread: true },
-    { id: 3, text: 'New weekly leaderboard reset is live — vote now!', time: '1 day ago', icon: '🔄', unread: false },
-    { id: 4, text: 'Your post "Tactical Techwear" hit 100+ likes!', time: '2 days ago', icon: '🔥', unread: false },
-    { id: 5, text: '@neon_wanderer followed you.', time: '3 days ago', icon: '👤', unread: false }
-  ];
-
-  return (
-    <div className="stl-overlay" onClick={onClose}>
-      <div className="notifications-screen-content" onClick={(e) => e.stopPropagation()}>
-        <div className="stl-drag-handle" />
-        <button className="stl-close-btn" onClick={onClose} aria-label="Close">
-          <X size={20} />
-        </button>
-
-        <h2 className="stl-title">Notifications</h2>
-
-        <div className="notifications-list">
-          {mockNotifications.map(notification => (
-            <div key={notification.id} className={`notification-item ${notification.unread ? 'unread' : ''}`}>
-              <div className="notification-icon">{notification.icon}</div>
-              <div className="notification-details">
-                <p className="notification-text">{notification.text}</p>
-                <span className="notification-time">{notification.time}</span>
-              </div>
-              {notification.unread && <span className="notification-unread-dot" />}
-            </div>
-          ))}
         </div>
       </div>
     </div>

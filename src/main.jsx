@@ -6,14 +6,17 @@ import ErrorBoundary from './components/ErrorBoundary.jsx';
 
 import { AuthProvider } from './context/AuthContext';
 import { ChatProvider } from './context/ChatContext';
+import { NotificationProvider } from './context/NotificationContext';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ErrorBoundary>
       <AuthProvider>
-        <ChatProvider>
-          <App />
-        </ChatProvider>
+        <NotificationProvider>
+          <ChatProvider>
+            <App />
+          </ChatProvider>
+        </NotificationProvider>
       </AuthProvider>
     </ErrorBoundary>
   </StrictMode>,
