@@ -22,6 +22,7 @@ const ShopTheLookDrawer = lazy(() => import('./components/ShopTheLookDrawer'));
 const FitDetailModal = lazy(() => import('./components/FitDetailModal'));
 const PostUpload = lazy(() => import('./components/PostUpload'));
 const SettingsModal = lazy(() => import('./components/SettingsModal'));
+const ReportProblemModal = lazy(() => import('./components/ReportProblemModal'));
 const CommentsModal = lazy(() => import('./components/CommentsModal'));
 const ShareModal = lazy(() => import('./components/ShareModal'));
 const NotificationsScreen = lazy(() => import('./components/NotificationsScreen'));
@@ -227,6 +228,7 @@ export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showReportProblemModal, setShowReportProblemModal] = useState(false);
 
   // Comments states
   const [selectedPostForComments, setSelectedPostForComments] = useState(null);
@@ -966,6 +968,10 @@ export default function App() {
               setIsMenuOpen(false);
               setShowSettingsModal(true);
             }}
+            onReportProblem={() => {
+              setIsMenuOpen(false);
+              setShowReportProblemModal(true);
+            }}
           />
         )}
 
@@ -990,6 +996,14 @@ export default function App() {
             onClose={() => setShowSettingsModal(false)}
             showToast={showToast}
             onProfileUpdate={() => setRefreshTrigger(Date.now())}
+          />
+        )}
+
+        {showReportProblemModal && (
+          <ReportProblemModal
+            isOpen={showReportProblemModal}
+            onClose={() => setShowReportProblemModal(false)}
+            showToast={showToast}
           />
         )}
 
@@ -1232,7 +1246,7 @@ function DeleteConfirmDialog({ onClose, onConfirm }) {
   );
 }
 
-function MenuDrawer({ isOpen, onClose, onNavigateToNotifications, showToast, theme, onToggleTheme, onChangeCity, onOpenSettings, hasNotifications }) {
+function MenuDrawer({ isOpen, onClose, onNavigateToNotifications, showToast, theme, onToggleTheme, onChangeCity, onOpenSettings, onReportProblem, hasNotifications }) {
   const { user, logout } = useAuth();
   if (!isOpen) return null;
   return (
@@ -1279,7 +1293,7 @@ function MenuDrawer({ isOpen, onClose, onNavigateToNotifications, showToast, the
               }} />
             )}
           </button>
-          <button className="menu-drawer-item" onClick={() => { onClose(); showToast("Report submitted successfully."); }}>
+          <button className="menu-drawer-item" onClick={() => { onClose(); if (onReportProblem) onReportProblem(); }}>
             Report a Problem
           </button>
           <div className="menu-drawer-divider" />
