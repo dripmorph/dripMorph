@@ -499,7 +499,6 @@ export default function App() {
       const cleanUserUsername = user.username ? user.username.trim().replace(/^@/, '').toLowerCase() : '';
       const cleanUserEmail = user.email ? user.email.split('@')[0].trim().toLowerCase() : '';
 
-      if (cleanTarget === 'minimalist_enzo') return true;
       if (cleanUserUsername && cleanTarget === cleanUserUsername) return true;
       if (cleanUserEmail && cleanTarget === cleanUserEmail) return true;
     }
@@ -576,7 +575,7 @@ export default function App() {
       ...uname,
       id: uname.id || uname.user_id || uname.poster_id || uname.creator_id,
       user_id: uname.id || uname.user_id || uname.poster_id || uname.creator_id,
-      username: uname.username || uname.handle || uname.name || uname.poster_username || 'Ris',
+      username: uname.username || uname.handle || uname.name || uname.poster_username || '',
       avatar_url: uname.avatar_url || uname.image_url || uname.avatar,
       city: uname.city || uname.location
     } : uname;

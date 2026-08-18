@@ -25,9 +25,16 @@ export default function FitDetailModal({ fit, onClose, onShopClick, onUserClick 
     if (e && e.stopPropagation) e.stopPropagation();
     if (onUserClick) {
       if (onClose) onClose();
+      const validPosterId = (fit.poster_id || fit.user_id || fit.creator_id) && 
+        (fit.poster_id || fit.user_id || fit.creator_id) !== fit.id && 
+        (fit.poster_id || fit.user_id || fit.creator_id) !== fit.outfit_id
+          ? (fit.poster_id || fit.user_id || fit.creator_id)
+          : null;
+
       const userObj = {
-        id: fit.poster_id || fit.user_id || fit.creator_id || fit.id,
-        user_id: fit.poster_id || fit.user_id || fit.creator_id || fit.id,
+        id: validPosterId,
+        user_id: validPosterId,
+        poster_id: validPosterId,
         username: username,
         avatar: avatarUrl,
         avatar_url: avatarUrl,

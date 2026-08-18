@@ -913,12 +913,21 @@ export async function fetchTrendingFits(limit = 50) {
 
     return {
       id: item.id,
+      outfit_id: item.id,
+      poster_id: item.poster_id,
+      user_id: item.poster_id,
+      creator_id: item.poster_id,
       title: item.caption || 'Outfit Check',
       username: usernameStr,
+      poster_username: rawUsername.replace(/^@/, ''),
+      avatar: profileObj?.avatar_url,
+      avatar_url: profileObj?.avatar_url,
+      user_avatar: profileObj?.avatar_url,
       score: numericScore > 0 ? numericScore.toFixed(1) : 'N/A',
       overall_score: numericScore,
       likes_count: likesCount,
       image: item.image_url,
+      image_url: item.image_url,
       outfit_ratings: ratingObj,
     };
   });
@@ -1285,30 +1294,29 @@ export async function fetchUserProfile(identifier) {
   if (!identifier) return null;
 
   try {
-    let query = supabase.from('profiles').select('*');
+    let id = typeof identifier === 'object' ? (identifier.poster_id || identifier.user_id || (identifier.id !== identifier.outfit_id ? identifier.id : null)) : null;
+    let username = typeof identifier === 'object' ? (identifier.username || identifier.name || identifier.poster_username) : (typeof identifier === 'string' ? identifier : null);
 
-    let id = typeof identifier === 'object' ? (identifier.poster_id || identifier.user_id || identifier.id) : null;
-    let username = typeof identifier === 'object' ? (identifier.username || identifier.name) : (typeof identifier === 'string' ? identifier : null);
+    if (id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', id).maybeSingle();
+      if (!error && data) return data;
+    }
 
-    if (id) {
-      query = query.eq('id', id);
-    } else if (username) {
+    if (username) {
       if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(username)) {
-        query = query.eq('id', username);
-      } else {
-        const clean = username.trim().replace(/^@/, '');
-        query = query.ilike('username', clean);
+        const { data } = await supabase.from('profiles').select('*').eq('id', username).maybeSingle();
+        if (data) return data;
       }
-    } else {
-      return null;
+      const clean = username.trim().replace(/^@/, '');
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .or(`username.ilike.${clean},username.ilike.@${clean}`)
+        .maybeSingle();
+      if (!error && data) return data;
     }
 
-    const { data, error } = await query.maybeSingle();
-    if (error) {
-      console.error('[outfitService] fetchUserProfile error:', error);
-      return null;
-    }
-    return data;
+    return null;
   } catch (err) {
     console.error('[outfitService] fetchUserProfile exception:', err);
     return null;

@@ -293,17 +293,21 @@ export default function UserProfile({
         (typeof viewedUser === 'object' && viewedUser !== null ? (viewedUser.username || viewedUser.handle || viewedUser.name || viewedUser.poster_username || viewedUser.user?.username) : '') ||
         targetUsername ||
         (urlUser && urlUser !== 'profile' && urlUser !== '' ? urlUser : '') ||
-        'Ris';
+        '';
 
       const cleanUsername = rawHandle.replace(/^@/, '').trim();
       const cleanHandle = cleanUsername;
 
       // Extract UUID from any possible property key
-      let resolvedUserId = targetUserId || 
-        (typeof viewedUser === 'object' && viewedUser !== null ? (viewedUser.id || viewedUser.user_id || viewedUser.poster_id || viewedUser.creator_id) : null) || 
+      let candidateId = targetUserId || 
+        (typeof viewedUser === 'object' && viewedUser !== null ? (viewedUser.poster_id || viewedUser.user_id || (viewedUser.id !== viewedUser.outfit_id ? viewedUser.id : null) || viewedUser.creator_id) : null) || 
         null;
 
-      // 2. If no direct UUID was passed in, query profiles table flex-matching both 'Ris' and '@Ris'
+      let resolvedUserId = (candidateId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(candidateId))
+        ? candidateId
+        : null;
+
+      // 2. If no direct UUID was passed in, query profiles table flex-matching both cleanUsername and @cleanUsername
       if (!resolvedUserId && cleanUsername) {
         try {
           const { data: profileMatch } = await supabase
@@ -343,14 +347,14 @@ export default function UserProfile({
       console.log('[UserProfile.loadData] Step 2 Resolved:', {
         targetUserId,
         targetUsername,
-        cleanUsername,
-        fallbackIdUsed: typeof viewedUser === 'object' && viewedUser !== null ? (!viewedUser.id && !viewedUser.user_id) : true
+        cleanUsername
       });
 
       let profileRow = null;
       if (targetUserId) {
         profileRow = await fetchUserProfile(targetUserId);
-      } else if (cleanUsername) {
+      }
+      if (!profileRow && cleanUsername) {
         profileRow = await fetchUserProfile(cleanUsername);
         if (profileRow?.id) {
           targetUserId = profileRow.id;
