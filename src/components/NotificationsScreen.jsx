@@ -163,25 +163,9 @@ export default function NotificationsScreen({
           borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
         }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <h2 className="stl-title" style={{ margin: 0, fontSize: '20px', fontWeight: '800' }}>
-                Notifications
-              </h2>
-              <span style={{
-                fontSize: '11px',
-                fontWeight: '700',
-                padding: '2px 8px',
-                borderRadius: '20px',
-                backgroundColor: 'rgba(166, 252, 41, 0.12)',
-                color: '#a6fc29',
-                border: '1px solid rgba(166, 252, 41, 0.3)'
-              }}>
-                24h
-              </span>
-            </div>
-            <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#71717a' }}>
-              Real-time activity from the last 24 hours
-            </p>
+            <h2 className="stl-title" style={{ margin: 0, fontSize: '20px', fontWeight: '800' }}>
+              Notifications
+            </h2>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -261,7 +245,7 @@ export default function NotificationsScreen({
                   All caught up!
                 </h4>
                 <p style={{ margin: 0, fontSize: '13px', color: '#71717a' }}>
-                  No new notifications in the last 24 hours.
+                  No new notifications.
                 </p>
               </div>
             </div>
