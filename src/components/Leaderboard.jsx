@@ -777,7 +777,7 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
 
           {/* Top 10 Section Grid (#4 to #10) */}
           {(() => {
-            const othersList = filteredCreators.filter(p => p !== topOne && p !== topTwo && p !== topThree);
+            const othersList = creators.filter(p => p !== topOne && p !== topTwo && p !== topThree);
             const topTenList = othersList.slice(0, 7);
             const remainingList = othersList.slice(7);
 
