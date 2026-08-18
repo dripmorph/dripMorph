@@ -14,13 +14,30 @@ export const useNotifications = () => {
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
-// Helper: Filter notifications to only those received in the last 24 hours
-const filterLast24Hours = (items) => {
+// Helper: Get active cutoff (considering 24 hours and user clear action)
+const getCutoffMs = (uid) => {
+  const oneDayAgo = Date.now() - ONE_DAY_MS;
+  try {
+    const clearedStr = localStorage.getItem(`dripmorph_notifications_cleared_${uid || 'guest'}`);
+    if (clearedStr) {
+      const clearedMs = new Date(clearedStr).getTime();
+      if (!isNaN(clearedMs)) {
+        return Math.max(oneDayAgo, clearedMs);
+      }
+    }
+  } catch (e) {
+    // Ignore storage read error
+  }
+  return oneDayAgo;
+};
+
+// Helper: Filter notifications to only valid ones (within 24 hours and after last clear)
+const filterValidNotifications = (items, uid) => {
   if (!Array.isArray(items)) return [];
-  const cutoff = Date.now() - ONE_DAY_MS;
+  const cutoff = getCutoffMs(uid);
   return items.filter((item) => {
     const ts = new Date(item.created_at || item.timestamp || Date.now()).getTime();
-    return !isNaN(ts) && ts >= cutoff;
+    return !isNaN(ts) && ts > cutoff;
   });
 };
 
@@ -33,6 +50,7 @@ export const formatRelativeTime = (isoString) => {
   if (diff < 24 * 60 * 60 * 1000) return `${Math.floor(diff / (60 * 60 * 1000))}h ago`;
   return '1d ago';
 };
+
 // Helper: Format message notification text cleanly (handles photos and text)
 const formatMessageNotificationText = (uname, content, type) => {
   if (type === 'image' || (typeof content === 'string' && (content.startsWith('data:image') || content.startsWith('http')))) {
@@ -51,12 +69,13 @@ export const NotificationProvider = ({ children }) => {
   const userId = user?.id;
 
   const storageKey = `dripmorph_notifications_${userId || 'guest'}`;
+  const clearedKey = `dripmorph_notifications_cleared_${userId || 'guest'}`;
 
   const [notifications, setNotifications] = useState(() => {
     try {
       const saved = localStorage.getItem(storageKey);
       if (saved) {
-        return filterLast24Hours(JSON.parse(saved));
+        return filterValidNotifications(JSON.parse(saved), userId);
       }
     } catch (e) {
       console.warn('[NotificationContext] Failed to load saved notifications:', e);
@@ -69,24 +88,24 @@ export const NotificationProvider = ({ children }) => {
   // Save to localStorage whenever notifications change
   useEffect(() => {
     try {
-      const filtered = filterLast24Hours(notifications);
+      const filtered = filterValidNotifications(notifications, userId);
       localStorage.setItem(storageKey, JSON.stringify(filtered));
     } catch (e) {
       console.warn('[NotificationContext] Failed to persist notifications:', e);
     }
-  }, [notifications, storageKey]);
+  }, [notifications, storageKey, userId]);
 
   // Periodic 24-hour cleanup (runs every 60 seconds)
   useEffect(() => {
     const interval = setInterval(() => {
       setNotifications((prev) => {
-        const fresh = filterLast24Hours(prev);
+        const fresh = filterValidNotifications(prev, userId);
         if (fresh.length !== prev.length) return fresh;
         return prev;
       });
     }, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [userId]);
 
   // Method to add or merge a real-time notification
   const addNotification = useCallback((newNotif) => {
@@ -108,54 +127,51 @@ export const NotificationProvider = ({ children }) => {
       if (existingIdx >= 0) {
         const updated = [...prev];
         updated[existingIdx] = { ...updated[existingIdx], ...item };
-        return filterLast24Hours(updated);
+        return filterValidNotifications(updated, userId);
       }
-      return [item, ...filterLast24Hours(prev)];
+      return [item, ...filterValidNotifications(prev, userId)];
     });
-  }, []);
+  }, [userId]);
 
   // Initial 24-hour query to fetch all recent database activity (messages, likes, follows)
   const fetch24hNotifications = useCallback(async (currentUid) => {
     if (!currentUid) return;
     try {
-      const cutoff = new Date(Date.now() - ONE_DAY_MS).toISOString();
+      const cutoffMs = getCutoffMs(currentUid);
+      const cutoff = new Date(cutoffMs).toISOString();
 
-      // 1. Fetch recent messages sent to current user in the last 24h
+      // 1. Fetch recent messages sent to current user after cutoff
       const { data: recentMsgs } = await supabase
         .from('messages')
-        .select('id, sender_id, content, created_at, read')
+        .select('id, sender_id, content, type, created_at, read')
         .eq('recipient_id', currentUid)
-        .gte('created_at', cutoff)
+        .gt('created_at', cutoff)
         .order('created_at', { ascending: false });
 
-      // 2. Fetch recent follows on current user in the last 24h
+      // 2. Fetch recent follows on current user after cutoff
       const { data: recentFollows } = await supabase
         .from('follows')
         .select('id, follower_id, created_at')
         .eq('following_id', currentUid)
-        .gte('created_at', cutoff)
+        .gt('created_at', cutoff)
         .order('created_at', { ascending: false });
 
-      // 3. Fetch user's outfits to find likes on them in the last 24h
+      // 3. Fetch user's outfits to find likes on them after cutoff
       const { data: myOutfits } = await supabase
         .from('outfits')
         .select('id, title')
         .eq('poster_id', currentUid);
 
       let recentLikes = [];
-      const outfitTitleMap = {};
       if (myOutfits && myOutfits.length > 0) {
-        const outfitIds = myOutfits.map((o) => {
-          outfitTitleMap[o.id] = o.title;
-          return o.id;
-        });
+        const outfitIds = myOutfits.map((o) => o.id);
 
         const { data: likesData } = await supabase
           .from('outfit_likes')
           .select('id, outfit_id, user_id, created_at')
           .in('outfit_id', outfitIds)
           .neq('user_id', currentUid)
-          .gte('created_at', cutoff)
+          .gt('created_at', cutoff)
           .order('created_at', { ascending: false });
 
         recentLikes = likesData || [];
@@ -247,7 +263,7 @@ export const NotificationProvider = ({ children }) => {
         });
         const combined = Array.from(map.values());
         combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        return filterLast24Hours(combined);
+        return filterValidNotifications(combined, currentUid);
       });
     } catch (err) {
       console.warn('[NotificationContext] fetch24hNotifications error:', err);
@@ -268,15 +284,17 @@ export const NotificationProvider = ({ children }) => {
     );
   }, []);
 
-  // Clear all notifications
+  // Clear all notifications completely and permanently
   const clearAll = useCallback(() => {
-    setNotifications([]);
+    const nowIso = new Date().toISOString();
     try {
-      localStorage.removeItem(storageKey);
+      localStorage.setItem(clearedKey, nowIso);
+      localStorage.setItem(storageKey, JSON.stringify([]));
     } catch (e) {
       console.warn('[NotificationContext] Failed to clear notifications:', e);
     }
-  }, [storageKey]);
+    setNotifications([]);
+  }, [clearedKey, storageKey]);
 
   // Real-time Supabase Subscriptions for Follows, Messages, and Likes
   useEffect(() => {
@@ -431,7 +449,7 @@ export const NotificationProvider = ({ children }) => {
     };
   }, [userId, addNotification, fetch24hNotifications]);
 
-  const active24hNotifications = filterLast24Hours(notifications);
+  const active24hNotifications = filterValidNotifications(notifications, userId);
   const unreadCount = active24hNotifications.filter((n) => n.unread).length;
   const hasNotifications = unreadCount > 0;
 
