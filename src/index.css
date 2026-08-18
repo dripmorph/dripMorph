@@ -1790,7 +1790,7 @@ body {
 /* ================= Post/Upload Screen ================= */
 .post-screen-scroll-container {
   width: 100%;
-  height: calc(100dvh - 65px); /* Offset for bottom navbar height */
+  height: 100%;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding: 16px;
@@ -1798,6 +1798,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  box-sizing: border-box;
 }
 
 .upload-screen {
@@ -1808,21 +1809,24 @@ body {
 
 .media-viewport {
   width: 100%;
-  min-height: 320px;
+  height: 40vh;
+  min-height: 280px;
+  max-height: 420px;
   flex: 0 0 auto;
   padding: 0;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: stretch;
   position: relative;
   overflow: hidden;
+  border-radius: 20px;
 }
 
 .preview-container {
   position: relative;
   width: 100%;
   height: 100%;
-  border-radius: 16px;
+  border-radius: 20px;
   overflow: hidden;
   border: 1px solid var(--border-color);
   box-shadow: 0 10px 25px var(--shadow-color);
@@ -1948,16 +1952,19 @@ body {
 .upload-placeholder {
   width: 100%;
   height: 100%;
-  border: 2px dashed rgba(255, 255, 255, 0.15);
-  border-radius: 16px;
+  min-height: 100%;
+  border: 2px dashed rgba(255, 255, 255, 0.18);
+  border-radius: 20px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
+  padding: 32px 20px;
   background: rgba(255, 255, 255, 0.02);
   cursor: pointer;
   transition: all 0.2s ease;
+  box-sizing: border-box;
 }
 
 .upload-placeholder:hover,
@@ -1967,26 +1974,36 @@ body {
 }
 
 .placeholder-icon-wrapper {
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-secondary);
+  color: var(--accent-solid);
+  transition: transform 0.2s ease;
+}
+
+.upload-placeholder:hover .placeholder-icon-wrapper {
+  transform: scale(1.08);
+  border-color: var(--accent-solid);
 }
 
 .placeholder-title {
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--text-primary);
+  text-align: center;
+  max-width: 290px;
+  line-height: 1.45;
 }
 
 .placeholder-subtitle {
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   color: var(--text-secondary);
+  text-align: center;
 }
 
 .change-img-floating-btn {
