@@ -33,6 +33,18 @@ export const formatRelativeTime = (isoString) => {
   if (diff < 24 * 60 * 60 * 1000) return `${Math.floor(diff / (60 * 60 * 1000))}h ago`;
   return '1d ago';
 };
+// Helper: Format message notification text cleanly (handles photos and text)
+const formatMessageNotificationText = (uname, content, type) => {
+  if (type === 'image' || (typeof content === 'string' && (content.startsWith('data:image') || content.startsWith('http')))) {
+    return `${uname} sent you a photo.`;
+  }
+  if (!content || !content.trim()) {
+    return `${uname} sent you a message.`;
+  }
+  const trimmed = content.trim();
+  const snippet = trimmed.length > 40 ? `${trimmed.slice(0, 40)}...` : trimmed;
+  return `${uname}: "${snippet}"`;
+};
 
 export const NotificationProvider = ({ children }) => {
   const { user } = useAuth();
@@ -174,14 +186,14 @@ export const NotificationProvider = ({ children }) => {
         const actor = actorMap[m.sender_id];
         const rawName = actor?.username || 'user';
         const uname = rawName.startsWith('@') ? rawName : `@${rawName}`;
-        const snippet = m.content && m.content.length > 50 ? `${m.content.slice(0, 50)}...` : m.content;
+        const notifText = formatMessageNotificationText(uname, m.content, m.type);
         fetchedList.push({
           id: `msg-${m.id}`,
           type: 'message',
           actorUsername: uname,
           actorAvatar: actor?.avatar_url || null,
           title: uname,
-          text: snippet ? `${uname}: "${snippet}"` : `${uname} sent you a message.`,
+          text: notifText,
           created_at: m.created_at,
           unread: !m.read,
           data: { senderId: m.sender_id, username: uname, content: m.content }
@@ -206,19 +218,18 @@ export const NotificationProvider = ({ children }) => {
         });
       });
 
-      // Format likes
+      // Format likes (strictly "@user liked your post.")
       recentLikes.forEach((l) => {
         const actor = actorMap[l.user_id];
         const rawName = actor?.username || 'user';
         const uname = rawName.startsWith('@') ? rawName : `@${rawName}`;
-        const outfitTitle = outfitTitleMap[l.outfit_id] ? `"${outfitTitleMap[l.outfit_id]}"` : 'your fit check';
         fetchedList.push({
           id: `like-${l.id}`,
           type: 'like',
           actorUsername: uname,
           actorAvatar: actor?.avatar_url || null,
           title: uname,
-          text: `${uname} liked ${outfitTitle}.`,
+          text: `${uname} liked your post.`,
           created_at: l.created_at,
           unread: true,
           data: { likerId: l.user_id, outfitId: l.outfit_id, username: uname }
@@ -349,7 +360,8 @@ export const NotificationProvider = ({ children }) => {
           const rawName = profile?.username || 'user';
           const username = rawName.startsWith('@') ? rawName : `@${rawName}`;
           const content = payload.new?.content || '';
-          const snippet = content.length > 50 ? `${content.slice(0, 50)}...` : content;
+          const msgType = payload.new?.type || 'text';
+          const notifText = formatMessageNotificationText(username, content, msgType);
 
           addNotification({
             id: `msg-${payload.new.id || Date.now()}`,
@@ -357,7 +369,7 @@ export const NotificationProvider = ({ children }) => {
             actorUsername: username,
             actorAvatar: profile?.avatar_url,
             title: username,
-            text: snippet ? `${username}: "${snippet}"` : `${username} sent you a message.`,
+            text: notifText,
             created_at: payload.new.created_at || new Date().toISOString(),
             data: { senderId, username, content }
           });
@@ -365,7 +377,7 @@ export const NotificationProvider = ({ children }) => {
       )
       .subscribe();
 
-    // 3. Outfit Likes Channel
+    // 3. Outfit Likes Channel (strictly "@user liked your post.")
     const likeChannel = supabase
       .channel(`notifs-likes:${userId}`)
       .on(
@@ -384,7 +396,7 @@ export const NotificationProvider = ({ children }) => {
             // Verify if this outfit belongs to the current user (using poster_id!)
             const { data: outfitData } = await supabase
               .from('outfits')
-              .select('id, poster_id, title')
+              .select('id, poster_id')
               .eq('id', outfitId)
               .single();
 
@@ -392,7 +404,6 @@ export const NotificationProvider = ({ children }) => {
               const profile = await fetchUserProfile(likerId);
               const rawName = profile?.username || 'user';
               const username = rawName.startsWith('@') ? rawName : `@${rawName}`;
-              const outfitTitle = outfitData.title ? `"${outfitData.title}"` : 'your fit check';
 
               addNotification({
                 id: `like-${payload.new.id || Date.now()}`,
@@ -400,7 +411,7 @@ export const NotificationProvider = ({ children }) => {
                 actorUsername: username,
                 actorAvatar: profile?.avatar_url,
                 title: username,
-                text: `${username} liked ${outfitTitle}.`,
+                text: `${username} liked your post.`,
                 created_at: payload.new.created_at || new Date().toISOString(),
                 data: { likerId, outfitId, username }
               });
