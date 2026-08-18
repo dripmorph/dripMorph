@@ -1,8 +1,11 @@
 import React from 'react';
 import { Menu, Bell, MessageSquare } from 'lucide-react';
 import DripMorphLogo from './DripMorphLogo';
+import { useChat } from '../context/ChatContext';
 
 export default function Header({ onMenuClick, onBellClick, hasNotifications, onTabChange }) {
+  const { hasUnreadMessages } = useChat();
+
   return (
     <header className="app-header">
       <button className="header-btn" onClick={onMenuClick} aria-label="Menu">
@@ -37,7 +40,21 @@ export default function Header({ onMenuClick, onBellClick, hasNotifications, onT
         </div>
       </button>
       <button className="header-btn" onClick={() => onTabChange('chat')} aria-label="Messages">
-        <MessageSquare size={22} strokeWidth={2} />
+        <div style={{ position: 'relative' }}>
+          <MessageSquare size={22} strokeWidth={2} />
+          {hasUnreadMessages && (
+            <span style={{
+              position: 'absolute',
+              top: '1px',
+              right: '1px',
+              width: '8px',
+              height: '8px',
+              backgroundColor: 'var(--accent-solid)',
+              borderRadius: '50%',
+              border: '1.5px solid var(--bg-color)'
+            }} />
+          )}
+        </div>
       </button>
     </header>
   );

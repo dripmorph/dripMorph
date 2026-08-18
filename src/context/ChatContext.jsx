@@ -79,7 +79,15 @@ export const ChatProvider = ({ children }) => {
     }
     loadConversations(currentUserId);
     setupRealtimeSubscription(currentUserId);
-    return cleanupChannel;
+
+    const pollInterval = setInterval(() => {
+      loadConversations(currentUserId);
+    }, 10000);
+
+    return () => {
+      clearInterval(pollInterval);
+      cleanupChannel();
+    };
   }, [currentUserId]);
 
   const cleanupChannel = () => {
@@ -378,12 +386,18 @@ export const ChatProvider = ({ children }) => {
 
   const closeChat = () => setActiveChatId(null);
 
+  const totalUnreadMessages = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+  const hasUnreadMessages = totalUnreadMessages > 0;
+
   return (
     <ChatContext.Provider
       value={{
         conversations,
         activeChatId,
         loadingMessages,
+        unreadCount: totalUnreadMessages,
+        unreadMessagesCount: totalUnreadMessages,
+        hasUnreadMessages,
         openChat,
         sendMessage,
         deleteChatMessages,

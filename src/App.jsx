@@ -948,6 +948,7 @@ export default function App() {
               setIsMenuOpen(false);
               setShowNotifications(true);
             }}
+            hasNotifications={hasNotifications}
             showToast={showToast}
             theme={theme}
             onToggleTheme={toggleTheme}
@@ -1222,7 +1223,7 @@ function DeleteConfirmDialog({ onClose, onConfirm }) {
   );
 }
 
-function MenuDrawer({ isOpen, onClose, onNavigateToNotifications, showToast, theme, onToggleTheme, onChangeCity, onOpenSettings }) {
+function MenuDrawer({ isOpen, onClose, onNavigateToNotifications, showToast, theme, onToggleTheme, onChangeCity, onOpenSettings, hasNotifications }) {
   const { user, logout } = useAuth();
   if (!isOpen) return null;
   return (
@@ -1257,8 +1258,17 @@ function MenuDrawer({ isOpen, onClose, onNavigateToNotifications, showToast, the
           <button className="menu-drawer-item" onClick={() => { onClose(); if (onOpenSettings) onOpenSettings(); }}>
             Settings
           </button>
-          <button className="menu-drawer-item" onClick={() => { onClose(); onNavigateToNotifications(); }}>
-            Notifications
+          <button className="menu-drawer-item" onClick={() => { onClose(); onNavigateToNotifications(); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+            <span>Notifications</span>
+            {hasNotifications && (
+              <span style={{
+                width: '8px',
+                height: '8px',
+                backgroundColor: 'var(--accent-solid)',
+                borderRadius: '50%',
+                display: 'inline-block'
+              }} />
+            )}
           </button>
           <button className="menu-drawer-item" onClick={() => { onClose(); showToast("Report submitted successfully."); }}>
             Report a Problem

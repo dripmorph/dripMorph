@@ -2,6 +2,7 @@ import React from 'react';
 import { Layers, Trophy, PlusSquare, MessageSquare, User, Sun, Moon, MapPin, Bell, LogOut, Settings } from 'lucide-react';
 import DripMorphLogo from './DripMorphLogo';
 import { useAuth } from '../context/AuthContext';
+import { useChat } from '../context/ChatContext';
 
 {/* Robust Avatar Component with Initial Fallback */}
 const renderAvatar = (avatarUrl, username) => {
@@ -56,6 +57,7 @@ const renderAvatar = (avatarUrl, username) => {
 
 export default function Sidebar({ activeTab, onTabChange, theme, onToggleTheme, onBellClick, hasNotifications, onChangeCity, showToast, onOpenSettings }) {
   const { user, logout } = useAuth();
+  const { hasUnreadMessages } = useChat();
 
   const navItems = [
     { id: 'feed', name: 'Feed', icon: Layers },
@@ -87,13 +89,17 @@ export default function Sidebar({ activeTab, onTabChange, theme, onToggleTheme, 
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
+          const showDot = item.id === 'chat' && hasUnreadMessages;
           return (
             <button
               key={item.id}
               className={`desktop-nav-item ${isActive ? 'active' : ''}`}
               onClick={() => onTabChange(item.id)}
             >
-              <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+                {showDot && <span className="desktop-notif-dot" />}
+              </div>
               <span>{item.name}</span>
             </button>
           );
