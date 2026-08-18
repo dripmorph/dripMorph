@@ -61,6 +61,7 @@ export default function ChatView({ onBack, onUserClick }) {
   const messagesEndRef = useRef(null);
   const textInputRef = useRef(null);
   const emojiPickerRef = useRef(null);
+  const optionsMenuRef = useRef(null);
   const prevMsgCountRef = useRef(0);
   const prevChatIdRef = useRef(null);
 
