@@ -88,7 +88,24 @@ export default function ShopTheLookDrawer({ post, onClose, showToast }) {
   };
 
   const modalContent = (
-    <div className="stl-overlay shop-modal-backdrop" onClick={onClose} style={{ zIndex: 9999 }}>
+    <div 
+      className="stl-overlay shop-modal-backdrop" 
+      onClick={onClose} 
+      style={{ 
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 9999,
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.75)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)'
+      }}
+    >
       <div className="stl-drawer shop-modal-content" onClick={(e) => e.stopPropagation()}>
         {/* Drag handle decoration */}
         <div className="stl-drag-handle" />

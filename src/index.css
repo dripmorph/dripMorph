@@ -1479,33 +1479,35 @@ body {
 
 /* ================= Shop the Look Product Tagging Drawer ================= */
 .stl-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  z-index: 30;
+  z-index: 9999 !important;
   display: flex;
   align-items: flex-end;
+  justify-content: center;
   animation: fadeIn 0.25s ease-out;
 }
 
 .stl-drawer {
-  background: var(--card-bg-elevated);
-  border-top: 1px solid var(--border-color);
-  border-top-left-radius: 20px;
-  border-top-right-radius: 20px;
+  background: var(--card-bg-elevated, #16161a);
+  border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
   width: 100%;
-  padding: 16px 20px 24px 20px;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 16px 20px max(24px, env(safe-area-inset-bottom)) 20px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-height: 85%;
+  max-height: 85dvh;
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
+  z-index: 10000 !important;
+  overflow-y: auto;
 }
 
 .stl-drag-handle {
