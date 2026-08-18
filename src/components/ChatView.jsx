@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useChat } from '../context/ChatContext';
 import { useAuth } from '../context/AuthContext';
-import { ArrowLeft, Send, Smile, MessageSquare, Loader } from 'lucide-react';
+import { ArrowLeft, Send, Smile, MessageSquare, Loader, MoreVertical, Trash2, Settings } from 'lucide-react';
 
 // Common emojis for the picker
 const EMOJI_LIST = [
@@ -41,11 +41,12 @@ function getDateKey(dateString) {
   return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 }
 
-export default function ChatView({ onBack }) {
+export default function ChatView({ onBack, onUserClick }) {
   const {
     conversations = [],
     activeChatId,
     sendMessage,
+    deleteChatMessages,
     loadingMessages,
     acceptConversation,
     declineConversation,
@@ -56,9 +57,11 @@ export default function ChatView({ onBack }) {
   const conv = convList.find(c => c?.id === activeChatId);
   const [input, setInput] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const messagesEndRef = useRef(null);
   const textInputRef = useRef(null);
   const emojiPickerRef = useRef(null);
+  const optionsMenuRef = useRef(null);
 
   // Scroll to bottom whenever messages change
   useEffect(() => {
@@ -67,18 +70,19 @@ export default function ChatView({ onBack }) {
     }
   }, [conv?.messages]);
 
-  // Close emoji picker when clicking outside
+  // Close emoji picker and options dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target)) {
         setShowEmojiPicker(false);
       }
+      if (optionsMenuRef.current && !optionsMenuRef.current.contains(e.target)) {
+        setShowOptionsMenu(false);
+      }
     };
-    if (showEmojiPicker) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
+    document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showEmojiPicker]);
+  }, []);
 
   // When keyboard opens on mobile, scroll input into view
   const handleInputFocus = () => {
@@ -99,6 +103,13 @@ export default function ChatView({ onBack }) {
   const handleEmojiClick = (emoji) => {
     setInput(prev => prev + emoji);
     textInputRef.current?.focus();
+  };
+
+  const handleDeleteChat = () => {
+    if (deleteChatMessages && activeChatId) {
+      deleteChatMessages(activeChatId);
+    }
+    setShowOptionsMenu(false);
   };
 
   // ── Empty state when no conversation is selected ───────────────────────────
@@ -133,7 +144,12 @@ export default function ChatView({ onBack }) {
         <button className="chat-back-btn" onClick={onBack} aria-label="Back">
           <ArrowLeft size={20} />
         </button>
-        <div className="chat-header-user-info">
+        <div 
+          className="chat-header-user-info"
+          onClick={() => onUserClick && onUserClick(convUsername)}
+          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}
+          title={`View ${convUsername}'s profile`}
+        >
           <div className="chat-header-avatar-wrapper">
             <img
               src={convAvatar}
@@ -151,6 +167,76 @@ export default function ChatView({ onBack }) {
               <span className="status-dot">●</span> Active now
             </span>
           </div>
+        </div>
+
+        {/* Right side Settings / Options Menu */}
+        <div className="chat-header-actions" ref={optionsMenuRef} style={{ marginLeft: 'auto', position: 'relative' }}>
+          <button
+            type="button"
+            className="chat-options-btn"
+            onClick={() => setShowOptionsMenu(prev => !prev)}
+            aria-label="Chat options"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: showOptionsMenu ? '#a6fc29' : '#9ca3af',
+              cursor: 'pointer',
+              padding: '8px',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.15s ease'
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.06)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = showOptionsMenu ? '#a6fc29' : '#9ca3af'; e.currentTarget.style.backgroundColor = 'transparent'; }}
+          >
+            <MoreVertical size={20} />
+          </button>
+
+          {showOptionsMenu && (
+            <div
+              className="chat-options-dropdown"
+              style={{
+                position: 'absolute',
+                right: 0,
+                top: 'calc(100% + 6px)',
+                backgroundColor: '#1c1c1e',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: '12px',
+                padding: '4px',
+                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5)',
+                zIndex: 100,
+                minWidth: '150px'
+              }}
+            >
+              <button
+                type="button"
+                onClick={handleDeleteChat}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '10px 12px',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  borderRadius: '8px',
+                  color: '#ef4444',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'background-color 0.15s ease'
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+              >
+                <Trash2 size={16} />
+                <span>Delete Chat</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

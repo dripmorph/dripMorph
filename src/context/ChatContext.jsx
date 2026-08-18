@@ -283,6 +283,27 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
+  // ── Delete all messages in a chat (chat conversation remains) ───────────────
+  const deleteChatMessages = async (partnerId) => {
+    const userId = currentUserIdRef.current;
+    if (!userId || !partnerId) return;
+
+    // Optimistically clear messages locally
+    setConversations(prev =>
+      prev.map(c =>
+        c.id === partnerId
+          ? { ...c, messages: [], lastMessage: null, unreadCount: 0 }
+          : c
+      )
+    );
+
+    try {
+      await messageService.clearChatMessages(userId, partnerId);
+    } catch (err) {
+      console.error('[Chat] deleteChatMessages error:', err);
+    }
+  };
+
   const closeChat = () => setActiveChatId(null);
 
   return (
@@ -293,6 +314,8 @@ export const ChatProvider = ({ children }) => {
         loadingMessages,
         openChat,
         sendMessage,
+        deleteChatMessages,
+        clearChatMessages: deleteChatMessages,
         closeChat,
         // Legacy compatibility for any existing call sites
         addConversation: (user) => openChat(user),

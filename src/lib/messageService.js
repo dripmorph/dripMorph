@@ -135,4 +135,23 @@ export function subscribeToIncomingMessages(userId, onMessage) {
   return () => supabase.removeChannel(channel);
 }
 
+/**
+ * Delete all messages between two users (clears chat history while keeping the contact).
+ */
+export async function clearChatMessages(userId, partnerId) {
+  const { error } = await supabase
+    .from('messages')
+    .delete()
+    .or(
+      `and(sender_id.eq.${userId},recipient_id.eq.${partnerId}),` +
+      `and(sender_id.eq.${partnerId},recipient_id.eq.${userId})`
+    );
+
+  if (error) {
+    console.error('[messageService] clearChatMessages error:', error);
+    throw error;
+  }
+  return true;
+}
+
 export { DEFAULT_AVATAR };

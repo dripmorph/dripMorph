@@ -841,7 +841,7 @@ export default function App() {
             <div style={{ display: activeTab === 'chat' ? 'flex' : 'none', flex: 1, flexDirection: 'column', overflow: 'hidden', height: '100%' }}>
               <div className={`messages-container ${activeChatId ? 'has-active-chat' : ''}`}>
                 <ChatList />
-                <ChatView onBack={closeChat} />
+                <ChatView onBack={closeChat} onUserClick={handleNavigateToProfile} />
               </div>
             </div>
           </Suspense>
