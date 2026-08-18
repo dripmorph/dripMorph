@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { useAuth } from './AuthContext';
 import * as messageService from '../lib/messageService';
 
 const ChatContext = createContext();
@@ -8,23 +9,37 @@ export const useChat = () => useContext(ChatContext);
 const DEFAULT_AVATAR =
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=240&h=240&fit=crop';
 
-// Helper: Get timestamp when this user cleared the chat with a specific partner
-const getChatClearedCutoff = (userId, partnerId) => {
+// Helper: Get timestamp when this user cleared the chat with a specific partner (checks cloud user_metadata + localStorage)
+const getChatClearedCutoff = (userId, partnerId, userMetadata) => {
   if (!userId || !partnerId) return 0;
+  let cloudMs = 0;
+  let localMs = 0;
+
+  // 1. Check cloud user metadata synced via Supabase Auth
+  if (userMetadata?.chat_cleared && userMetadata.chat_cleared[partnerId]) {
+    const ms = new Date(userMetadata.chat_cleared[partnerId]).getTime();
+    if (!isNaN(ms)) cloudMs = ms;
+  }
+
+  // 2. Check localStorage on current device
   try {
     const str = localStorage.getItem(`dripmorph_chat_cleared_${userId}_${partnerId}`);
     if (str) {
       const ms = new Date(str).getTime();
-      if (!isNaN(ms)) return ms;
+      if (!isNaN(ms)) localMs = ms;
     }
   } catch (e) {
     // Ignore storage read error
   }
-  return 0;
+
+  return Math.max(cloudMs, localMs);
 };
 
 export const ChatProvider = ({ children }) => {
-  const [currentUserId, setCurrentUserId] = useState(null);
+  const { user } = useAuth();
+  const currentUserId = user?.id || null;
+  const userMetadata = user?.userMetadata || {};
+
   const [conversations, setConversations] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null); // partner's UUID
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -32,21 +47,27 @@ export const ChatProvider = ({ children }) => {
   // Refs to access latest values inside async callbacks without stale closures
   const activeChatIdRef = useRef(null);
   const currentUserIdRef = useRef(null);
+  const userMetadataRef = useRef(userMetadata);
   const channelRef = useRef(null);
 
   useEffect(() => { activeChatIdRef.current = activeChatId; }, [activeChatId]);
   useEffect(() => { currentUserIdRef.current = currentUserId; }, [currentUserId]);
+  useEffect(() => { userMetadataRef.current = userMetadata; }, [userMetadata]);
 
-  // ── Track auth state ────────────────────────────────────────────────────────
+  // Sync cloud chat_cleared metadata to localStorage on mount / user change
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setCurrentUserId(session?.user?.id ?? null);
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      setCurrentUserId(session?.user?.id ?? null);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
+    if (currentUserId && userMetadata?.chat_cleared) {
+      try {
+        Object.entries(userMetadata.chat_cleared).forEach(([partnerId, isoDate]) => {
+          if (partnerId && isoDate) {
+            localStorage.setItem(`dripmorph_chat_cleared_${currentUserId}_${partnerId}`, isoDate);
+          }
+        });
+      } catch (e) {
+        console.warn('[Chat] Failed to sync cloud cleared map to localStorage:', e);
+      }
+    }
+  }, [currentUserId, userMetadata]);
 
   // ── Load conversations + subscribe to realtime when user logs in ────────────
   useEffect(() => {
@@ -86,7 +107,7 @@ export const ChatProvider = ({ children }) => {
       setConversations(
         convData.map(c => {
           const profile = profileMap[c.partnerId];
-          const clearedCutoff = getChatClearedCutoff(userId, c.partnerId);
+          const clearedCutoff = getChatClearedCutoff(userId, c.partnerId, userMetadataRef.current);
           let lastMsg = c.lastMessage;
           if (lastMsg && clearedCutoff > 0) {
             const ts = new Date(lastMsg.created_at || lastMsg.timestamp || Date.now()).getTime();
@@ -244,7 +265,7 @@ export const ChatProvider = ({ children }) => {
     setLoadingMessages(true);
     try {
       const msgs = await messageService.fetchMessages(userId, partnerId);
-      const clearedCutoff = getChatClearedCutoff(userId, partnerId);
+      const clearedCutoff = getChatClearedCutoff(userId, partnerId, userMetadataRef.current);
       const visibleMsgs = clearedCutoff > 0
         ? (msgs || []).filter(m => {
             const ts = new Date(m.created_at || m.timestamp || Date.now()).getTime();
@@ -315,19 +336,37 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
-  // ── Delete all messages in a chat (for current user permanently) ────────────
+  // ── Delete all messages in a chat (synced across Web & Mobile) ─────────────
   const deleteChatMessages = async (partnerId) => {
     const userId = currentUserIdRef.current;
     if (!userId || !partnerId) return;
 
     const nowIso = new Date().toISOString();
+
+    // 1. Save locally for instantaneous response
     try {
       localStorage.setItem(`dripmorph_chat_cleared_${userId}_${partnerId}`, nowIso);
     } catch (e) {
-      console.warn('[Chat] Failed to set cleared timestamp:', e);
+      console.warn('[Chat] Failed to set cleared timestamp locally:', e);
     }
 
-    // Optimistically clear messages locally for current user
+    // 2. Sync to Supabase cloud user_metadata so Mobile & Web stay 100% in sync
+    try {
+      const existingMeta = userMetadataRef.current || {};
+      const existingCleared = existingMeta.chat_cleared || {};
+      const updatedCleared = { ...existingCleared, [partnerId]: nowIso };
+      userMetadataRef.current = { ...existingMeta, chat_cleared: updatedCleared };
+
+      await supabase.auth.updateUser({
+        data: {
+          chat_cleared: updatedCleared,
+        }
+      });
+    } catch (cloudErr) {
+      console.warn('[Chat] Failed to sync cleared timestamp to Supabase:', cloudErr);
+    }
+
+    // 3. Clear messages in active local state
     setConversations(prev =>
       prev.map(c =>
         c.id === partnerId

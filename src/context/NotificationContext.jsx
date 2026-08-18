@@ -14,27 +14,33 @@ export const useNotifications = () => {
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
-// Helper: Get active cutoff (considering 24 hours and user clear action)
-const getCutoffMs = (uid) => {
+// Helper: Get active cutoff (considering 24 hours, cloud user_metadata, and user clear action)
+const getCutoffMs = (uid, userMetadata) => {
   const oneDayAgo = Date.now() - ONE_DAY_MS;
+  let cloudMs = 0;
+  let localMs = 0;
+
+  if (userMetadata?.notifications_cleared_at) {
+    const ms = new Date(userMetadata.notifications_cleared_at).getTime();
+    if (!isNaN(ms)) cloudMs = ms;
+  }
+
   try {
     const clearedStr = localStorage.getItem(`dripmorph_notifications_cleared_${uid || 'guest'}`);
     if (clearedStr) {
-      const clearedMs = new Date(clearedStr).getTime();
-      if (!isNaN(clearedMs)) {
-        return Math.max(oneDayAgo, clearedMs);
-      }
+      const ms = new Date(clearedStr).getTime();
+      if (!isNaN(ms)) localMs = ms;
     }
   } catch (e) {
     // Ignore storage read error
   }
-  return oneDayAgo;
+  return Math.max(oneDayAgo, cloudMs, localMs);
 };
 
 // Helper: Filter notifications to only valid ones (within 24 hours and after last clear)
-const filterValidNotifications = (items, uid) => {
+const filterValidNotifications = (items, uid, userMetadata) => {
   if (!Array.isArray(items)) return [];
-  const cutoff = getCutoffMs(uid);
+  const cutoff = getCutoffMs(uid, userMetadata);
   return items.filter((item) => {
     const ts = new Date(item.created_at || item.timestamp || Date.now()).getTime();
     return !isNaN(ts) && ts > cutoff;
@@ -67,6 +73,7 @@ const formatMessageNotificationText = (uname, content, type) => {
 export const NotificationProvider = ({ children }) => {
   const { user } = useAuth();
   const userId = user?.id;
+  const userMetadata = user?.userMetadata || {};
 
   const storageKey = `dripmorph_notifications_${userId || 'guest'}`;
   const clearedKey = `dripmorph_notifications_cleared_${userId || 'guest'}`;
@@ -75,7 +82,7 @@ export const NotificationProvider = ({ children }) => {
     try {
       const saved = localStorage.getItem(storageKey);
       if (saved) {
-        return filterValidNotifications(JSON.parse(saved), userId);
+        return filterValidNotifications(JSON.parse(saved), userId, userMetadata);
       }
     } catch (e) {
       console.warn('[NotificationContext] Failed to load saved notifications:', e);
@@ -88,24 +95,24 @@ export const NotificationProvider = ({ children }) => {
   // Save to localStorage whenever notifications change
   useEffect(() => {
     try {
-      const filtered = filterValidNotifications(notifications, userId);
+      const filtered = filterValidNotifications(notifications, userId, userMetadata);
       localStorage.setItem(storageKey, JSON.stringify(filtered));
     } catch (e) {
       console.warn('[NotificationContext] Failed to persist notifications:', e);
     }
-  }, [notifications, storageKey, userId]);
+  }, [notifications, storageKey, userId, userMetadata]);
 
   // Periodic 24-hour cleanup (runs every 60 seconds)
   useEffect(() => {
     const interval = setInterval(() => {
       setNotifications((prev) => {
-        const fresh = filterValidNotifications(prev, userId);
+        const fresh = filterValidNotifications(prev, userId, userMetadata);
         if (fresh.length !== prev.length) return fresh;
         return prev;
       });
     }, 60000);
     return () => clearInterval(interval);
-  }, [userId]);
+  }, [userId, userMetadata]);
 
   // Method to add or merge a real-time notification
   const addNotification = useCallback((newNotif) => {
@@ -127,11 +134,11 @@ export const NotificationProvider = ({ children }) => {
       if (existingIdx >= 0) {
         const updated = [...prev];
         updated[existingIdx] = { ...updated[existingIdx], ...item };
-        return filterValidNotifications(updated, userId);
+        return filterValidNotifications(updated, userId, userMetadata);
       }
-      return [item, ...filterValidNotifications(prev, userId)];
+      return [item, ...filterValidNotifications(prev, userId, userMetadata)];
     });
-  }, [userId]);
+  }, [userId, userMetadata]);
 
   // Initial 24-hour query to fetch all recent database activity (messages, likes, follows)
   const fetch24hNotifications = useCallback(async (currentUid) => {
@@ -284,15 +291,26 @@ export const NotificationProvider = ({ children }) => {
     );
   }, []);
 
-  // Clear all notifications completely and permanently
-  const clearAll = useCallback(() => {
+  // Clear all notifications completely and permanently (synced across Web & Mobile)
+  const clearAll = useCallback(async () => {
     const nowIso = new Date().toISOString();
     try {
       localStorage.setItem(clearedKey, nowIso);
       localStorage.setItem(storageKey, JSON.stringify([]));
     } catch (e) {
-      console.warn('[NotificationContext] Failed to clear notifications:', e);
+      console.warn('[NotificationContext] Failed to clear notifications locally:', e);
     }
+
+    try {
+      await supabase.auth.updateUser({
+        data: {
+          notifications_cleared_at: nowIso,
+        }
+      });
+    } catch (cloudErr) {
+      console.warn('[NotificationContext] Failed to sync clear to Supabase:', cloudErr);
+    }
+
     setNotifications([]);
   }, [clearedKey, storageKey]);
 
@@ -455,7 +473,7 @@ export const NotificationProvider = ({ children }) => {
     };
   }, [userId, addNotification, fetch24hNotifications]);
 
-  const active24hNotifications = filterValidNotifications(notifications, userId);
+  const active24hNotifications = filterValidNotifications(notifications, userId, userMetadata);
   const unreadCount = active24hNotifications.filter((n) => n.unread).length;
   const hasNotifications = unreadCount > 0;
 

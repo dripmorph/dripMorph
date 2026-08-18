@@ -44,6 +44,7 @@ function buildAppUser(authUser, profile) {
     gender: profile?.gender ?? null,
     instagramLink: profile?.instagram_link ?? null,
     ageVerified: profile?.age_verified ?? false,
+    userMetadata: authUser?.user_metadata || {},
   };
   return {
     ...userObj,
