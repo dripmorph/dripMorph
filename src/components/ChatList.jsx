@@ -100,7 +100,6 @@ export default function ChatList({ onSelectChat }) {
                     e.currentTarget.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=240&h=240&fit=crop';
                   }}
                 />
-                <span className="online-indicator-dot" />
               </div>
               <div className="chat-info">
                 <div className="chat-item-top-row">

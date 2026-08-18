@@ -159,13 +159,9 @@ export default function ChatView({ onBack, onUserClick }) {
                 e.currentTarget.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=240&h=240&fit=crop';
               }}
             />
-            <span className="online-indicator-dot" />
           </div>
           <div className="chat-header-meta">
             <span className="chat-header-username">{convUsername}</span>
-            <span className="chat-header-status">
-              <span className="status-dot">●</span> Active now
-            </span>
           </div>
         </div>
 
