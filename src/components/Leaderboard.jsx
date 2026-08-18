@@ -275,14 +275,16 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
           <Loader2 size={28} className="animate-spin text-lime-400" />
           <span className="text-sm font-semibold">Fetching live leaderboard...</span>
         </div>
-      ) : creators.length === 0 ? (
+      ) : filteredCreators.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 px-6 text-center border border-dashed border-zinc-800 bg-zinc-900/30 rounded-2xl my-6 gap-3">
           <Trophy size={42} className="text-lime-400 opacity-80" />
           <h3 className="text-white text-lg font-bold">No creators ranked yet</h3>
           <p className="text-zinc-400 text-xs max-w-xs leading-relaxed">
-            {scope === 'local'
-              ? `No ranked creators in ${selectedCity} yet. Be the first to publish an outfit and claim #1!`
-              : 'Be the first creator to scan and publish an outfit to claim top rank!'}
+            {searchQuery.trim()
+              ? `No creators found matching "${searchQuery}".`
+              : (scope === 'local'
+                  ? `No ranked creators in ${selectedCity} yet. Be the first to publish an outfit and claim #1!`
+                  : 'Be the first creator to scan and publish an outfit to claim top rank!')}
           </p>
         </div>
       ) : (

@@ -956,27 +956,7 @@ export async function fetchTopCreatorsByCity(city, limit = 50) {
 
   let { data, error } = await query;
 
-  // Fallback to all profiles if no creators found in specific city
-  if (error || !data || data.length === 0) {
-    const fallbackRes = await supabase
-      .from('profiles')
-      .select(`
-        id,
-        username,
-        avatar_url,
-        city,
-        outfits (
-          id,
-          outfit_ratings (
-            overall_score
-          )
-        )
-      `)
-      .limit(50);
-    data = fallbackRes.data || [];
-  }
-
-  if (!data || data.length === 0) return [];
+  if (error || !data || data.length === 0) return [];
 
   const creators = data.map(profile => {
     const rawUsername = profile.username || 'anonymous';
@@ -1210,11 +1190,6 @@ export async function fetchLeaderboard(cityOrOptions = null, limitParam = 50) {
         const profileCity = prof?.city ? prof.city.trim().toLowerCase() : '';
         return outfitCity.includes(searchCity) || profileCity.includes(searchCity);
       });
-      
-      // Fallback to all outfits globally only if zero outfits found in specific city
-      if (filteredOutfits.length === 0) {
-        filteredOutfits = outfits;
-      }
     }
 
     // Aggregate per user and track highest scoring outfit photo
