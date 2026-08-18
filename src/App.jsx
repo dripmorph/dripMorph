@@ -705,29 +705,35 @@ export default function App() {
     const rawScore = deletingPost.aiScore || deletingPost.score || '8.4';
     const scoreVal = parseFloat(rawScore) || 8.4;
 
-    // 1. Remove from Feed posts
+    // 1. Close delete modal immediately
+    setDeletingPost(null);
+
+    // 2. Track last deleted ID for instant optimistic filtering
+    setLastDeletedOutfitId(targetId);
+
+    // 3. Remove immediately from Feed posts
     setPosts(prevPosts => prevPosts.filter(p => p.id !== targetId));
 
-    // 2. Remove from Profile fits
+    // 4. Remove immediately from Profile fits
     setProfileFits(prevFits => {
-      const filterList = (list) => list.filter(f => f.id !== targetId);
+      const filterList = (list) => (Array.isArray(list) ? list.filter(f => f.id !== targetId) : []);
       return {
         'ALL TIME': filterList(prevFits['ALL TIME']),
         'THIS WEEK': filterList(prevFits['THIS WEEK'])
       };
     });
 
-    // 3. Update stats & trigger refresh
+    // 5. Update stats immediately
     setFitsCount(prev => Math.max(0, prev - 1));
     setTotalScoreSum(prev => Math.max(0, prev - scoreVal));
-    setLastDeletedOutfitId(targetId);
-    setRefreshTrigger(Date.now());
-
-    setDeletingPost(null);
 
     try {
+      // 6. Await database deletion completion FIRST
       await deleteOutfit(targetId);
       showToast("Post deleted successfully.");
+
+      // 7. AFTER Supabase deletion completes, trigger background refresh
+      setRefreshTrigger(Date.now());
     } catch (err) {
       console.error('[App] Failed to delete outfit from Supabase:', err);
       showToast(err.message || "Failed to delete post.");

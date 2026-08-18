@@ -405,14 +405,16 @@ export const deleteOutfit = async (outfitId) => {
     throw new Error("You must be logged in to delete a post.");
   }
 
-  // 1. Delete associated rating row first (safety fallback)
-  const { error: ratingDeleteErr } = await supabase
-    .from('outfit_ratings')
-    .delete()
-    .eq('outfit_id', outfitId);
-
-  if (ratingDeleteErr) {
-    console.warn("[outfitService] Rating delete warning:", ratingDeleteErr.message);
+  // 1. Delete associated child records first (safety fallbacks)
+  try {
+    await Promise.allSettled([
+      supabase.from('outfit_ratings').delete().eq('outfit_id', outfitId),
+      supabase.from('outfit_likes').delete().eq('outfit_id', outfitId),
+      supabase.from('outfit_comments').delete().eq('outfit_id', outfitId),
+      supabase.from('outfit_products').delete().eq('outfit_id', outfitId)
+    ]);
+  } catch (childErr) {
+    console.warn("[outfitService] Child rows delete warning:", childErr);
   }
 
   // 2. Delete main outfit row using poster_id

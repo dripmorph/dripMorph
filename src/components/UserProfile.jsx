@@ -368,7 +368,10 @@ export default function UserProfile({
           const outfits = await fetchUserOutfits(targetUserId, user?.id || null);
           console.log('[UserProfile.loadData] Step 6 fetchUserOutfits returned', outfits?.length, 'outfits:', JSON.stringify(outfits, null, 2));
           if (isMounted) {
-            setUserOutfits(outfits || []);
+            const filtered = lastDeletedOutfitId 
+              ? (outfits || []).filter(item => item.id !== lastDeletedOutfitId) 
+              : (outfits || []);
+            setUserOutfits(filtered);
           }
         } catch (err) {
           console.error('[UserProfile.loadData] ERROR in fetchUserOutfits:', err);
@@ -758,6 +761,7 @@ export default function UserProfile({
                       className="post-menu-item delete"
                       onClick={() => {
                         setActiveFitMenuId(null);
+                        setUserOutfits(prev => (prev ? prev.filter(item => item.id !== fit.id) : []));
                         if (onDeleteFit) onDeleteFit(fit);
                       }}
                     >
@@ -874,6 +878,7 @@ export default function UserProfile({
                       className="post-menu-item delete"
                       onClick={() => {
                         setActiveRecentMenuId(null);
+                        setUserOutfits(prev => (prev ? prev.filter(item => item.id !== post.id) : []));
                         if (onDeleteFit) onDeleteFit(post);
                       }}
                     >
