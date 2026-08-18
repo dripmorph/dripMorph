@@ -8,6 +8,21 @@ export const useChat = () => useContext(ChatContext);
 const DEFAULT_AVATAR =
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=240&h=240&fit=crop';
 
+// Helper: Get timestamp when this user cleared the chat with a specific partner
+const getChatClearedCutoff = (userId, partnerId) => {
+  if (!userId || !partnerId) return 0;
+  try {
+    const str = localStorage.getItem(`dripmorph_chat_cleared_${userId}_${partnerId}`);
+    if (str) {
+      const ms = new Date(str).getTime();
+      if (!isNaN(ms)) return ms;
+    }
+  } catch (e) {
+    // Ignore storage read error
+  }
+  return 0;
+};
+
 export const ChatProvider = ({ children }) => {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [conversations, setConversations] = useState([]);
@@ -71,6 +86,15 @@ export const ChatProvider = ({ children }) => {
       setConversations(
         convData.map(c => {
           const profile = profileMap[c.partnerId];
+          const clearedCutoff = getChatClearedCutoff(userId, c.partnerId);
+          let lastMsg = c.lastMessage;
+          if (lastMsg && clearedCutoff > 0) {
+            const ts = new Date(lastMsg.created_at || lastMsg.timestamp || Date.now()).getTime();
+            if (isNaN(ts) || ts <= clearedCutoff) {
+              lastMsg = null;
+            }
+          }
+
           return {
             id: c.partnerId,
             partnerId: c.partnerId,
@@ -80,8 +104,8 @@ export const ChatProvider = ({ children }) => {
               avatar: profile?.avatar_url || DEFAULT_AVATAR,
             },
             messages: [],          // lazy-loaded when chat is opened
-            lastMessage: c.lastMessage,
-            unreadCount: c.unreadCount,
+            lastMessage: lastMsg,
+            unreadCount: lastMsg ? c.unreadCount : 0,
             status: 'accepted',
           };
         })
@@ -220,8 +244,16 @@ export const ChatProvider = ({ children }) => {
     setLoadingMessages(true);
     try {
       const msgs = await messageService.fetchMessages(userId, partnerId);
+      const clearedCutoff = getChatClearedCutoff(userId, partnerId);
+      const visibleMsgs = clearedCutoff > 0
+        ? (msgs || []).filter(m => {
+            const ts = new Date(m.created_at || m.timestamp || Date.now()).getTime();
+            return !isNaN(ts) && ts > clearedCutoff;
+          })
+        : (msgs || []);
+
       setConversations(prev =>
-        prev.map(c => c.id === partnerId ? { ...c, messages: msgs, unreadCount: 0 } : c)
+        prev.map(c => c.id === partnerId ? { ...c, messages: visibleMsgs, unreadCount: 0 } : c)
       );
       await messageService.markMessagesRead(userId, partnerId);
     } catch (err) {
@@ -283,12 +315,19 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
-  // ── Delete all messages in a chat (chat conversation remains) ───────────────
+  // ── Delete all messages in a chat (for current user permanently) ────────────
   const deleteChatMessages = async (partnerId) => {
     const userId = currentUserIdRef.current;
     if (!userId || !partnerId) return;
 
-    // Optimistically clear messages locally
+    const nowIso = new Date().toISOString();
+    try {
+      localStorage.setItem(`dripmorph_chat_cleared_${userId}_${partnerId}`, nowIso);
+    } catch (e) {
+      console.warn('[Chat] Failed to set cleared timestamp:', e);
+    }
+
+    // Optimistically clear messages locally for current user
     setConversations(prev =>
       prev.map(c =>
         c.id === partnerId
@@ -296,12 +335,6 @@ export const ChatProvider = ({ children }) => {
           : c
       )
     );
-
-    try {
-      await messageService.clearChatMessages(userId, partnerId);
-    } catch (err) {
-      console.error('[Chat] deleteChatMessages error:', err);
-    }
   };
 
   const closeChat = () => setActiveChatId(null);
