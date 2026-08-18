@@ -57,17 +57,12 @@ export const formatRelativeTime = (isoString) => {
   return '1d ago';
 };
 
-// Helper: Format message notification text cleanly (handles photos and text)
-const formatMessageNotificationText = (uname, content, type) => {
-  if (type === 'image' || (typeof content === 'string' && (content.startsWith('data:image') || content.startsWith('http')))) {
-    return `${uname} sent you a photo.`;
-  }
-  if (!content || !content.trim()) {
+// Helper: Format message notification text (bundled like Instagram)
+const formatMessageNotificationText = (uname, count = 1) => {
+  if (count <= 1) {
     return `${uname} sent you a message.`;
   }
-  const trimmed = content.trim();
-  const snippet = trimmed.length > 40 ? `${trimmed.slice(0, 40)}...` : trimmed;
-  return `${uname}: "${snippet}"`;
+  return `${uname} sent you ${count} messages.`;
 };
 
 export const NotificationProvider = ({ children }) => {
@@ -204,22 +199,45 @@ export const NotificationProvider = ({ children }) => {
 
       const fetchedList = [];
 
-      // Format messages
+      // 1. Group recent messages by sender_id (bulge onto one another like Instagram)
+      const msgGroupsBySender = {};
       (recentMsgs || []).forEach((m) => {
-        const actor = actorMap[m.sender_id];
+        if (!msgGroupsBySender[m.sender_id]) {
+          msgGroupsBySender[m.sender_id] = {
+            sender_id: m.sender_id,
+            messages: [],
+            latest_created_at: m.created_at,
+            hasUnread: !m.read
+          };
+        }
+        msgGroupsBySender[m.sender_id].messages.push(m);
+        if (!m.read) {
+          msgGroupsBySender[m.sender_id].hasUnread = true;
+        }
+        if (new Date(m.created_at).getTime() > new Date(msgGroupsBySender[m.sender_id].latest_created_at).getTime()) {
+          msgGroupsBySender[m.sender_id].latest_created_at = m.created_at;
+        }
+      });
+
+      // Format bundled message notifications
+      Object.values(msgGroupsBySender).forEach((group) => {
+        const actor = actorMap[group.sender_id];
         const rawName = actor?.username || 'user';
         const uname = rawName.startsWith('@') ? rawName : `@${rawName}`;
-        const notifText = formatMessageNotificationText(uname, m.content, m.type);
+        const count = group.messages.length;
+        const notifText = formatMessageNotificationText(uname, count);
+
         fetchedList.push({
-          id: `msg-${m.id}`,
+          id: `msg-group-${group.sender_id}`,
           type: 'message',
           actorUsername: uname,
           actorAvatar: actor?.avatar_url || null,
           title: uname,
           text: notifText,
-          created_at: m.created_at,
-          unread: !m.read,
-          data: { senderId: m.sender_id, username: uname, content: m.content }
+          created_at: group.latest_created_at,
+          unread: group.hasUnread,
+          count: count,
+          data: { senderId: group.sender_id, username: uname, count }
         });
       });
 
@@ -395,19 +413,46 @@ export const NotificationProvider = ({ children }) => {
           const profile = await fetchUserProfile(senderId);
           const rawName = profile?.username || 'user';
           const username = rawName.startsWith('@') ? rawName : `@${rawName}`;
-          const content = payload.new?.content || '';
-          const msgType = payload.new?.type || 'text';
-          const notifText = formatMessageNotificationText(username, content, msgType);
+          const createdAt = payload.new?.created_at || new Date().toISOString();
 
-          addNotification({
-            id: `msg-${payload.new.id || Date.now()}`,
-            type: 'message',
-            actorUsername: username,
-            actorAvatar: profile?.avatar_url,
-            title: username,
-            text: notifText,
-            created_at: payload.new.created_at || new Date().toISOString(),
-            data: { senderId, username, content }
+          setNotifications((prev) => {
+            const existingIdx = prev.findIndex(
+              (n) => n.id === `msg-group-${senderId}` || (n.type === 'message' && n.data?.senderId === senderId)
+            );
+
+            if (existingIdx >= 0) {
+              const existing = prev[existingIdx];
+              const newCount = (existing.count || 1) + 1;
+              const updatedItem = {
+                ...existing,
+                id: `msg-group-${senderId}`,
+                type: 'message',
+                actorUsername: username,
+                actorAvatar: profile?.avatar_url || existing.actorAvatar,
+                title: username,
+                text: formatMessageNotificationText(username, newCount),
+                created_at: createdAt,
+                unread: true,
+                count: newCount,
+                data: { senderId, username, count: newCount }
+              };
+              const remaining = prev.filter((_, idx) => idx !== existingIdx);
+              return filterValidNotifications([updatedItem, ...remaining], userId, userMetadata);
+            } else {
+              const newItem = {
+                id: `msg-group-${senderId}`,
+                type: 'message',
+                actorUsername: username,
+                actorAvatar: profile?.avatar_url || null,
+                title: username,
+                text: formatMessageNotificationText(username, 1),
+                created_at: createdAt,
+                unread: true,
+                count: 1,
+                data: { senderId, username, count: 1 }
+              };
+              return filterValidNotifications([newItem, ...prev], userId, userMetadata);
+            }
           });
         }
       )

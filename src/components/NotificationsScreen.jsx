@@ -23,6 +23,46 @@ export default function NotificationsScreen({
     }
   }, [isOpen, unreadCount, markAllAsRead]);
 
+  // Group notifications so messages from the same sender bulge together (like Instagram)
+  const consolidatedNotifications = React.useMemo(() => {
+    const messageGroups = {};
+    const others = [];
+
+    notifications.forEach((item) => {
+      if (item.type === 'message') {
+        const senderKey = item.data?.senderId || item.actorUsername || item.id;
+        if (!messageGroups[senderKey]) {
+          messageGroups[senderKey] = {
+            ...item,
+            count: item.count || 1,
+            hasUnread: item.unread
+          };
+        } else {
+          messageGroups[senderKey].count = (messageGroups[senderKey].count || 1) + (item.count || 1);
+          if (item.unread) messageGroups[senderKey].hasUnread = true;
+          if (new Date(item.created_at).getTime() > new Date(messageGroups[senderKey].created_at).getTime()) {
+            messageGroups[senderKey].created_at = item.created_at;
+          }
+        }
+      } else {
+        others.push(item);
+      }
+    });
+
+    const bundledMessages = Object.values(messageGroups).map(group => {
+      const uname = group.actorUsername || 'user';
+      return {
+        ...group,
+        text: group.count > 1 ? `${uname} sent you ${group.count} messages.` : `${uname} sent you a message.`,
+        unread: group.hasUnread
+      };
+    });
+
+    const combined = [...bundledMessages, ...others];
+    combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return combined;
+  }, [notifications]);
+
   if (!isOpen) return null;
 
   const handleNotificationClick = (item) => {
@@ -217,7 +257,7 @@ export default function NotificationsScreen({
             gap: '8px'
           }}
         >
-          {notifications.length === 0 ? (
+          {consolidatedNotifications.length === 0 ? (
             <div style={{
               textAlign: 'center',
               padding: '48px 16px',
@@ -250,7 +290,7 @@ export default function NotificationsScreen({
               </div>
             </div>
           ) : (
-            notifications.map((item) => (
+            consolidatedNotifications.map((item) => (
               <div
                 key={item.id}
                 onClick={() => handleNotificationClick(item)}
