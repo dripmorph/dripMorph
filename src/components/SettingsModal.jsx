@@ -11,7 +11,6 @@ export default function SettingsModal({ isOpen, onClose, showToast, onProfileUpd
   const [username, setUsername] = useState('');
   const [instagram, setInstagram] = useState('');
   const [primaryCity, setPrimaryCity] = useState('Kolkata');
-  const [moderationFilter, setModerationFilter] = useState('Standard');
   
   const [usernameError, setUsernameError] = useState('');
   const [isSavingUsername, setIsSavingUsername] = useState(false);
@@ -36,10 +35,6 @@ export default function SettingsModal({ isOpen, onClose, showToast, onProfileUpd
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-
-  // Blocked users state
-  const [blockedUsers, setBlockedUsers] = useState(['@spam_bot_99', '@toxic_hater']);
-  const [showBlockedModal, setShowBlockedModal] = useState(false);
 
   // Delete Account Modal state
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
@@ -156,11 +151,6 @@ export default function SettingsModal({ isOpen, onClose, showToast, onProfileUpd
     setNewPassword('');
     setConfirmPassword('');
     if (showToast) showToast('Password updated successfully.');
-  };
-
-  const handleUnblockUser = (handle) => {
-    setBlockedUsers(prev => prev.filter(u => u !== handle));
-    if (showToast) showToast(`Unblocked ${handle}`);
   };
 
   return (
@@ -313,25 +303,6 @@ export default function SettingsModal({ isOpen, onClose, showToast, onProfileUpd
                 <option value="Bangalore">Bangalore</option>
               </select>
             </div>
-
-            {/* Content Moderation Filter */}
-            <div className="settings-item-row">
-              <div className="settings-item-info">
-                <span className="settings-item-label">Content Moderation Filter</span>
-                <span className="settings-item-sub">Control AI filtering intensity</span>
-              </div>
-              <select
-                className="settings-select"
-                value={moderationFilter}
-                onChange={(e) => {
-                  setModerationFilter(e.target.value);
-                  if (showToast) showToast(`Content filter set to ${e.target.value}`);
-                }}
-              >
-                <option value="Strict">Strict (Recommended)</option>
-                <option value="Standard">Standard</option>
-              </select>
-            </div>
           </div>
 
           {/* Section 3: Push Notifications */}
@@ -386,41 +357,6 @@ export default function SettingsModal({ isOpen, onClose, showToast, onProfileUpd
               <Shield size={16} />
               <span>Safety & Legal</span>
             </div>
-
-            {/* Blocked Creators List */}
-            <div className="settings-item-row">
-              <div className="settings-item-info">
-                <span className="settings-item-label">Blocked Creators</span>
-                <span className="settings-item-sub">{blockedUsers.length} creator(s) blocked</span>
-              </div>
-              <button
-                className="settings-action-btn"
-                onClick={() => setShowBlockedModal(!showBlockedModal)}
-              >
-                {showBlockedModal ? 'Hide List' : 'View List'}
-              </button>
-            </div>
-
-            {showBlockedModal && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '10px', background: 'var(--input-bg)', borderRadius: '12px' }}>
-                {blockedUsers.length === 0 ? (
-                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>No blocked creators.</span>
-                ) : (
-                  blockedUsers.map(u => (
-                    <div key={u} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>{u}</span>
-                      <button
-                        className="settings-action-btn"
-                        style={{ padding: '4px 10px', fontSize: '11px' }}
-                        onClick={() => handleUnblockUser(u)}
-                      >
-                        Unblock
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
 
             {/* Privacy Policy */}
             <div className="settings-item-row">
