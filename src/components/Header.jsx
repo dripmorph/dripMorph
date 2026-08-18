@@ -89,18 +89,23 @@ export default function Header({
         <span className="sidebar-brand-title">DRIPMORPH</span>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>
         {/* Notifications Button */}
-        <button className="header-btn" onClick={onBellClick} aria-label="Notifications">
-          <div style={{ position: 'relative' }}>
-            <Bell size={22} strokeWidth={2} />
+        <button 
+          className="header-btn" 
+          onClick={onBellClick} 
+          aria-label="Notifications"
+          style={{ width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+        >
+          <div style={{ position: 'relative', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Bell size={22} strokeWidth={2} style={{ display: 'block' }} />
             {hasNotifications && (
               <span style={{
                 position: 'absolute',
-                top: '1px',
-                right: '1px',
-                width: '8px',
-                height: '8px',
+                top: '0px',
+                right: '0px',
+                width: '7px',
+                height: '7px',
                 backgroundColor: 'var(--accent-solid)',
                 borderRadius: '50%',
                 border: '1.5px solid var(--bg-color)'
@@ -117,17 +122,23 @@ export default function Header({
           aria-label="Trending Fits"
           aria-expanded={showTrendingDropdown}
           style={{
+            width: '36px',
+            height: '36px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 0,
             color: showTrendingDropdown ? '#a6fc29' : 'var(--text-primary)',
             transition: 'color 0.2s ease',
             position: 'relative'
           }}
         >
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Flame size={22} strokeWidth={2} />
+          <div style={{ position: 'relative', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Flame size={22} strokeWidth={2} style={{ display: 'block' }} />
             <span style={{
               position: 'absolute',
-              top: '-1px',
-              right: '-2px',
+              top: '0px',
+              right: '0px',
               width: '7px',
               height: '7px',
               backgroundColor: '#a6fc29',
