@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { MapPin, ChevronDown, Trophy, X, Loader2, Sparkles } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { MapPin, ChevronDown, Trophy, X, Loader2, Sparkles, User } from 'lucide-react';
 import { FiSearch } from 'react-icons/fi';
 import { fetchLeaderboard } from '../lib/outfitService';
+import { supabase } from '../lib/supabaseClient';
 
 const CITIES = ['Kolkata', 'Mumbai', 'Delhi'];
 
@@ -41,8 +42,67 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
   const [showCityDropdown, setShowCityDropdown] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const searchContainerRef = useRef(null);
+  const debounceRef = useRef(null);
+
   const [creators, setCreators] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Close search dropdown when clicking outside
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target)) {
+        setSearchQuery('');
+        setSearchResults([]);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  // Debounced live user search against Supabase profiles
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (!q) {
+      setSearchResults([]);
+      return;
+    }
+
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url, city')
+          .ilike('username', `%${q}%`)
+          .limit(8);
+
+        if (!error && Array.isArray(data)) {
+          setSearchResults(data);
+        } else {
+          setSearchResults([]);
+        }
+      } catch (err) {
+        console.error('[Leaderboard Search] error:', err);
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(debounceRef.current);
+  }, [searchQuery]);
+
+  const handleSearchResultClick = (username) => {
+    if (onUserClick && username) {
+      onUserClick(`@${username.replace(/^@/, '')}`);
+    }
+    setSearchQuery('');
+    setSearchResults([]);
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -65,18 +125,13 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
     return () => { isMounted = false; };
   }, [scope, selectedCity, refreshTrigger]);
 
-  // Filter creators based on search query
-  const filteredCreators = searchQuery.trim()
-    ? creators.filter(c => c.username.toLowerCase().includes(searchQuery.toLowerCase().trim()))
-    : creators;
-
-  // Podium elements
-  const topOne = filteredCreators.find(p => Number(p.rank) === 1) || filteredCreators[0];
-  const topTwo = filteredCreators.find(p => Number(p.rank) === 2) || (filteredCreators[1] && filteredCreators[1] !== topOne ? filteredCreators[1] : null);
-  const topThree = filteredCreators.find(p => Number(p.rank) === 3) || (filteredCreators[2] && filteredCreators[2] !== topOne && filteredCreators[2] !== topTwo ? filteredCreators[2] : null);
+  // Podium elements from actual rankings (unaffected by search!)
+  const topOne = creators.find(p => Number(p.rank) === 1) || creators[0];
+  const topTwo = creators.find(p => Number(p.rank) === 2) || (creators[1] && creators[1] !== topOne ? creators[1] : null);
+  const topThree = creators.find(p => Number(p.rank) === 3) || (creators[2] && creators[2] !== topOne && creators[2] !== topTwo ? creators[2] : null);
 
   // Ranked list (4th and beyond)
-  const rankedList = filteredCreators.filter(p => Number(p.rank) > 3);
+  const rankedList = creators.filter(p => Number(p.rank) > 3);
 
   const handleCitySelect = (city) => {
     setSelectedCity(city);
@@ -125,8 +180,10 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
       {/* Redesigned Header Section (Inline Styles for Guaranteed Styling) */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '32px', maxWidth: '448px', marginLeft: 'auto', marginRight: 'auto', width: '100%' }}>
         {/* Search Input Container */}
-        <div style={{ position: 'relative', width: '100%' }}>
-          <FiSearch style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', width: '16px', height: '16px', pointerEvents: 'none' }} />
+        <div ref={searchContainerRef} style={{ position: 'relative', width: '100%' }}>
+          <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
+            {searchLoading ? <Loader2 size={16} className="animate-spin text-lime-400" /> : <FiSearch size={16} />}
+          </div>
           <input
             type="text"
             style={{
@@ -139,21 +196,111 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
               paddingBottom: '12px',
               borderRadius: '9999px',
               fontSize: '14px',
-              border: 'none',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
               outline: 'none',
               boxSizing: 'border-box'
             }}
             placeholder="Search ranked creators..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            autoComplete="off"
           />
           {searchQuery && (
             <button
-              onClick={() => setSearchQuery('')}
+              onClick={() => {
+                setSearchQuery('');
+                setSearchResults([]);
+              }}
               style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
             >
               <X size={14} />
             </button>
+          )}
+
+          {/* Floating Search Dropdown */}
+          {searchQuery.trim().length > 0 && (
+            <div 
+              className="search-dropdown" 
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 6px)',
+                left: 0,
+                right: 0,
+                backgroundColor: '#1c1c1e',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: '16px',
+                boxShadow: '0 12px 32px rgba(0, 0, 0, 0.7)',
+                zIndex: 100,
+                maxHeight: '260px',
+                overflowY: 'auto',
+                padding: '6px'
+              }}
+            >
+              {searchLoading && searchResults.length === 0 ? (
+                <div style={{ padding: '12px', textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>
+                  Searching...
+                </div>
+              ) : searchResults.length > 0 ? (
+                searchResults.map((profile) => {
+                  if (!profile) return null;
+                  const uname = profile.username || 'user';
+                  return (
+                    <button
+                      key={profile.id || uname}
+                      type="button"
+                      onClick={() => handleSearchResultClick(profile.username)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        padding: '10px 12px',
+                        borderRadius: '10px',
+                        color: '#ffffff',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        width: '100%',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        transition: 'background-color 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      <div style={{ position: 'relative', width: '32px', height: '32px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
+                        {profile.avatar_url ? (
+                          <img
+                            src={profile.avatar_url}
+                            alt={uname}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        ) : (
+                          <div style={{ width: '100%', height: '100%', backgroundColor: '#27272a', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a6fc29', fontWeight: '700', fontSize: '12px' }}>
+                            {uname.replace(/^@/, '').charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          @{uname.replace(/^@/, '')}
+                        </span>
+                        {profile.city && (
+                          <span style={{ fontSize: '11px', color: '#9ca3af' }}>
+                            {profile.city}
+                          </span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', padding: '2px 6px', borderRadius: '4px', backgroundColor: 'rgba(255, 255, 255, 0.08)', color: '#a1a1aa' }}>
+                        USER
+                      </span>
+                    </button>
+                  );
+                })
+              ) : (
+                <div style={{ padding: '12px', textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>
+                  No users found for "{searchQuery}"
+                </div>
+              )}
+            </div>
           )}
         </div>
 
@@ -275,16 +422,14 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
           <Loader2 size={28} className="animate-spin text-lime-400" />
           <span className="text-sm font-semibold">Fetching live leaderboard...</span>
         </div>
-      ) : filteredCreators.length === 0 ? (
+      ) : creators.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 px-6 text-center border border-dashed border-zinc-800 bg-zinc-900/30 rounded-2xl my-6 gap-3">
           <Trophy size={42} className="text-lime-400 opacity-80" />
           <h3 className="text-white text-lg font-bold">No creators ranked yet</h3>
           <p className="text-zinc-400 text-xs max-w-xs leading-relaxed">
-            {searchQuery.trim()
-              ? `No creators found matching "${searchQuery}".`
-              : (scope === 'local'
-                  ? `No ranked creators in ${selectedCity} yet. Be the first to publish an outfit and claim #1!`
-                  : 'Be the first creator to scan and publish an outfit to claim top rank!')}
+            {scope === 'local'
+              ? `No ranked creators in ${selectedCity} yet. Be the first to publish an outfit and claim #1!`
+              : 'Be the first creator to scan and publish an outfit to claim top rank!'}
           </p>
         </div>
       ) : (
