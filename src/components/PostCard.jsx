@@ -4,7 +4,7 @@ import { FaHeart } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import { toggleOutfitLike } from '../lib/outfitService';
 
-export default function PostCard({ post, onShopClick, onFitClick, onShareClick, showToast, onEditPost, onDeletePost, onCommentClick, onUserClick, currentUsername = '@minimalist_enzo' }) {
+export default function PostCard({ post, onShopClick, onFitClick, onShareClick, showToast, onEditPost, onDeletePost, onCommentClick, onUserClick, currentUsername = 'minimalist_enzo' }) {
   const { user } = useAuth();
   const [liked, setLiked] = useState(Boolean(post.user_has_liked));
   const [likeCount, setLikeCount] = useState(post.likes_count ?? post.likes ?? 0);
@@ -263,7 +263,7 @@ export default function PostCard({ post, onShopClick, onFitClick, onShareClick, 
               <img src={post.avatar || post.user_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop'} alt={post.username} className="avatar-img" />
             </div>
             <div className="user-text">
-              <span className="username">{post.username}</span>
+              <span className="username">{post.username ? post.username.replace(/^@/, '') : 'User'}</span>
               <span className="location">{post.location}</span>
             </div>
           </div>

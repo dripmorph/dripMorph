@@ -5,7 +5,7 @@ import minimalistImg from '../assets/minimalist_look.png';
 export const MOCK_POSTS = [
   {
     id: 1,
-    username: '@streetstyle_icon',
+    username: 'streetstyle_icon',
     location: 'Tokyo, JP',
     aiScore: '8.7/10',
     image: techwearImg,
@@ -36,7 +36,7 @@ export const MOCK_POSTS = [
   },
   {
     id: 2,
-    username: '@neon_wanderer',
+    username: 'neon_wanderer',
     location: 'Neo-Seoul, KR',
     aiScore: '9.2/10',
     image: cyberpunkImg,
@@ -67,7 +67,7 @@ export const MOCK_POSTS = [
   },
   {
     id: 3,
-    username: '@brutal_aesthetic',
+    username: 'brutal_aesthetic',
     location: 'Berlin, DE',
     aiScore: '8.5/10',
     image: minimalistImg,
@@ -92,7 +92,7 @@ export const MOCK_POSTS = [
   },
   {
     id: 101,
-    username: '@minimalist_enzo',
+    username: 'minimalist_enzo',
     location: 'Seattle, WA',
     aiScore: '8.9/10',
     image: cyberpunkImg,
@@ -108,7 +108,7 @@ export const MOCK_POSTS = [
   },
   {
     id: 102,
-    username: '@minimalist_enzo',
+    username: 'minimalist_enzo',
     location: 'Seattle, WA',
     aiScore: '8.5/10',
     image: techwearImg,

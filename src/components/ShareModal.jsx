@@ -9,7 +9,7 @@ export default function ShareModal({ isOpen, onClose, post, showToast }) {
 
   const shareUrl = `${window.location.origin}/?post=${post.id}`;
   const scoreVal = post.overall_score || post.score || '8.0';
-  const creatorName = post.username || '@creator';
+  const creatorName = (post.username || 'creator').replace(/^@/, '');
   const shareText = `Check out ${creatorName}'s fit on DripMorph! AI Score: ${scoreVal}/10`;
 
   const handleCopyLink = async () => {

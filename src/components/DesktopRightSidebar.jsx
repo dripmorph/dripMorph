@@ -85,7 +85,7 @@ export default function DesktopRightSidebar({ onUserClick, onFitClick, userCity 
   }, [searchQuery]);
 
   const handleResultClick = (username) => {
-    if (onUserClick && username) onUserClick(`@${username.replace(/^@/, '')}`);
+    if (onUserClick && username) onUserClick(username.replace(/^@/, ''));
     setSearchQuery('');
     setSearchResults([]);
   };
@@ -146,7 +146,7 @@ export default function DesktopRightSidebar({ onUserClick, onFitClick, userCity 
                       </div>
                     </div>
                     <div className="search-result-info">
-                      <span className="search-result-username">@{uname}</span>
+                      <span className="search-result-username">{uname.replace(/^@/, '')}</span>
                       {profile.city && (
                         <span className="search-result-city">{profile.city}</span>
                       )}
@@ -183,7 +183,7 @@ export default function DesktopRightSidebar({ onUserClick, onFitClick, userCity 
                 <img src={fit.image} alt={fit.title || 'fit'} className="trending-fit-img" />
                 <div className="trending-fit-info">
                   <span className="trending-fit-title">{fit.title || 'Outfit'}</span>
-                  <span className="trending-fit-user">{fit.username || '@creator'}</span>
+                  <span className="trending-fit-user">{(fit.username || 'creator').replace(/^@/, '')}</span>
                 </div>
                 <div className="trending-score-badge">
                   <Star size={10} fill="currentColor" />
@@ -215,7 +215,7 @@ export default function DesktopRightSidebar({ onUserClick, onFitClick, userCity 
                 <div className="creator-rank-num">#{creator.rank}</div>
                 <img src={creator.avatar} alt={creator.username || 'creator'} className="creator-avatar-thumb" />
                 <div className="creator-meta">
-                  <span className="creator-handle">{creator.username || '@creator'}</span>
+                  <span className="creator-handle">{(creator.username || 'creator').replace(/^@/, '')}</span>
                   <span className="creator-score-text">{creator.score} AI Score</span>
                 </div>
                 <ArrowUpRight size={16} className="creator-arrow-icon" />

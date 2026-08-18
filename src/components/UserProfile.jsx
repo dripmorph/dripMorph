@@ -134,7 +134,7 @@ export default function UserProfile({
   onDeleteFit, 
   recentPosts = [], 
   weekLabel = 'This Week',
-  username = '@minimalist_enzo',
+  username = 'minimalist_enzo',
   avatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=240&h=240&fit=crop',
   city = '',
   height = '',
@@ -386,9 +386,9 @@ export default function UserProfile({
 
   // Derived profile display values
   const rawUsername = isOwnProfile
-    ? (user?.username ? (user.username.startsWith('@') ? user.username : `@${user.username}`) : username)
-    : (fetchedProfile?.username ? `@${fetchedProfile.username.replace(/^@/, '')}` : (typeof viewedUser === 'string' ? (viewedUser.startsWith('@') ? viewedUser : `@${viewedUser}`) : (typeof username === 'string' ? username : '@creator')));
-  const displayUsername = typeof rawUsername === 'string' ? rawUsername : '@creator';
+    ? (user?.username ? user.username.replace(/^@/, '') : (username ? username.replace(/^@/, '') : 'creator'))
+    : (fetchedProfile?.username ? fetchedProfile.username.replace(/^@/, '') : (typeof viewedUser === 'string' ? viewedUser.replace(/^@/, '') : (typeof username === 'string' ? username.replace(/^@/, '') : 'creator')));
+  const displayUsername = typeof rawUsername === 'string' ? rawUsername : 'creator';
 
   const rawAvatar = isOwnProfile
     ? (user?.avatar || avatarUrl)

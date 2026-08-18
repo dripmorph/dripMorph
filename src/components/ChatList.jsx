@@ -69,7 +69,7 @@ export default function ChatList({ onSelectChat }) {
         {filtered.map(conv => {
           if (!conv) return null;
           const userObj = conv.user || {};
-          const username = userObj.username || '@user';
+          const username = (userObj.username || 'user').replace(/^@/, '');
           const avatar = userObj.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=240&h=240&fit=crop';
 
           // Use lastMessage (from DB summary) or fall back to last in messages array

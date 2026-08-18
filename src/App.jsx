@@ -232,22 +232,22 @@ export default function App() {
   const [selectedPostForComments, setSelectedPostForComments] = useState(null);
   const [postComments, setPostComments] = useState({
     1: [
-      { id: 1, username: '@tech_ninja', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop', text: 'Where did you get that tactical harness coat? Insane look!' },
-      { id: 2, username: '@cyber_vibe', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop', text: '10/10 silhouette. The cargo straps are perfect.' },
-      { id: 3, username: '@minimalist_enzo', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop', text: 'Love the high-collar turtleneck layer underneath.' }
+      { id: 1, username: 'tech_ninja', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop', text: 'Where did you get that tactical harness coat? Insane look!' },
+      { id: 2, username: 'cyber_vibe', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop', text: '10/10 silhouette. The cargo straps are perfect.' },
+      { id: 3, username: 'minimalist_enzo', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop', text: 'Love the high-collar turtleneck layer underneath.' }
     ],
     2: [
-      { id: 1, username: '@street_specter', avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&h=100&fit=crop', text: 'Reflective windbreaker goes so hard under neon lights.' },
-      { id: 2, username: '@seoul_runner', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop', text: 'Platform boots link please!' }
+      { id: 1, username: 'street_specter', avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&h=100&fit=crop', text: 'Reflective windbreaker goes so hard under neon lights.' },
+      { id: 2, username: 'seoul_runner', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop', text: 'Platform boots link please!' }
     ],
     3: [
-      { id: 1, username: '@darkwear_cult', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop', text: 'Berlin vibes all the way. The raw indigo denim fits perfectly.' }
+      { id: 1, username: 'darkwear_cult', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop', text: 'Berlin vibes all the way. The raw indigo denim fits perfectly.' }
     ],
     101: [
-      { id: 1, username: '@acronym_fan', avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=100&h=100&fit=crop', text: 'Great coat styling Enzo. Fits perfectly in Seattle rain.' }
+      { id: 1, username: 'acronym_fan', avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=100&h=100&fit=crop', text: 'Great coat styling Enzo. Fits perfectly in Seattle rain.' }
     ],
     102: [
-      { id: 1, username: '@minimal_layer', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop', text: 'Nike ACG vest is a grail item.' }
+      { id: 1, username: 'minimal_layer', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop', text: 'Nike ACG vest is a grail item.' }
     ]
   });
 
@@ -508,8 +508,8 @@ export default function App() {
   const getProfileForUser = (uname) => {
     const isSelf = isUserSelf(uname);
     const currentUsername = user?.username 
-      ? (user.username.startsWith('@') ? user.username : `@${user.username}`) 
-      : '@minimalist_enzo';
+      ? user.username.replace(/^@/, '')
+      : 'minimalist_enzo';
 
     if (isSelf) {
       return {
@@ -608,7 +608,8 @@ export default function App() {
   };
 
   const handlePostCreated = (newPostData) => {
-    const authorUsername = newPostData.username || user?.username || user?.email?.split('@')[0] || '@minimalist_enzo';
+    const rawAuthor = newPostData.username || user?.username || user?.email?.split('@')[0] || 'minimalist_enzo';
+    const authorUsername = rawAuthor.replace(/^@/, '');
     const authorAvatar = newPostData.user_avatar || newPostData.avatar || user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop';
     const authorLocation = newPostData.location || user?.city || 'Kolkata';
 

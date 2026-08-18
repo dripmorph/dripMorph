@@ -140,7 +140,7 @@ export const ChatProvider = ({ children }) => {
             partnerId: c.partnerId,
             user: {
               id: c.partnerId,
-              username: profile?.username ? `@${profile.username}` : (prevConv?.user?.username || '...'),
+              username: profile?.username ? profile.username.replace(/^@/, '') : (prevConv?.user?.username || '...'),
               avatar: profile?.avatar_url || prevConv?.user?.avatar || DEFAULT_AVATAR,
             },
             messages: existingMsgs, // Preserve already loaded active messages
@@ -209,7 +209,7 @@ export const ChatProvider = ({ children }) => {
       partnerId,
       user: {
         id: partnerId,
-        username: profile?.username ? `@${profile.username}` : '...',
+        username: profile?.username ? profile.username.replace(/^@/, '') : '...',
         avatar: profile?.avatar_url || DEFAULT_AVATAR,
       },
       messages: [firstMsg],
@@ -239,11 +239,11 @@ export const ChatProvider = ({ children }) => {
     } else if (typeof target === 'object' && target?.id && String(target.id).includes('-')) {
       // User object with UUID id
       partnerId = target.id;
-      partnerUsername = target.username;
+      partnerUsername = target.username ? target.username.replace(/^@/, '') : null;
       partnerAvatar = target.avatar || avatarUrl;
     } else {
       // Look up by username
-      const uname = typeof target === 'string' ? target : target?.username;
+      const uname = typeof target === 'string' ? target.replace(/^@/, '') : target?.username?.replace(/^@/, '');
       partnerUsername = uname;
       partnerAvatar = target?.avatar || avatarUrl;
       if (!uname) return;
@@ -255,7 +255,7 @@ export const ChatProvider = ({ children }) => {
       }
       partnerId = profile.id;
       partnerAvatar = partnerAvatar || profile.avatar_url;
-      partnerUsername = partnerUsername || `@${profile.username}`;
+      partnerUsername = partnerUsername || (profile.username ? profile.username.replace(/^@/, '') : 'user');
     }
 
     if (!partnerId) return;

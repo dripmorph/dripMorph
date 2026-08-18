@@ -45,7 +45,7 @@ export default function UsernameSelectionScreen({ onUsernameSelected }) {
 
     setIsSubmitting(true);
     try {
-      const finalUsername = `@${cleanedValue}`;
+      const finalUsername = cleanedValue;
       await updateUsername(finalUsername, true); // true = age verified
       if (onUsernameSelected) {
         onUsernameSelected(finalUsername);
@@ -73,7 +73,7 @@ export default function UsernameSelectionScreen({ onUsernameSelected }) {
 
         <div className="auth-header">
           <h2 className="auth-title">Choose Your Username</h2>
-          <p className="auth-subtitle">Create your unique @handle on the DripMorph network</p>
+          <p className="auth-subtitle">Create your unique username on the DripMorph network</p>
         </div>
 
         {error && (
@@ -84,9 +84,8 @@ export default function UsernameSelectionScreen({ onUsernameSelected }) {
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="auth-field-group">
-            <label className="auth-label">Unique Handle</label>
+            <label className="auth-label">Username</label>
             <div className={`auth-input-wrapper username-input-wrapper ${status?.type === 'error' ? 'invalid' : ''} ${status?.type === 'success' ? 'valid' : ''}`}>
-              <span className="username-prefix">@</span>
               <input
                 type="text"
                 className="auth-input username-input"

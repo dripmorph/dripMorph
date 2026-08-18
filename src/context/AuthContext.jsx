@@ -37,7 +37,7 @@ function buildAppUser(authUser, profile) {
   const userObj = {
     id: authUser.id,
     email: authUser.email,
-    username: profile?.username ?? null,
+    username: profile?.username ? profile.username.replace(/^@/, '') : null,
     avatar: profile?.avatar_url ?? null,
     city: profile?.city ?? null,
     height: profile?.height ?? null,
@@ -261,7 +261,7 @@ export const AuthProvider = ({ children }) => {
 
     const updated = {
       ...user,
-      username: `@${clean}`,
+      username: clean,
       ageVerified: ageVerified || user.ageVerified,
     };
     setUser(updated);

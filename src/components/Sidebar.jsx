@@ -147,7 +147,7 @@ export default function Sidebar({ activeTab, onTabChange, theme, onToggleTheme, 
           <div className="desktop-user-info" onClick={() => onTabChange('profile')}>
             {renderAvatar(user.avatar || user.avatar_url, user.username, 'w-9 h-9', 'text-sm')}
             <div className="desktop-user-meta">
-              <span className="desktop-user-name">{user.username || '@minimalist_enzo'}</span>
+              <span className="desktop-user-name">{(user.username || 'minimalist_enzo').replace(/^@/, '')}</span>
               <span className="desktop-user-sub">{user.city || 'Verified Stylist'}</span>
             </div>
           </div>

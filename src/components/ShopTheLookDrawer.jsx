@@ -105,7 +105,7 @@ export default function ShopTheLookDrawer({ post, onClose, showToast }) {
           <div className="stl-meta-row">
             <div className="stl-earning-badge">
               <DollarSign size={15} className="earning-icon" />
-              <span>Earning via <span className="stl-handle">{(post && post.username) || '@style_icon'}</span></span>
+              <span>Earning via <span className="stl-handle">{((post && post.username) || 'style_icon').replace(/^@/, '')}</span></span>
             </div>
             
             <div className="stl-count-badge">

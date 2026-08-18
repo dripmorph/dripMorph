@@ -98,7 +98,7 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
 
   const handleSearchResultClick = (username) => {
     if (onUserClick && username) {
-      onUserClick(`@${username.replace(/^@/, '')}`);
+      onUserClick(username.replace(/^@/, ''));
     }
     setSearchQuery('');
     setSearchResults([]);
@@ -281,7 +281,7 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
                       </div>
                       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
                         <span style={{ fontSize: '13px', fontWeight: '700', color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          @{uname.replace(/^@/, '')}
+                          {uname.replace(/^@/, '')}
                         </span>
                         {profile.city && (
                           <span style={{ fontSize: '11px', color: '#9ca3af' }}>
@@ -578,7 +578,7 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
                   );
                 })()}
                 <span style={{ fontSize: '14px', fontWeight: '600', color: '#ffffff' }}>
-                  {topOne.username ? (topOne.username.startsWith('@') ? topOne.username : `@${topOne.username}`) : '@creator'}
+                  {topOne.username ? topOne.username.replace(/^@/, '') : 'creator'}
                 </span>
               </div>
 
@@ -676,7 +676,7 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
                     >
                       <span style={{ fontSize: '12px', fontWeight: '800', color: '#a1a1aa', flexShrink: 0 }}>#2</span>
                       <span style={{ fontSize: '12px', fontWeight: '700', color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {topTwo.username ? (topTwo.username.startsWith('@') ? topTwo.username : `@${topTwo.username}`) : '@creator'}
+                        {topTwo.username ? topTwo.username.replace(/^@/, '') : 'creator'}
                       </span>
                     </div>
                     <div 
@@ -758,7 +758,7 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
                     >
                       <span style={{ fontSize: '12px', fontWeight: '800', color: '#a1a1aa', flexShrink: 0 }}>#3</span>
                       <span style={{ fontSize: '12px', fontWeight: '700', color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {topThree.username ? (topThree.username.startsWith('@') ? topThree.username : `@${topThree.username}`) : '@creator'}
+                        {topThree.username ? topThree.username.replace(/^@/, '') : 'creator'}
                       </span>
                     </div>
                     <div 
@@ -836,7 +836,7 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
                               </span>
                             </div>
                             <span style={{ fontSize: '11px', fontWeight: '600', color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {player.username ? (player.username.startsWith('@') ? player.username : `@${player.username}`) : '@user'}
+                              {player.username ? player.username.replace(/^@/, '') : 'user'}
                             </span>
                           </div>
 
@@ -909,7 +909,7 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
                                 </span>
                               </div>
                               <span style={{ fontSize: '11px', fontWeight: '600', color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {player.username ? (player.username.startsWith('@') ? player.username : `@${player.username}`) : '@user'}
+                                {player.username ? player.username.replace(/^@/, '') : 'user'}
                               </span>
                             </div>
 

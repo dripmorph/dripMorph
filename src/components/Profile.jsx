@@ -8,15 +8,15 @@ export default function Profile(props) {
   // Determine if viewing own profile or another creator's profile
   const targetUsername = props.username;
   const currentUsername = currentUser?.username 
-    ? (currentUser.username.startsWith('@') ? currentUser.username : `@${currentUser.username}`) 
-    : '@minimalist_enzo';
+    ? currentUser.username.replace(/^@/, '')
+    : 'minimalist_enzo';
   
   const isSelf = !targetUsername || targetUsername === currentUsername || targetUsername === currentUser?.username;
 
   return (
     <UserProfile
       {...props}
-      username={isSelf ? currentUsername : (targetUsername.startsWith('@') ? targetUsername : `@${targetUsername}`)}
+      username={isSelf ? currentUsername : (targetUsername ? targetUsername.replace(/^@/, '') : 'creator')}
       isOwnProfile={isSelf}
     />
   );

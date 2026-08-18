@@ -17,6 +17,7 @@ build
 .env
 .env.local
 .env.*.local
+context/
 
 # Supabase local dev state
 .supabase/
@@ -32,3 +33,4 @@ supabase/.temp/
 *.njsproj
 *.sln
 *.sw?
+.vercel

@@ -223,7 +223,7 @@ export const NotificationProvider = ({ children }) => {
       Object.values(msgGroupsBySender).forEach((group) => {
         const actor = actorMap[group.sender_id];
         const rawName = actor?.username || 'user';
-        const uname = rawName.startsWith('@') ? rawName : `@${rawName}`;
+        const uname = rawName.replace(/^@/, '');
         const count = group.messages.length;
         const notifText = formatMessageNotificationText(uname, count);
 
@@ -245,7 +245,7 @@ export const NotificationProvider = ({ children }) => {
       (recentFollows || []).forEach((f) => {
         const actor = actorMap[f.follower_id];
         const rawName = actor?.username || 'user';
-        const uname = rawName.startsWith('@') ? rawName : `@${rawName}`;
+        const uname = rawName.replace(/^@/, '');
         fetchedList.push({
           id: `follow-${f.follower_id}-${f.following_id}`,
           type: 'follow',
@@ -259,11 +259,11 @@ export const NotificationProvider = ({ children }) => {
         });
       });
 
-      // Format likes (strictly "@user liked your post.")
+      // Format likes
       recentLikes.forEach((l) => {
         const actor = actorMap[l.user_id];
         const rawName = actor?.username || 'user';
-        const uname = rawName.startsWith('@') ? rawName : `@${rawName}`;
+        const uname = rawName.replace(/^@/, '');
         fetchedList.push({
           id: `like-${l.id || l.user_id + '-' + l.outfit_id}`,
           type: 'like',
@@ -410,7 +410,7 @@ export const NotificationProvider = ({ children }) => {
 
           const profile = await fetchUserProfile(followerId);
           const rawName = profile?.username || 'user';
-          const username = rawName.startsWith('@') ? rawName : `@${rawName}`;
+          const username = rawName.replace(/^@/, '');
 
           addNotification({
             id: `follow-${followerId}-${userId}`,
@@ -443,7 +443,7 @@ export const NotificationProvider = ({ children }) => {
 
           const profile = await fetchUserProfile(senderId);
           const rawName = profile?.username || 'user';
-          const username = rawName.startsWith('@') ? rawName : `@${rawName}`;
+          const username = rawName.replace(/^@/, '');
           const createdAt = payload.new?.created_at || new Date().toISOString();
 
           setNotifications((prev) => {
@@ -538,7 +538,7 @@ export const NotificationProvider = ({ children }) => {
             if (outfitData && outfitData.poster_id === userId) {
               const profile = await fetchUserProfile(likerId);
               const rawName = profile?.username || 'user';
-              const username = rawName.startsWith('@') ? rawName : `@${rawName}`;
+              const username = rawName.replace(/^@/, '');
 
               addNotification({
                 id: `like-${payload.new.id || likerId + '-' + outfitId}`,

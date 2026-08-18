@@ -14,7 +14,7 @@ export default function FitDetailModal({ fit, onClose, onShopClick }) {
 
   if (!fit) return null;
 
-  const username = fit.username || '@streetwear_creator';
+  const username = (fit.username || 'streetwear_creator').replace(/^@/, '');
   const title = fit.title || fit.caption || 'Streetwear Look';
   const score = fit.score || (fit.aiScore ? fit.aiScore.replace('/10', '') : '8.9');
   const hasProducts = Array.isArray(fit.products) && fit.products.length > 0;

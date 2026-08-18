@@ -139,7 +139,7 @@ export default function ChatView({ onBack, onUserClick }) {
   }
 
   const userObj = conv.user || {};
-  const convUsername = userObj.username || '@user';
+  const convUsername = (userObj.username || 'user').replace(/^@/, '');
   const convAvatar = userObj.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=240&h=240&fit=crop';
   const isPending = conv.status === 'pending';
   const isRecipient = user && userObj.id === user.id;

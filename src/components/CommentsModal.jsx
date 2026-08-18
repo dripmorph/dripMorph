@@ -55,7 +55,7 @@ export default function CommentsModal({ post, isOpen, onClose, comments = [], on
       id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `opt-${Date.now()}`,
       outfit_id: post.id,
       user_id: user.id,
-      username: user.username ? (user.username.startsWith('@') ? user.username : `@${user.username}`) : (user.email?.split('@')[0] || 'anonymous'),
+      username: user.username ? user.username.replace(/^@/, '') : (user.email?.split('@')[0] || 'anonymous'),
       avatar: user.avatar || user.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop',
       user_avatar: user.avatar || user.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop',
       content: text,
@@ -88,7 +88,7 @@ export default function CommentsModal({ post, isOpen, onClose, comments = [], on
 
   const handleOptionReply = () => {
     if (!selectedComment) return;
-    const targetUser = selectedComment.username;
+    const targetUser = (selectedComment.username || '').replace(/^@/, '');
     setReplyToUser(targetUser);
     setCommentText(`${targetUser} `);
     setSelectedComment(null);
@@ -97,7 +97,7 @@ export default function CommentsModal({ post, isOpen, onClose, comments = [], on
 
   const handleOptionVisitProfile = () => {
     if (!selectedComment) return;
-    const targetUser = selectedComment.username;
+    const targetUser = (selectedComment.username || '').replace(/^@/, '');
     setSelectedComment(null);
     onClose();
     if (onUserClick) {
@@ -113,24 +113,25 @@ export default function CommentsModal({ post, isOpen, onClose, comments = [], on
     }
   };
 
-  const currentHandle = user?.username ? (user.username.startsWith('@') ? user.username : `@${user.username}`) : '@minimalist_enzo';
+  const currentHandle = user?.username ? user.username.replace(/^@/, '') : 'minimalist_enzo';
 
   // Permission checks
   const isCommentOwner = selectedComment && (
     (user?.id && user.id === selectedComment.user_id) ||
-    (selectedComment.username && (selectedComment.username === currentHandle || selectedComment.username === user?.username || selectedComment.username === '@minimalist_enzo'))
+    (selectedComment.username && (selectedComment.username.replace(/^@/, '') === currentHandle || selectedComment.username === user?.username || selectedComment.username === 'minimalist_enzo'))
   );
 
   const isPostOwner = post && (
     (user?.id && user.id === post.user_id) ||
-    (post.username && (post.username === currentHandle || post.username === user?.username || post.username === '@minimalist_enzo'))
+    (post.username && (post.username.replace(/^@/, '') === currentHandle || post.username === user?.username || post.username === 'minimalist_enzo'))
   );
 
   const canDeleteComment = Boolean(isCommentOwner || isPostOwner);
 
-  const handleDeleteComment = async (targetComment = null) => {
-    const commentToDelete = targetComment || selectedComment;
-    if (!commentToDelete) return;
+  const handleDeleteComment = async (comment = null) => {
+    const commentToDelete = comment || selectedComment;
+    if (!commentToDelete?.id) return;
+    const previous = [...commentsList];
     const commentId = commentToDelete.id;
     setSelectedComment(null);
 
@@ -142,6 +143,7 @@ export default function CommentsModal({ post, isOpen, onClose, comments = [], on
       if (showToast) showToast("Comment deleted.");
     } catch (err) {
       console.error('[CommentsModal] Failed to delete comment:', err);
+      setCommentsList(previous);
       if (showToast) showToast(err.message || "Failed to delete comment.");
     }
   };
@@ -167,7 +169,7 @@ export default function CommentsModal({ post, isOpen, onClose, comments = [], on
         <div className="comments-post-summary">
           <img src={post.image || post.image_url} alt="Post thumbnail" className="comments-post-thumb" />
           <div className="comments-post-info">
-            <span className="comments-post-author">{post.username}</span>
+            <span className="comments-post-author">{post.username?.replace(/^@/, '')}</span>
             <p className="comments-post-caption">{post.caption || post.title || 'Streetwear check.'}</p>
           </div>
         </div>
@@ -196,7 +198,7 @@ export default function CommentsModal({ post, isOpen, onClose, comments = [], on
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', flex: 1 }}>
                     <img src={comment.avatar || comment.user_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop'} alt={comment.username} className="comment-avatar" />
                     <div className="comment-bubble-content">
-                      <span className="comment-username">{comment.username}</span>
+                      <span className="comment-username">{comment.username ? comment.username.replace(/^@/, '') : 'User'}</span>
                       <p className="comment-text">{comment.content || comment.text}</p>
                     </div>
                   </div>
