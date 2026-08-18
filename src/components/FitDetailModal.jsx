@@ -22,17 +22,9 @@ export default function FitDetailModal({ fit, onClose, onShopClick }) {
   const avatarUrl = fit.avatar || fit.user_avatar || fit.avatar_url;
 
   return (
-    <div className="stl-overlay fit-detail-overlay" onClick={onClose}>
+    <div className="fit-detail-overlay" onClick={onClose}>
       <div className="fit-detail-modal" onClick={(e) => e.stopPropagation()}>
-        {/* Drag handle / Header decoration */}
-        <div className="stl-drag-handle" />
-
-        {/* Top Close Button */}
-        <button className="fit-detail-close-btn" onClick={onClose} aria-label="Close modal">
-          <X size={20} />
-        </button>
-
-        {/* Creator Info Header */}
+        {/* Creator Info & Header Actions */}
         <div className="fit-detail-header">
           <div className="fit-detail-user-row">
             <div className="fit-detail-avatar">
@@ -54,10 +46,15 @@ export default function FitDetailModal({ fit, onClose, onShopClick }) {
             </div>
           </div>
 
-          {/* AI Score Badge */}
-          <div className="fit-card-score-badge fit-modal-score-badge">
-            <span>{score}</span>
-            <Star size={12} className="star-icon" fill="currentColor" />
+          {/* Header Actions: AI Score Badge + Close Button */}
+          <div className="fit-detail-header-actions">
+            <div className="fit-modal-score-badge">
+              <span>{score}</span>
+              <Star size={12} className="star-icon" fill="currentColor" />
+            </div>
+            <button className="fit-detail-close-btn" onClick={onClose} aria-label="Close modal">
+              <X size={18} />
+            </button>
           </div>
         </div>
 
