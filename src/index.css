@@ -5164,6 +5164,14 @@ body {
   align-items: center;
   gap: 12px;
   min-width: 0;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  user-select: none;
+}
+
+.fit-detail-user-row:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
 }
 
 .fit-detail-avatar {
@@ -5174,6 +5182,11 @@ body {
   border: 2px solid var(--accent-solid, #a6fc29);
   flex-shrink: 0;
   box-shadow: 0 0 12px rgba(166, 252, 41, 0.2);
+  transition: transform 0.2s ease;
+}
+
+.fit-detail-user-row:hover .fit-detail-avatar {
+  transform: scale(1.05);
 }
 
 .fit-avatar-img {
@@ -5208,6 +5221,13 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: color 0.2s ease;
+}
+
+.fit-detail-user-row:hover .fit-detail-username {
+  color: var(--accent-solid, #a6fc29);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .fit-detail-location {

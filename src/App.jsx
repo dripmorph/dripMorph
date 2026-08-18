@@ -916,8 +916,11 @@ export default function App() {
             fit={selectedFitForDetail} 
             onClose={() => {
               setSelectedFitForDetail(null);
-              setActiveTab('feed');
             }} 
+            onUserClick={(userObj) => {
+              setSelectedFitForDetail(null);
+              handleNavigateToProfile(userObj);
+            }}
             onShopClick={(fit) => {
               setSelectedFitForDetail(null);
               handleOpenShopModal(fit);

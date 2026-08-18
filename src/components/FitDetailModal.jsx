@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { X, Star, ShoppingBag, MapPin } from 'lucide-react';
 
-export default function FitDetailModal({ fit, onClose, onShopClick }) {
+export default function FitDetailModal({ fit, onClose, onShopClick, onUserClick }) {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
@@ -21,12 +21,33 @@ export default function FitDetailModal({ fit, onClose, onShopClick }) {
   const fitImage = fit.image || fit.image_url || fit.outfit_image;
   const avatarUrl = fit.avatar || fit.user_avatar || fit.avatar_url;
 
+  const handleProfileClick = (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (onUserClick) {
+      if (onClose) onClose();
+      const userObj = {
+        id: fit.poster_id || fit.user_id || fit.creator_id || fit.id,
+        user_id: fit.poster_id || fit.user_id || fit.creator_id || fit.id,
+        username: username,
+        avatar: avatarUrl,
+        avatar_url: avatarUrl,
+        city: fit.location || fit.city
+      };
+      onUserClick(userObj);
+    }
+  };
+
   return (
     <div className="fit-detail-overlay" onClick={onClose}>
       <div className="fit-detail-modal" onClick={(e) => e.stopPropagation()}>
         {/* Creator Info & Header Actions */}
         <div className="fit-detail-header">
-          <div className="fit-detail-user-row">
+          <div 
+            className="fit-detail-user-row"
+            onClick={handleProfileClick}
+            style={{ cursor: onUserClick ? 'pointer' : 'default' }}
+            title={`View ${username}'s profile`}
+          >
             <div className="fit-detail-avatar">
               {avatarUrl ? (
                 <img src={avatarUrl} alt={username} className="fit-avatar-img" />
