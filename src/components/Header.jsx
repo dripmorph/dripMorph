@@ -148,88 +148,94 @@ export default function Header({
           </div>
         </button>
 
-        {/* Trending Fits Dropdown Menu */}
+        {/* Trending Fits Dropdown Menu & Backdrop */}
         {showTrendingDropdown && (
-          <div 
-            ref={dropdownRef}
-            className="mobile-trending-dropdown"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Dropdown Header */}
-            <div className="mobile-trending-dropdown-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Flame size={18} className="icon-flame" style={{ color: '#a6fc29' }} />
-                <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                  Trending Fits
-                </h3>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{
-                  backgroundColor: 'rgba(166, 252, 41, 0.15)',
-                  color: '#a6fc29',
-                  padding: '2px 6px',
-                  borderRadius: '4px',
-                  fontSize: '0.7rem',
-                  fontWeight: 800,
-                  letterSpacing: '0.5px'
-                }}>
-                  LIVE
-                </span>
-                <button 
-                  type="button"
-                  onClick={() => setShowTrendingDropdown(false)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--text-secondary)',
-                    cursor: 'pointer',
-                    padding: '2px',
-                    display: 'flex',
-                    alignItems: 'center'
-                  }}
-                  aria-label="Close"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            </div>
-
-            {/* Fits List */}
-            <div className="mobile-trending-dropdown-list">
-              {loadingFits && trendingFits.length === 0 ? (
-                <div style={{ padding: '24px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                  <Loader2 size={18} className="animate-spin" />
-                  <span>Loading trending fits...</span>
+          <>
+            <div 
+              className="mobile-trending-backdrop" 
+              onClick={() => setShowTrendingDropdown(false)} 
+            />
+            <div 
+              ref={dropdownRef}
+              className="mobile-trending-dropdown"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Dropdown Header */}
+              <div className="mobile-trending-dropdown-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Flame size={18} className="icon-flame" style={{ color: '#a6fc29' }} />
+                  <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                    Trending Fits
+                  </h3>
                 </div>
-              ) : trendingFits.length === 0 ? (
-                <div style={{ padding: '24px 12px', textAlign: 'center', fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
-                  No trending fits yet. Publish a fit to rank!
-                </div>
-              ) : (
-                trendingFits.map((fit) => (
-                  <div 
-                    key={fit.id} 
-                    className="trending-fit-item" 
-                    onClick={() => handleFitSelect(fit)}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{
+                    backgroundColor: 'rgba(166, 252, 41, 0.15)',
+                    color: '#a6fc29',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    fontSize: '0.7rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.5px'
+                  }}>
+                    LIVE
+                  </span>
+                  <button 
+                    type="button"
+                    onClick={() => setShowTrendingDropdown(false)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--text-secondary)',
+                      cursor: 'pointer',
+                      padding: '2px',
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}
+                    aria-label="Close"
                   >
-                    <img 
-                      src={fit.image || fit.image_url || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=100&h=120&fit=crop'} 
-                      alt={fit.title || 'Trending Outfit'} 
-                      className="trending-fit-img" 
-                    />
-                    <div className="trending-fit-info">
-                      <span className="trending-fit-title">{fit.title || fit.caption || 'Outfit Check'}</span>
-                      <span className="trending-fit-user">{(fit.username || 'creator').replace(/^@/, '')}</span>
-                    </div>
-                    <div className="trending-score-badge">
-                      <Star size={11} fill="currentColor" />
-                      <span>{fit.score || fit.overall_score || '8.0'}</span>
-                    </div>
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Fits List */}
+              <div className="mobile-trending-dropdown-list">
+                {loadingFits && trendingFits.length === 0 ? (
+                  <div style={{ padding: '24px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                    <Loader2 size={18} className="animate-spin" />
+                    <span>Loading trending fits...</span>
                   </div>
-                ))
-              )}
+                ) : trendingFits.length === 0 ? (
+                  <div style={{ padding: '24px 12px', textAlign: 'center', fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
+                    No trending fits yet. Publish a fit to rank!
+                  </div>
+                ) : (
+                  trendingFits.map((fit) => (
+                    <div 
+                      key={fit.id} 
+                      className="trending-fit-item" 
+                      onClick={() => handleFitSelect(fit)}
+                    >
+                      <img 
+                        src={fit.image || fit.image_url || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=100&h=120&fit=crop'} 
+                        alt={fit.title || 'Trending Outfit'} 
+                        className="trending-fit-img" 
+                      />
+                      <div className="trending-fit-info">
+                        <span className="trending-fit-title">{fit.title || fit.caption || 'Outfit Check'}</span>
+                        <span className="trending-fit-user">{(fit.username || 'creator').replace(/^@/, '')}</span>
+                      </div>
+                      <div className="trending-score-badge">
+                        <Star size={11} fill="currentColor" />
+                        <span>{fit.score || fit.overall_score || '8.0'}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
     </header>
