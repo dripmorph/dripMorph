@@ -1,7 +1,25 @@
-import React, { useEffect } from 'react';
-import { X, Star, ShoppingBag, MapPin } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Star, ShoppingBag, MapPin, Heart, MessageSquare, Share2 } from 'lucide-react';
+import { FaHeart } from 'react-icons/fa';
+import { useAuth } from '../context/AuthContext';
+import { toggleOutfitLike } from '../lib/outfitService';
 
-export default function FitDetailModal({ fit, onClose, onShopClick, onUserClick }) {
+export default function FitDetailModal({
+  fit,
+  onClose,
+  onShopClick,
+  onUserClick,
+  onCommentClick,
+  onShareClick,
+  showToast
+}) {
+  const { user } = useAuth();
+  const [liked, setLiked] = useState(Boolean(fit?.user_has_liked));
+  const [likeCount, setLikeCount] = useState(fit?.likes_count ?? fit?.likes ?? 0);
+  const [commentCount, setCommentCount] = useState(fit?.comments_count ?? fit?.comments ?? 0);
+  const [animateLike, setAnimateLike] = useState(false);
+  const [showHeartAnim, setShowHeartAnim] = useState(false);
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
@@ -12,6 +30,14 @@ export default function FitDetailModal({ fit, onClose, onShopClick, onUserClick 
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
+  useEffect(() => {
+    if (fit) {
+      setLiked(Boolean(fit.user_has_liked));
+      setLikeCount(fit.likes_count ?? fit.likes ?? 0);
+      setCommentCount(fit.comments_count ?? fit.comments ?? 0);
+    }
+  }, [fit?.user_has_liked, fit?.likes_count, fit?.likes, fit?.comments_count, fit?.comments]);
+
   if (!fit) return null;
 
   const username = (fit.username || 'streetwear_creator').replace(/^@/, '');
@@ -20,6 +46,79 @@ export default function FitDetailModal({ fit, onClose, onShopClick, onUserClick 
   const hasProducts = Array.isArray(fit.products) && fit.products.length > 0;
   const fitImage = fit.image || fit.image_url || fit.outfit_image;
   const avatarUrl = fit.avatar || fit.user_avatar || fit.avatar_url;
+
+  const toggleLike = async () => {
+    if (!user?.id) {
+      if (showToast) showToast('Please sign in to like fits.');
+      return;
+    }
+
+    const previousLiked = liked;
+    const previousCount = likeCount;
+    const nextLiked = !previousLiked;
+    const nextCount = nextLiked ? previousCount + 1 : Math.max(0, previousCount - 1);
+
+    // Optimistic UI update
+    setLiked(nextLiked);
+    setLikeCount(nextCount);
+    setAnimateLike(true);
+    setTimeout(() => setAnimateLike(false), 300);
+
+    if (nextLiked && showToast) {
+      showToast('Added to Liked Outfits!');
+    }
+
+    try {
+      await toggleOutfitLike(fit.id, user.id);
+    } catch (err) {
+      console.error('[FitDetailModal] toggleLike error:', err);
+      // Rollback
+      setLiked(previousLiked);
+      setLikeCount(previousCount);
+      if (showToast) showToast('Failed to update like. Please try again.');
+    }
+  };
+
+  const handleImageClick = (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (e.detail >= 2) {
+      if (!liked) {
+        toggleLike();
+      }
+      setShowHeartAnim(true);
+      setTimeout(() => setShowHeartAnim(false), 800);
+    }
+  };
+
+  const handleShare = async (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (onShareClick) {
+      onShareClick(fit);
+      return;
+    }
+
+    const shareUrl = `${window.location.origin}/?post=${fit.id}`;
+    const shareData = {
+      title: `Check out ${username}'s fit on DripMorph!`,
+      text: `Rate this fit on DripMorph! AI Score: ${score}/10`,
+      url: shareUrl,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        if (err.name !== 'AbortError') console.error('Error sharing:', err);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        if (showToast) showToast('Link copied to clipboard!');
+      } catch (err) {
+        console.error('Failed to copy link:', err);
+      }
+    }
+  };
 
   const handleProfileClick = (e) => {
     if (e && e.stopPropagation) e.stopPropagation();
@@ -87,30 +186,84 @@ export default function FitDetailModal({ fit, onClose, onShopClick, onUserClick 
         </div>
 
         {/* Unobscured Full Fit Image Display */}
-        <div className="fit-detail-image-container">
+        <div className="fit-detail-image-container" onClick={handleImageClick}>
           <img src={fitImage} alt={title} className="fit-detail-image" />
+          {showHeartAnim && (
+            <div className="heart-pop-overlay">
+              <FaHeart className="heart-pop-icon" />
+            </div>
+          )}
         </div>
 
-        {/* Fit Breakdown & Description */}
+        {/* Fit Breakdown & Interactive Actions */}
         <div className="fit-detail-body">
           <div className="fit-detail-title-section">
             <h3 className="fit-detail-title">{title}</h3>
             {fit.brands && <p className="fit-detail-brands">{fit.brands}</p>}
           </div>
 
-          {/* Shop the look trigger button: only shown for posts that have tagged items */}
-          {hasProducts && onShopClick && (
-            <button 
-              className="fit-detail-shop-btn"
-              onClick={() => {
-                onClose();
-                onShopClick(fit);
+          {/* Aesthetic Action Row: Like, Comment, Share, Shop */}
+          <div className="fit-detail-actions-bar">
+            {/* Like Button */}
+            <button
+              type="button"
+              className={`fit-detail-action-pill like-pill ${liked ? 'liked' : ''} ${animateLike ? 'pulse' : ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleLike();
               }}
+              aria-label={liked ? 'Unlike' : 'Like'}
             >
-              <ShoppingBag size={18} />
-              <span>Shop this Look</span>
+              <Heart
+                size={18}
+                fill={liked ? 'var(--accent-solid, #a6fc29)' : 'none'}
+                stroke={liked ? 'var(--accent-solid, #a6fc29)' : 'currentColor'}
+                strokeWidth={liked ? 0 : 2}
+              />
+              <span className="fit-pill-count">{likeCount}</span>
             </button>
-          )}
+
+            {/* Comment Button */}
+            <button
+              type="button"
+              className="fit-detail-action-pill comment-pill"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onCommentClick) onCommentClick(fit);
+              }}
+              aria-label="Comments"
+            >
+              <MessageSquare size={18} strokeWidth={2} />
+              <span className="fit-pill-count">{commentCount}</span>
+            </button>
+
+            {/* Share Button */}
+            <button
+              type="button"
+              className="fit-detail-action-pill share-pill icon-only-pill"
+              onClick={handleShare}
+              aria-label="Share"
+              title="Share fit"
+            >
+              <Share2 size={18} strokeWidth={2} />
+            </button>
+
+            {/* Shop button if available */}
+            {hasProducts && onShopClick && (
+              <button 
+                type="button"
+                className="fit-detail-shop-pill"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClose();
+                  onShopClick(fit);
+                }}
+              >
+                <ShoppingBag size={18} />
+                <span>Shop Look</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

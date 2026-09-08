@@ -925,6 +925,13 @@ export default function App() {
               setSelectedFitForDetail(null);
               handleOpenShopModal(fit);
             }}
+            onCommentClick={(fit) => {
+              setSelectedPostForComments(fit);
+            }}
+            onShareClick={(fit) => {
+              setSharingPost(fit);
+            }}
+            showToast={showToast}
           />
         )}
 
