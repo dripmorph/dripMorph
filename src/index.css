@@ -65,6 +65,10 @@
 
 html, body, #root {
   background-color: var(--body-bg) !important;
+  background-image: 
+    radial-gradient(circle at 50% -10%, rgba(166, 252, 41, 0.07), transparent 50%),
+    radial-gradient(circle at 85% 15%, rgba(166, 252, 41, 0.035), transparent 40%) !important;
+  background-attachment: fixed !important;
   min-height: 100%;
   min-height: 100dvh;
   overflow-x: hidden;
@@ -73,6 +77,9 @@ html, body, #root {
 [data-theme='light'] body,
 [data-theme='light'] #root {
   background-color: var(--body-bg) !important;
+  background-image: 
+    radial-gradient(circle at 50% -10%, rgba(22, 163, 74, 0.045), transparent 50%),
+    radial-gradient(circle at 85% 15%, rgba(22, 163, 74, 0.02), transparent 40%) !important;
 }
 
 body {
@@ -91,6 +98,49 @@ body {
   position: relative;
   display: flex;
   flex-direction: column;
+}
+
+.brand-logo-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.brand-logo-badge:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(166, 252, 41, 0.35);
+  box-shadow: 0 0 16px rgba(166, 252, 41, 0.2);
+}
+
+.sidebar-brand-title,
+.desktop-logo-title {
+  font-family: var(--font-family);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  font-size: 1.15rem;
+  background: linear-gradient(135deg, #FFFFFF 0%, #D4D4D8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-transform: uppercase;
+}
+
+[data-theme='light'] .brand-logo-badge {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme='light'] .sidebar-brand-title,
+[data-theme='light'] .desktop-logo-title {
+  background: linear-gradient(135deg, #09090B 0%, #27272A 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 /* Mobile Sidebars hidden by default on mobile screens (< 1024px) */
@@ -691,9 +741,11 @@ body {
 
 /* Header style */
 .app-header {
-  height: 50px;
-  background-color: var(--bg-color);
-  border-bottom: 1px solid var(--border-color, #1f1f1f);
+  height: 54px;
+  background: rgba(11, 11, 14, 0.82) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -701,22 +753,44 @@ body {
   position: sticky;
   top: 0;
   z-index: 1000;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme='light'] .app-header {
+  background: rgba(248, 249, 250, 0.88) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
 }
 
 .header-btn {
-  background: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   padding: 0;
-  border-radius: 8px;
+  border-radius: 9999px;
   line-height: 0;
-  transition: opacity 0.2s ease, background-color 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.header-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateY(-1px);
+}
+
+.header-btn:active {
+  transform: scale(0.92);
+}
+
+[data-theme='light'] .header-btn {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
 }
 
 .logo-text {
@@ -9226,6 +9300,91 @@ body {
   background: #FFFFFF !important;
   border: 1px solid rgba(13, 13, 15, 0.1) !important;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* ================= LEADERBOARD WINNER HERO & SCOPE TOGGLE (Light Mode Support) ================= */
+[data-theme='light'] .leaderboard-winner-hero {
+  background-color: #FFFFFF !important;
+  border: 2px solid #16a34a !important;
+  box-shadow: 0 10px 30px rgba(22, 163, 74, 0.15) !important;
+}
+
+[data-theme='light'] .leaderboard-winner-username {
+  color: #0D0D0F !important;
+}
+
+[data-theme='light'] .leaderboard-winner-drip-pill {
+  background-color: #16a34a !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.3) !important;
+}
+
+[data-theme='light'] .leaderboard-scope-toggle {
+  background-color: #ECEEF2 !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme='light'] .leaderboard-scope-pill-btn {
+  color: #64748B !important;
+}
+
+[data-theme='light'] .leaderboard-scope-pill-btn.active {
+  background-color: #000000 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-theme='light'] .leaderboard-search-input {
+  background-color: #FFFFFF !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+  color: #0D0D0F !important;
+}
+
+[data-theme='light'] .leaderboard-search-dropdown {
+  background-color: #FFFFFF !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* ================= BESPOKE LUXURY ANIMATIONS ================= */
+@keyframes radarPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(166, 252, 41, 0.7);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(166, 252, 41, 0);
+    transform: scale(1.15);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(166, 252, 41, 0);
+    transform: scale(1);
+  }
+}
+
+.radar-live-dot {
+  animation: radarPulse 1.8s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes crownFloat {
+  0% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-5px) rotate(2deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+
+.crown-float-anim {
+  animation: crownFloat 2.6s ease-in-out infinite;
+}
+
+@keyframes heartPop {
+  0% { transform: scale(0) rotate(-15deg); opacity: 0; }
+  50% { transform: scale(1.4) rotate(0deg); opacity: 1; }
+  75% { transform: scale(1.1) rotate(5deg); opacity: 0.9; }
+  100% { transform: scale(1) rotate(0deg); opacity: 0; }
+}
+
+.heart-pop-animation {
+  animation: heartPop 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 

@@ -369,25 +369,27 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
       {/* Redesigned Header Section (Inline Styles for Guaranteed Styling) */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '32px', maxWidth: '448px', marginLeft: 'auto', marginRight: 'auto', width: '100%' }}>
         {/* Search Input Container */}
-        <div ref={searchContainerRef} style={{ position: 'relative', width: '100%' }}>
-          <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
+        <div ref={searchContainerRef} className="leaderboard-search-input-wrap" style={{ position: 'relative', width: '100%' }}>
+          <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary, #9ca3af)', pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
             {searchLoading ? <Loader2 size={16} className="animate-spin text-lime-400" /> : <FiSearch size={16} />}
           </div>
           <input
             type="text"
+            className="leaderboard-search-input"
             style={{
               width: '100%',
-              backgroundColor: '#1c1c1e',
-              color: '#ffffff',
+              backgroundColor: 'var(--card-bg-elevated, #1c1c1e)',
+              color: 'var(--text-primary, #ffffff)',
               paddingLeft: '44px',
               paddingRight: '36px',
               paddingTop: '12px',
               paddingBottom: '12px',
               borderRadius: '9999px',
               fontSize: '14px',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              border: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
               outline: 'none',
-              boxSizing: 'border-box'
+              boxSizing: 'border-box',
+              transition: 'all 0.2s ease'
             }}
             placeholder="Search ranked creators..."
             value={searchQuery}
@@ -400,7 +402,7 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
                 setSearchQuery('');
                 setSearchResults([]);
               }}
-              style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
+              style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-secondary, #9ca3af)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
             >
               <X size={14} />
             </button>
@@ -409,14 +411,14 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
           {/* Floating Search Dropdown */}
           {searchQuery.trim().length > 0 && (
             <div 
-              className="search-dropdown" 
+              className="search-dropdown leaderboard-search-dropdown" 
               style={{
                 position: 'absolute',
                 top: 'calc(100% + 6px)',
                 left: 0,
                 right: 0,
-                backgroundColor: '#1c1c1e',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
+                backgroundColor: 'var(--card-bg-elevated, #1c1c1e)',
+                border: '1px solid var(--border-color, rgba(255, 255, 255, 0.12))',
                 borderRadius: '16px',
                 boxShadow: '0 12px 32px rgba(0, 0, 0, 0.7)',
                 zIndex: 100,
@@ -426,7 +428,7 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
               }}
             >
               {searchLoading && searchResults.length === 0 ? (
-                <div style={{ padding: '12px', textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>
+                <div style={{ padding: '12px', textAlign: 'center', color: 'var(--text-secondary, #9ca3af)', fontSize: '13px' }}>
                   Searching...
                 </div>
               ) : searchResults.length > 0 ? (
@@ -444,7 +446,7 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
                         gap: '10px',
                         padding: '10px 12px',
                         borderRadius: '10px',
-                        color: '#ffffff',
+                        color: 'var(--text-primary, #ffffff)',
                         backgroundColor: 'transparent',
                         border: 'none',
                         width: '100%',
@@ -463,29 +465,29 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           />
                         ) : (
-                          <div style={{ width: '100%', height: '100%', backgroundColor: '#27272a', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a6fc29', fontWeight: '700', fontSize: '12px' }}>
+                          <div style={{ width: '100%', height: '100%', backgroundColor: 'var(--surface-secondary, #27272a)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-solid, #a6fc29)', fontWeight: '700', fontSize: '12px' }}>
                             {uname.replace(/^@/, '').charAt(0).toUpperCase()}
                           </div>
                         )}
                       </div>
                       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary, #ffffff)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {uname.replace(/^@/, '')}
                         </span>
                         {profile.city && (
-                          <span style={{ fontSize: '11px', color: '#9ca3af' }}>
+                          <span style={{ fontSize: '11px', color: 'var(--text-secondary, #9ca3af)' }}>
                             {profile.city}
                           </span>
                         )}
                       </div>
-                      <span style={{ fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', padding: '2px 6px', borderRadius: '4px', backgroundColor: 'rgba(255, 255, 255, 0.08)', color: '#a1a1aa' }}>
+                      <span style={{ fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', padding: '2px 6px', borderRadius: '4px', backgroundColor: 'rgba(255, 255, 255, 0.08)', color: 'var(--text-secondary, #a1a1aa)' }}>
                         USER
                       </span>
                     </button>
                   );
                 })
               ) : (
-                <div style={{ padding: '12px', textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>
+                <div style={{ padding: '12px', textAlign: 'center', color: 'var(--text-secondary, #9ca3af)', fontSize: '13px' }}>
                   No users found for "{searchQuery}"
                 </div>
               )}
@@ -494,8 +496,9 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
         </div>
 
         {/* Segmented Control Pill Container (Global / Local) */}
-        <div style={{ backgroundColor: '#1c1c1e', padding: '4px', borderRadius: '9999px', display: 'flex', alignItems: 'center', width: '100%', boxSizing: 'border-box' }}>
+        <div className="leaderboard-scope-toggle" style={{ backgroundColor: 'var(--card-bg-elevated, #1c1c1e)', padding: '4px', borderRadius: '9999px', display: 'flex', alignItems: 'center', width: '100%', boxSizing: 'border-box', border: '1px solid var(--border-color, rgba(255,255,255,0.08))' }}>
           <button
+            className={`leaderboard-scope-pill-btn ${scope === 'global' ? 'active' : ''}`}
             style={{
               flex: 1,
               paddingTop: '10px',
@@ -505,16 +508,17 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
               fontWeight: '700',
               border: 'none',
               cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              backgroundColor: scope === 'global' ? '#a6fc29' : 'transparent',
-              color: scope === 'global' ? '#000000' : '#9ca3af',
-              boxShadow: scope === 'global' ? '0 0 12px rgba(166, 252, 41, 0.4)' : 'none'
+              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+              backgroundColor: scope === 'global' ? 'var(--accent-solid, #a6fc29)' : 'transparent',
+              color: scope === 'global' ? '#000000' : 'var(--text-secondary, #9ca3af)',
+              boxShadow: scope === 'global' ? '0 0 14px rgba(166, 252, 41, 0.4)' : 'none'
             }}
             onClick={() => handleScopeChange('global')}
           >
             Global
           </button>
           <button
+            className={`leaderboard-scope-pill-btn ${scope === 'local' ? 'active' : ''}`}
             style={{
               flex: 1,
               paddingTop: '10px',
@@ -524,10 +528,10 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
               fontWeight: '700',
               border: 'none',
               cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              backgroundColor: scope === 'local' ? '#a6fc29' : 'transparent',
-              color: scope === 'local' ? '#000000' : '#9ca3af',
-              boxShadow: scope === 'local' ? '0 0 12px rgba(166, 252, 41, 0.4)' : 'none'
+              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+              backgroundColor: scope === 'local' ? 'var(--accent-solid, #a6fc29)' : 'transparent',
+              color: scope === 'local' ? '#000000' : 'var(--text-secondary, #9ca3af)',
+              boxShadow: scope === 'local' ? '0 0 14px rgba(166, 252, 41, 0.4)' : 'none'
             }}
             onClick={() => handleScopeChange('local')}
           >
@@ -631,11 +635,12 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
           {/* #1 Winner Hero Card (Stitch Mockup) */}
           {topOne && (
             <div 
+              className="leaderboard-winner-hero"
               style={{ 
                 position: 'relative', 
-                backgroundColor: '#1f1f22', 
-                border: '2px solid #a6fc29', 
-                boxShadow: '0 0 25px rgba(166, 252, 41, 0.4)', 
+                backgroundColor: 'var(--card-bg-elevated, #1f1f22)', 
+                border: '2px solid var(--accent-solid, #a6fc29)', 
+                boxShadow: '0 0 25px rgba(166, 252, 41, 0.35)', 
                 borderRadius: '24px', 
                 padding: '16px', 
                 display: 'flex', 
@@ -658,7 +663,7 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
                       borderRadius: '16px', 
                       position: 'relative', 
                       overflow: 'hidden', 
-                      backgroundColor: '#18181b', 
+                      backgroundColor: 'var(--input-bg, #18181b)', 
                       display: 'flex', 
                       alignItems: 'center', 
                       justifyContent: 'center',
@@ -691,8 +696,8 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
                         height: '100%', 
                         alignItems: 'center', 
                         justifyContent: 'center', 
-                        backgroundColor: '#18181b', 
-                        color: '#a6fc29', 
+                        backgroundColor: 'var(--input-bg, #18181b)', 
+                        color: 'var(--accent-solid, #a6fc29)', 
                         fontWeight: 'bold', 
                         fontSize: '48px' 
                       }}
@@ -707,10 +712,10 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
                         top: '50%', 
                         left: '50%', 
                         transform: 'translate(-50%, -50%)', 
-                        backgroundColor: 'rgba(0, 0, 0, 0.45)', 
-                        backdropFilter: 'blur(8px)', 
-                        WebkitBackdropFilter: 'blur(8px)', 
-                        border: '1px solid rgba(255, 255, 255, 0.2)', 
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)', 
+                        backdropFilter: 'blur(10px)', 
+                        WebkitBackdropFilter: 'blur(10px)', 
+                        border: '1px solid rgba(255, 255, 255, 0.22)', 
                         padding: '12px 24px', 
                         borderRadius: '16px', 
                         textAlign: 'center', 
@@ -750,7 +755,7 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
                   const initial = (topOne.username || 'U').replace(/^@/, '').charAt(0).toUpperCase();
 
                   return (
-                    <div style={{ width: '24px', height: '24px', borderRadius: '9999px', overflow: 'hidden', backgroundColor: '#18181b', border: '1px solid rgba(255, 255, 255, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '9999px', overflow: 'hidden', backgroundColor: 'var(--input-bg, #18181b)', border: '1px solid rgba(255, 255, 255, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       {avatarUrl ? (
                         <img 
                           src={avatarUrl} 
@@ -764,22 +769,23 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
                           }}
                         />
                       ) : null}
-                      <span style={{ display: avatarUrl ? 'none' : 'flex', fontSize: '10px', fontWeight: 'bold', color: '#a6fc29', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
+                      <span style={{ display: avatarUrl ? 'none' : 'flex', fontSize: '10px', fontWeight: 'bold', color: 'var(--accent-solid, #a6fc29)', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
                         {initial}
                       </span>
                     </div>
                   );
                 })()}
-                <span style={{ fontSize: '14px', fontWeight: '600', color: '#ffffff' }}>
+                <span className="leaderboard-winner-username" style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-primary, #ffffff)' }}>
                   {topOne.username ? topOne.username.replace(/^@/, '') : 'creator'}
                 </span>
               </div>
 
               {/* Full-Width Solid Neon-Lime DRIP SCORE Pill */}
               <div 
+                className="leaderboard-winner-drip-pill"
                 style={{ 
                   width: '100%', 
-                  backgroundColor: '#a6fc29', 
+                  backgroundColor: 'var(--accent-solid, #a6fc29)', 
                   color: '#000000', 
                   padding: '10px', 
                   borderRadius: '9999px', 
