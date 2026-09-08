@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Menu, Bell, Flame, Star, Loader2, X } from 'lucide-react';
 import DripMorphLogo from './DripMorphLogo';
 import { fetchTrendingFits } from '../lib/outfitService';
+import { supabase } from '../lib/supabaseClient';
 
 export default function Header({ 
   onMenuClick, 
@@ -17,29 +18,45 @@ export default function Header({
   const dropdownRef = useRef(null);
   const buttonRef = useRef(null);
 
+  const loadTrending = async () => {
+    setLoadingFits(true);
+    try {
+      const fits = await fetchTrendingFits(8);
+      setTrendingFits(Array.isArray(fits) ? fits : []);
+    } catch (err) {
+      console.error('[Header] Failed to fetch trending fits:', err);
+    } finally {
+      setLoadingFits(false);
+    }
+  };
+
   // Load trending fits whenever dropdown opens or refreshTrigger changes
   useEffect(() => {
-    let isMounted = true;
-    async function loadTrending() {
-      setLoadingFits(true);
-      try {
-        const fits = await fetchTrendingFits(8);
-        if (isMounted) {
-          setTrendingFits(Array.isArray(fits) ? fits : []);
-        }
-      } catch (err) {
-        console.error('[Header] Failed to fetch trending fits:', err);
-      } finally {
-        if (isMounted) setLoadingFits(false);
-      }
-    }
-
-    if (showTrendingDropdown || trendingFits.length === 0) {
-      loadTrending();
-    }
-
-    return () => { isMounted = false; };
+    loadTrending();
+    const t = setTimeout(loadTrending, 400);
+    return () => clearTimeout(t);
   }, [showTrendingDropdown, refreshTrigger]);
+
+  // Realtime subscription for instant trending updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('public:header-trending-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'outfits' }, () => {
+        loadTrending();
+        setTimeout(loadTrending, 500);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'outfit_ratings' }, () => {
+        loadTrending();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'outfit_likes' }, () => {
+        loadTrending();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   // Click outside to close dropdown
   useEffect(() => {

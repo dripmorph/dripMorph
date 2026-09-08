@@ -26,28 +26,51 @@ export default function DesktopRightSidebar({ onUserClick, onFitClick, userCity 
   }, []);
 
   // Load sidebar widgets
-  useEffect(() => {
-    let isMounted = true;
-    async function loadSidebarData() {
-      setIsLoading(true);
-      try {
-        const [fits, creators] = await Promise.all([
-          fetchTrendingFits(3).catch(() => []),
-          fetchTopCreatorsByCity(userCity, 3).catch(() => []),
-        ]);
-        if (isMounted) {
-          setTrendingFits(Array.isArray(fits) ? fits : []);
-          setTopCreators(Array.isArray(creators) ? creators : []);
-        }
-      } catch (err) {
-        console.error('[DesktopRightSidebar] Error loading sidebar data:', err);
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
+  const loadSidebarData = async () => {
+    try {
+      const [fits, creators] = await Promise.all([
+        fetchTrendingFits(3).catch(() => []),
+        fetchTopCreatorsByCity(userCity, 3).catch(() => []),
+      ]);
+      setTrendingFits(Array.isArray(fits) ? fits : []);
+      setTopCreators(Array.isArray(creators) ? creators : []);
+    } catch (err) {
+      console.error('[DesktopRightSidebar] Error loading sidebar data:', err);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  // Initial load and whenever refreshTrigger or userCity changes
+  useEffect(() => {
     loadSidebarData();
-    return () => { isMounted = false; };
+    // Subsequent check in 400ms to catch any async rating row insertion
+    const t = setTimeout(() => {
+      loadSidebarData();
+    }, 400);
+    return () => clearTimeout(t);
   }, [userCity, refreshTrigger]);
+
+  // Realtime subscription for automatic updates on new posts, ratings, and likes
+  useEffect(() => {
+    const channel = supabase
+      .channel('public:sidebar-realtime-feed')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'outfits' }, () => {
+        loadSidebarData();
+        setTimeout(loadSidebarData, 500);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'outfit_ratings' }, () => {
+        loadSidebarData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'outfit_likes' }, () => {
+        loadSidebarData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userCity]);
 
   // Debounced live search against Supabase profiles table
   useEffect(() => {
@@ -211,7 +234,7 @@ export default function DesktopRightSidebar({ onUserClick, onFitClick, userCity 
             </div>
           ) : (
             topCreators.map((creator) => (
-              <div key={creator.username} className="creator-row-item" onClick={() => onUserClick && onUserClick(creator.username)}>
+              <div key={creator.username || creator.id} className="creator-row-item" onClick={() => onUserClick && onUserClick(creator)}>
                 <div className="creator-rank-num">#{creator.rank}</div>
                 <img src={creator.avatar} alt={creator.username || 'creator'} className="creator-avatar-thumb" />
                 <div className="creator-meta">

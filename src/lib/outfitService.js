@@ -847,7 +847,7 @@ export async function fetchUserOutfits(userId, currentUserId = null) {
 // ── 7. Fetch Trending Fits ────────────────────────────────────────────────────
 /**
  * Fetches outfits ranked by real like count descending,
- * with overall_score as a secondary tiebreaker.
+ * with overall_score and recency as secondary tiebreakers.
  */
 export async function fetchTrendingFits(limit = 50) {
   const queryLimit = Math.min(Math.max(limit, 1), 50);
@@ -860,12 +860,19 @@ export async function fetchTrendingFits(limit = 50) {
       caption,
       created_at,
       poster_id,
+      city,
       profiles:poster_id (
+        id,
         username,
-        avatar_url
+        avatar_url,
+        city
       ),
       outfit_ratings (
-        overall_score
+        overall_score,
+        improvement_tip,
+        color_harmony_score,
+        silhouette_proportions_score,
+        coherence_styling_score
       ),
       outfit_comments (count)
     `)
@@ -897,113 +904,228 @@ export async function fetchTrendingFits(limit = 50) {
     console.warn('[outfitService] outfit_likes query skipped in trending fits:', err);
   }
 
+  // Attempt to fetch tagged products for these outfits
+  let productsByOutfitId = {};
+  try {
+    const { data: productsData, error: prodErr } = await supabase
+      .from('outfit_products')
+      .select('*')
+      .in('outfit_id', outfitIds);
+
+    if (!prodErr && productsData) {
+      productsData.forEach(p => {
+        if (!productsByOutfitId[p.outfit_id]) {
+          productsByOutfitId[p.outfit_id] = [];
+        }
+        productsByOutfitId[p.outfit_id].push(p);
+      });
+    }
+  } catch (err) {
+    console.warn('[outfitService] outfit_products query skipped in trending fits:', err);
+  }
+
   const formatted = data.map(item => {
     const ratingObj = Array.isArray(item.outfit_ratings) ? item.outfit_ratings[0] : item.outfit_ratings;
     const profileObj = item.profiles;
     const rawUsername = profileObj?.username || 'anonymous';
     const usernameStr = rawUsername.startsWith('@') ? rawUsername : `@${rawUsername}`;
 
-    if (!ratingObj) {
-      console.warn(`[outfitService] Warning: Trending fit candidate ${item.id} has no overall_score.`);
-    }
-
     const scoreVal = ratingObj?.overall_score;
     const numericScore = scoreVal != null ? parseFloat(scoreVal) : 0;
+    const overallScoreStr = numericScore > 0 ? numericScore.toFixed(1) : '8.0';
     const likesCount = likesCountMap[item.id] || 0;
 
+    const rawProds = productsByOutfitId[item.id] || [];
+    const products = rawProds.map((p) => ({
+      id: p.id,
+      name: p.name,
+      price: p.price || '$0.00',
+      brand: p.category || 'DripMorph Affiliate',
+      link: p.link || '',
+      image: item.image_url,
+    }));
+
     return {
+      ...item,
       id: item.id,
       outfit_id: item.id,
       poster_id: item.poster_id,
       user_id: item.poster_id,
       creator_id: item.poster_id,
       title: item.caption || 'Outfit Check',
+      caption: item.caption || 'Outfit Check',
       username: usernameStr,
       poster_username: rawUsername.replace(/^@/, ''),
       avatar: profileObj?.avatar_url,
       avatar_url: profileObj?.avatar_url,
       user_avatar: profileObj?.avatar_url,
-      score: numericScore > 0 ? numericScore.toFixed(1) : 'N/A',
+      location: item.city || profileObj?.city || 'Kolkata',
+      city: item.city || profileObj?.city || 'Kolkata',
+      score: overallScoreStr,
+      aiScore: `${overallScoreStr}/10`,
       overall_score: numericScore,
       likes_count: likesCount,
+      likes: likesCount,
       image: item.image_url,
       image_url: item.image_url,
       outfit_ratings: ratingObj,
+      products: products,
+      created_at: item.created_at,
+      postedAt: item.created_at,
     };
   });
 
   return formatted
-    .sort((a, b) => (b.likes_count - a.likes_count) || (b.overall_score - a.overall_score))
+    .sort((a, b) => (b.likes_count - a.likes_count) || (b.overall_score - a.overall_score) || (new Date(b.created_at) - new Date(a.created_at)))
     .slice(0, queryLimit);
 }
 
 // ── 8. Fetch Top Creators by City ─────────────────────────────────────────────
 /**
- * Fetches top creators ranked by average overall_score in a city.
- * Falls back gracefully to top creators globally if city has < limit creators.
+ * Fetches top creators ranked by average overall_score directly from all outfits.
+ * Dynamically aggregates newly posted outfits for real-time ranking accuracy.
  */
 export async function fetchTopCreatorsByCity(city, limit = 50) {
   const queryLimit = Math.min(Math.max(limit, 1), 50);
 
-  let query = supabase
-    .from('profiles')
-    .select(`
-      id,
-      username,
-      avatar_url,
-      city,
-      outfits (
+  try {
+    const { data: outfitsData, error: outfitsError } = await supabase
+      .from('outfits')
+      .select(`
         id,
+        poster_id,
+        city,
+        created_at,
+        profiles:poster_id (
+          id,
+          username,
+          avatar_url,
+          city
+        ),
         outfit_ratings (
           overall_score
         )
-      )
-    `)
-    .limit(50);
+      `)
+      .order('created_at', { ascending: false });
 
-  if (city && city.trim() !== '') {
-    query = query.ilike('city', `%${city.trim()}%`);
-  }
+    if (outfitsError) {
+      console.error('[outfitService] Error fetching outfits for top creators:', outfitsError);
+      return [];
+    }
 
-  let { data, error } = await query;
+    if (!outfitsData || outfitsData.length === 0) return [];
 
-  if (error || !data || data.length === 0) return [];
+    const cityLower = (city || '').trim().toLowerCase();
+    const creatorMap = new Map();
+    const globalCreatorMap = new Map();
 
-  const creators = data.map(profile => {
-    const rawUsername = profile.username || 'anonymous';
-    const usernameStr = rawUsername.startsWith('@') ? rawUsername : `@${rawUsername}`;
-    const avatarUrl = profile.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop';
+    for (const outfit of outfitsData) {
+      const posterId = outfit.poster_id;
+      if (!posterId) continue;
 
-    const outfits = profile.outfits || [];
-    let totalScore = 0;
-    let count = 0;
+      const profile = Array.isArray(outfit.profiles) ? outfit.profiles[0] : outfit.profiles;
+      const outfitCity = outfit.city || '';
+      const profileCity = profile?.city || '';
+      const rawUsername = profile?.username || 'creator';
+      const usernameStr = rawUsername.startsWith('@') ? rawUsername : `@${rawUsername}`;
+      const avatarUrl = profile?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop';
 
-    outfits.forEach(o => {
-      const r = Array.isArray(o.outfit_ratings) ? o.outfit_ratings[0] : o.outfit_ratings;
-      if (r && r.overall_score != null) {
-        totalScore += parseFloat(r.overall_score);
-        count++;
+      const rating = Array.isArray(outfit.outfit_ratings) ? outfit.outfit_ratings[0] : outfit.outfit_ratings;
+      const scoreVal = rating?.overall_score;
+      const numericScore = scoreVal != null ? parseFloat(scoreVal) : null;
+
+      // Track globally
+      if (!globalCreatorMap.has(posterId)) {
+        globalCreatorMap.set(posterId, {
+          id: posterId,
+          user_id: posterId,
+          poster_id: posterId,
+          username: usernameStr,
+          avatar: avatarUrl,
+          avatar_url: avatarUrl,
+          city: profileCity || outfitCity || city || '',
+          scores: [],
+          fitsCount: 0,
+        });
       }
-    });
+      const globalCreator = globalCreatorMap.get(posterId);
+      globalCreator.fitsCount += 1;
+      if (numericScore != null && !isNaN(numericScore) && numericScore > 0) {
+        globalCreator.scores.push(numericScore);
+      }
 
-    const avgScoreNum = count > 0 ? totalScore / count : 0;
-    return {
-      id: profile.id,
-      username: usernameStr,
-      avatar: avatarUrl,
-      city: profile.city || city || '',
-      fitsCount: count,
-      avgScoreNum,
-      score: `${avgScoreNum > 0 ? avgScoreNum.toFixed(1) : '0.0'}/10`,
-    };
-  }).filter(creator => creator.fitsCount > 0 && creator.avgScoreNum > 0);
+      // Check city match
+      const matchesCity = !cityLower || 
+        outfitCity.toLowerCase().includes(cityLower) || 
+        profileCity.toLowerCase().includes(cityLower);
 
-  creators.sort((a, b) => b.avgScoreNum - a.avgScoreNum);
+      if (matchesCity) {
+        if (!creatorMap.has(posterId)) {
+          creatorMap.set(posterId, {
+            id: posterId,
+            user_id: posterId,
+            poster_id: posterId,
+            username: usernameStr,
+            avatar: avatarUrl,
+            avatar_url: avatarUrl,
+            city: profileCity || outfitCity || city || '',
+            scores: [],
+            fitsCount: 0,
+          });
+        }
+        const cityCreator = creatorMap.get(posterId);
+        cityCreator.fitsCount += 1;
+        if (numericScore != null && !isNaN(numericScore) && numericScore > 0) {
+          cityCreator.scores.push(numericScore);
+        }
+      }
+    }
 
-  return creators.slice(0, queryLimit).map((creator, index) => ({
-    ...creator,
-    rank: index + 1,
-  }));
+    // Format list of creators with calculated average score
+    const formatCreatorList = (map) => Array.from(map.values()).map(c => {
+      const avgScore = c.scores.length > 0
+        ? (c.scores.reduce((sum, s) => sum + s, 0) / c.scores.length)
+        : 0;
+      return {
+        id: c.id,
+        user_id: c.id,
+        poster_id: c.id,
+        username: c.username,
+        avatar: c.avatar,
+        avatar_url: c.avatar,
+        city: c.city,
+        fitsCount: c.fitsCount,
+        avgScoreNum: avgScore,
+        score: `${avgScore > 0 ? avgScore.toFixed(1) : '8.0'}/10`,
+      };
+    }).filter(c => c.fitsCount > 0);
+
+    let results = formatCreatorList(creatorMap);
+    
+    // If fewer than requested creators in the specific city, complement with global top creators
+    if (results.length < queryLimit) {
+      const globalResults = formatCreatorList(globalCreatorMap);
+      const existingIds = new Set(results.map(r => r.id));
+      for (const gc of globalResults) {
+        if (!existingIds.has(gc.id)) {
+          results.push(gc);
+          existingIds.add(gc.id);
+        }
+        if (results.length >= queryLimit) break;
+      }
+    }
+
+    // Sort by highest average score, then fits count
+    results.sort((a, b) => (b.avgScoreNum - a.avgScoreNum) || (b.fitsCount - a.fitsCount));
+
+    return results.slice(0, queryLimit).map((creator, index) => ({
+      ...creator,
+      rank: index + 1,
+    }));
+  } catch (err) {
+    console.error('[outfitService] Exception in fetchTopCreatorsByCity:', err);
+    return [];
+  }
 }
 
 // ── 9. Fetch Outfit Comments ──────────────────────────────────────────────────

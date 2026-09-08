@@ -129,26 +129,46 @@ export default function Leaderboard({ onUserClick, onFitClick, showToast, refres
     setSearchResults([]);
   };
 
-  useEffect(() => {
-    let isMounted = true;
-    async function loadData() {
-      setIsLoading(true);
-      try {
-        const cityFilter = scope === 'local' ? selectedCity : null;
-        const remote = await fetchLeaderboard({ city: cityFilter, limit: 50 });
-        if (isMounted) {
-          setCreators(remote || []);
-        }
-      } catch (err) {
-        console.warn('[Leaderboard] Remote fetch error:', err);
-        if (isMounted) setCreators([]);
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
+  const loadData = async () => {
+    try {
+      const cityFilter = scope === 'local' ? selectedCity : null;
+      const remote = await fetchLeaderboard({ city: cityFilter, limit: 50 });
+      setCreators(remote || []);
+    } catch (err) {
+      console.warn('[Leaderboard] Remote fetch error:', err);
+      setCreators([]);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
+    setIsLoading(true);
     loadData();
-    return () => { isMounted = false; };
+    const t = setTimeout(loadData, 400);
+    return () => clearTimeout(t);
   }, [scope, selectedCity, refreshTrigger]);
+
+  // Realtime subscription for automatic updates on new posts, ratings, and likes
+  useEffect(() => {
+    const channel = supabase
+      .channel('public:leaderboard-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'outfits' }, () => {
+        loadData();
+        setTimeout(loadData, 500);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'outfit_ratings' }, () => {
+        loadData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'outfit_likes' }, () => {
+        loadData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [scope, selectedCity]);
 
   // Podium elements from actual rankings (unaffected by search!)
   const topOne = creators.find(p => Number(p.rank) === 1) || creators[0];
