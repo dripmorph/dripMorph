@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import Header from './components/Header';
 import BottomNav from './components/BottomNav';
 import DesktopSidebar from './components/DesktopSidebar';
@@ -392,6 +392,65 @@ export default function App() {
   const [deletingPost, setDeletingPost] = useState(null);
   const [sharingPost, setSharingPost] = useState(null);
 
+  // Synchronized Like Handler: keeps feed posts, modal fit, and profile fits strictly in sync
+  const handleToggleLike = useCallback((outfitId, nextLiked, nextCount) => {
+    // 1. Update posts array
+    setPosts(prevPosts =>
+      prevPosts.map(p => {
+        if (p.id === outfitId) {
+          return {
+            ...p,
+            user_has_liked: nextLiked,
+            likes: nextCount,
+            likes_count: nextCount,
+          };
+        }
+        return p;
+      })
+    );
+
+    // 2. Update selectedFitForDetail if currently open
+    setSelectedFitForDetail(prevFit => {
+      if (prevFit && (prevFit.id === outfitId || prevFit.outfit_id === outfitId)) {
+        return {
+          ...prevFit,
+          user_has_liked: nextLiked,
+          likes: nextCount,
+          likes_count: nextCount,
+        };
+      }
+      return prevFit;
+    });
+
+    // 3. Update profileFits state
+    setProfileFits(prevFits => {
+      const updateList = (list) =>
+        Array.isArray(list)
+          ? list.map(f => {
+              if (f.id === outfitId) {
+                return {
+                  ...f,
+                  user_has_liked: nextLiked,
+                  likes: nextCount,
+                  likes_count: nextCount,
+                };
+              }
+              return f;
+            })
+          : [];
+      return {
+        'ALL TIME': updateList(prevFits['ALL TIME']),
+        'THIS WEEK': updateList(prevFits['THIS WEEK']),
+      };
+    });
+  }, []);
+
+  const handleOpenFitDetail = (fit) => {
+    if (!fit) return;
+    const freshFit = posts.find(p => p.id === fit.id) || fit;
+    setSelectedFitForDetail(freshFit);
+  };
+
   // Auto-hide toast after 2.5 seconds
   const [debugError, setDebugError] = useState(null);
 
@@ -782,7 +841,7 @@ export default function App() {
         onBellClick={handleBellClick} 
         hasNotifications={hasNotifications}
         onTabChange={handleTabChange}
-        onFitClick={(fit) => setSelectedFitForDetail(fit)}
+        onFitClick={handleOpenFitDetail}
         refreshTrigger={refreshTrigger}
       />
 
@@ -809,8 +868,9 @@ export default function App() {
                 posts={posts}
                 isLoading={isLoadingFeed}
                 onShopClick={handleOpenShopModal}
-                onFitClick={(fit) => setSelectedFitForDetail(fit)}
+                onFitClick={handleOpenFitDetail}
                 onShareClick={handleShare}
+                onToggleLike={handleToggleLike}
                 showToast={showToast}
                 onEditPost={(post) => setEditingPost(post)}
                 onDeletePost={(post) => setDeletingPost(post)}
@@ -821,7 +881,7 @@ export default function App() {
             </div>
 
             <div style={{ display: activeTab === 'ranks' ? 'flex' : 'none', flex: 1, flexDirection: 'column', overflow: 'hidden', height: '100%' }}>
-              <Leaderboard showToast={showToast} onUserClick={handleNavigateToProfile} onFitClick={(fit) => setSelectedFitForDetail(fit)} refreshTrigger={refreshTrigger} />
+              <Leaderboard showToast={showToast} onUserClick={handleNavigateToProfile} onFitClick={handleOpenFitDetail} refreshTrigger={refreshTrigger} />
             </div>
 
             <div style={{ display: activeTab === 'post' ? 'flex' : 'none', flex: 1, flexDirection: 'column', overflow: 'hidden', height: '100%' }}>
@@ -837,7 +897,7 @@ export default function App() {
                 viewedUser={viewedProfileUser}
                 isOwnProfile={isUserSelf(viewedProfileUser)}
                 onShopClick={handleOpenShopModal} 
-                onFitClick={(fit) => setSelectedFitForDetail(fit)}
+                onFitClick={handleOpenFitDetail}
                 onEditFit={(fit) => setEditingPost(fit)}
                 onDeleteFit={(fit) => setDeletingPost(fit)}
                 onBackClick={profileBackStack.length > 0 ? handleBackNavigation : null}
@@ -862,7 +922,7 @@ export default function App() {
         <DesktopRightSidebar
           userCity={user?.city || 'Seattle'}
           onUserClick={handleNavigateToProfile}
-          onFitClick={(fit) => setSelectedFitForDetail(fit)}
+          onFitClick={handleOpenFitDetail}
           refreshTrigger={refreshTrigger}
         />
       </div>
@@ -913,7 +973,7 @@ export default function App() {
         {/* FULL FIT DETAIL MODAL */}
         {selectedFitForDetail && (
           <FitDetailModal 
-            fit={selectedFitForDetail} 
+            fit={posts.find(p => p.id === selectedFitForDetail.id) || selectedFitForDetail} 
             onClose={() => {
               setSelectedFitForDetail(null);
             }} 
@@ -931,6 +991,7 @@ export default function App() {
             onShareClick={(fit) => {
               setSharingPost(fit);
             }}
+            onToggleLike={handleToggleLike}
             showToast={showToast}
           />
         )}
@@ -996,7 +1057,7 @@ export default function App() {
               }
               handleTabChange('chat');
             }}
-            onFitClick={(fit) => setSelectedFitForDetail(fit)}
+            onFitClick={handleOpenFitDetail}
           />
         )}
 

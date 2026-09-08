@@ -14,6 +14,7 @@ export default function PostCard({
   onDeletePost,
   onCommentClick,
   onUserClick,
+  onToggleLike,
   currentUsername = 'minimalist_enzo'
 }) {
   const { user } = useAuth();
@@ -59,6 +60,10 @@ export default function PostCard({
     setAnimateLike(true);
     setTimeout(() => setAnimateLike(false), 300);
 
+    if (onToggleLike) {
+      onToggleLike(post.id, nextLiked, nextCount);
+    }
+
     if (nextLiked && showToast) {
       showToast('Added to Liked Outfits!');
     }
@@ -70,6 +75,9 @@ export default function PostCard({
       // Rollback on write error
       setLiked(previousLiked);
       setLikeCount(previousCount);
+      if (onToggleLike) {
+        onToggleLike(post.id, previousLiked, previousCount);
+      }
       const displayMsg = err?.message || 'Failed to update like. Please try again.';
       if (showToast) showToast(displayMsg);
     }
@@ -87,7 +95,12 @@ export default function PostCard({
       // Single Tap: Wait 250ms to see if a second tap follows
       timerRef.current = setTimeout(() => {
         if (onFitClick) {
-          onFitClick(post);
+          onFitClick({
+            ...post,
+            user_has_liked: liked,
+            likes: likeCount,
+            likes_count: likeCount,
+          });
         }
       }, 250);
     } else if (e.detail >= 2) {

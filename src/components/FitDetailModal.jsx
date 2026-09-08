@@ -11,6 +11,7 @@ export default function FitDetailModal({
   onUserClick,
   onCommentClick,
   onShareClick,
+  onToggleLike,
   showToast
 }) {
   const { user } = useAuth();
@@ -71,7 +72,7 @@ export default function FitDetailModal({
       setLikeCount(fit.likes_count ?? fit.likes ?? 0);
       setCommentCount(fit.comments_count ?? fit.comments ?? 0);
     }
-  }, [fit?.user_has_liked, fit?.likes_count, fit?.likes, fit?.comments_count, fit?.comments]);
+  }, [fit?.id, fit?.user_has_liked, fit?.likes_count, fit?.likes, fit?.comments_count, fit?.comments]);
 
   if (!fit) return null;
 
@@ -98,6 +99,10 @@ export default function FitDetailModal({
     setAnimateLike(true);
     setTimeout(() => setAnimateLike(false), 300);
 
+    if (onToggleLike) {
+      onToggleLike(fit.id, nextLiked, nextCount);
+    }
+
     if (nextLiked && showToast) {
       showToast('Added to Liked Outfits!');
     }
@@ -108,6 +113,9 @@ export default function FitDetailModal({
       console.error('[FitDetailModal] toggleLike error:', err);
       setLiked(previousLiked);
       setLikeCount(previousCount);
+      if (onToggleLike) {
+        onToggleLike(fit.id, previousLiked, previousCount);
+      }
       if (showToast) showToast('Failed to update like. Please try again.');
     }
   };

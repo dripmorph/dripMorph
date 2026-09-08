@@ -14,6 +14,7 @@ export default function Feed({
   onCommentClick,
   onUserClick,
   onUploadClick,
+  onToggleLike,
 }) {
   if (isLoading) {
     return (
@@ -139,6 +140,7 @@ export default function Feed({
             onDeletePost={onDeletePost}
             onCommentClick={() => onCommentClick(post)}
             onUserClick={onUserClick}
+            onToggleLike={onToggleLike}
           />
         ))}
       </div>
@@ -155,6 +157,7 @@ export default function Feed({
             onDeletePost={onDeletePost}
             onCommentClick={() => onCommentClick(post)}
             onUserClick={onUserClick}
+            onToggleLike={onToggleLike}
           />
         ))}
       </div>
