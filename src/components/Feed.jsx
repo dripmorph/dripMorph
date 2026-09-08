@@ -18,22 +18,40 @@ export default function Feed({
   if (isLoading) {
     return (
       <div className="feed-container pinterest-grid">
-        {[260, 340, 220, 300, 240, 320].map((h, i) => (
-          <div
-            key={i}
-            className="pinterest-skeleton-card"
-            style={{
-              height: `${h}px`,
-              borderRadius: '16px',
-              backgroundColor: 'rgba(255, 255, 255, 0.04)',
-              marginBottom: '16px',
-              breakInside: 'avoid',
-              position: 'relative',
-              overflow: 'hidden',
-              animation: 'pinterestPulse 1.4s ease-in-out infinite alternate',
-            }}
-          />
-        ))}
+        <div className="pinterest-column">
+          {[280, 220, 320].map((h, i) => (
+            <div
+              key={i}
+              className="pinterest-skeleton-card"
+              style={{
+                height: `${h}px`,
+                borderRadius: '16px',
+                backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                width: '100%',
+                position: 'relative',
+                overflow: 'hidden',
+                animation: 'pinterestPulse 1.4s ease-in-out infinite alternate',
+              }}
+            />
+          ))}
+        </div>
+        <div className="pinterest-column">
+          {[220, 340, 260].map((h, i) => (
+            <div
+              key={i}
+              className="pinterest-skeleton-card"
+              style={{
+                height: `${h}px`,
+                borderRadius: '16px',
+                backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                width: '100%',
+                position: 'relative',
+                overflow: 'hidden',
+                animation: 'pinterestPulse 1.4s ease-in-out infinite alternate',
+              }}
+            />
+          ))}
+        </div>
       </div>
     );
   }
@@ -46,7 +64,7 @@ export default function Feed({
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            justify: 'center',
+            justifyContent: 'center',
             padding: '80px 24px',
             textAlign: 'center',
             background: 'rgba(255, 255, 255, 0.02)',
@@ -64,7 +82,7 @@ export default function Feed({
               background: 'rgba(166, 252, 41, 0.1)',
               display: 'flex',
               alignItems: 'center',
-              justify: 'center',
+              justifyContent: 'center',
               color: '#A6FC29',
             }}
           >
@@ -103,23 +121,43 @@ export default function Feed({
     );
   }
 
+  const col1 = posts.filter((_, i) => i % 2 === 0);
+  const col2 = posts.filter((_, i) => i % 2 === 1);
+
   return (
     <div className="feed-container pinterest-grid">
-      {posts.map((post) => (
-        <PostCard
-          key={post.id}
-          post={post}
-          onShopClick={onShopClick}
-          onFitClick={onFitClick}
-          onShareClick={onShareClick}
-          showToast={showToast}
-          onEditPost={onEditPost}
-          onDeletePost={onDeletePost}
-          onCommentClick={() => onCommentClick(post)}
-          onUserClick={onUserClick}
-        />
-      ))}
+      <div className="pinterest-column">
+        {col1.map((post) => (
+          <PostCard
+            key={post.id}
+            post={post}
+            onShopClick={onShopClick}
+            onFitClick={onFitClick}
+            onShareClick={onShareClick}
+            showToast={showToast}
+            onEditPost={onEditPost}
+            onDeletePost={onDeletePost}
+            onCommentClick={() => onCommentClick(post)}
+            onUserClick={onUserClick}
+          />
+        ))}
+      </div>
+      <div className="pinterest-column">
+        {col2.map((post) => (
+          <PostCard
+            key={post.id}
+            post={post}
+            onShopClick={onShopClick}
+            onFitClick={onFitClick}
+            onShareClick={onShareClick}
+            showToast={showToast}
+            onEditPost={onEditPost}
+            onDeletePost={onDeletePost}
+            onCommentClick={() => onCommentClick(post)}
+            onUserClick={onUserClick}
+          />
+        ))}
+      </div>
     </div>
   );
 }
-

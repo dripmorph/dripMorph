@@ -104,14 +104,28 @@ body {
 .pinterest-grid {
   width: 100%;
   height: 100%;
-  overflow-y: auto;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
   -webkit-overflow-scrolling: touch;
-  column-count: 2;
-  column-gap: 10px;
-  padding: 12px 10px 85px;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  padding: 12px 10px 85px !important;
   box-sizing: border-box;
   scrollbar-width: thin;
   scrollbar-color: rgba(166, 252, 41, 0.3) transparent;
+}
+
+.pinterest-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  width: 50%;
+  box-sizing: border-box;
 }
 
 .feed-container::-webkit-scrollbar {
@@ -129,10 +143,9 @@ body {
 
 .pinterest-pin,
 .post-card {
-  display: inline-block;
+  display: block;
   width: 100%;
-  margin-bottom: 12px;
-  break-inside: avoid;
+  margin-bottom: 0;
   border-radius: 16px;
   overflow: hidden;
   position: relative;
@@ -6185,24 +6198,36 @@ body {
   /* Desktop Pinterest Feed Layout */
   .feed-container,
   .pinterest-grid {
-    height: 100vh;
-    max-height: 100vh;
-    overflow-y: auto;
-    column-count: 2;
-    column-gap: 16px;
-    padding: 20px 16px 40px;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    gap: 16px !important;
+    padding: 20px 16px 40px !important;
     box-sizing: border-box;
-    display: block;
+  }
+
+  .pinterest-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+    width: 50%;
+    box-sizing: border-box;
   }
 
   .pinterest-pin,
   .post-card {
-    display: inline-block;
+    display: block;
     width: 100%;
     max-width: 100%;
     height: auto;
-    margin: 0 0 16px 0;
-    break-inside: avoid;
+    margin: 0;
     border-radius: 18px;
     position: relative;
     overflow: hidden;
