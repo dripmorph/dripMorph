@@ -5823,6 +5823,286 @@ body {
   transform: scale(0.96);
 }
 
+/* ── Fit Detail Zoom Badges & Enlarged Lightbox ── */
+.fit-zoom-hint-badge {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 9999px;
+  padding: 5px 12px;
+  color: #e4e4e7;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+  z-index: 10;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  animation: fadeInHint 0.3s ease;
+  user-select: none;
+}
+
+@keyframes fadeInHint {
+  from { opacity: 0; transform: translate(-50%, 6px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.fit-zoom-reset-badge {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--accent-solid, #a6fc29);
+  border-radius: 9999px;
+  padding: 6px 13px;
+  color: var(--accent-solid, #a6fc29);
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  z-index: 15;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  transition: transform 0.18s ease, background-color 0.18s ease;
+}
+
+.fit-zoom-reset-badge:hover {
+  background: rgba(166, 252, 41, 0.18);
+  transform: scale(1.05);
+}
+
+.fit-zoom-reset-badge:active {
+  transform: scale(0.96);
+}
+
+/* Enlarged Fullscreen Lightbox */
+.fit-enlarged-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: 100000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  box-sizing: border-box;
+  animation: fitEnlargedFade 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fitEnlargedFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.fit-enlarged-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1200px;
+  z-index: 20;
+  gap: 12px;
+  padding-bottom: 8px;
+}
+
+.fit-enlarged-user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.fit-enlarged-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--accent-solid, #a6fc29);
+  flex-shrink: 0;
+}
+
+.fit-enlarged-uname {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #ffffff;
+}
+
+.fit-enlarged-caption {
+  font-size: 0.78rem;
+  color: #a1a1aa;
+  max-width: 300px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fit-enlarged-close-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.fit-enlarged-close-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: scale(1.08);
+}
+
+.fit-enlarged-image-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  user-select: none;
+  touch-action: none;
+}
+
+.fit-enlarged-image {
+  max-width: 90vw;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 16px 56px rgba(0, 0, 0, 0.85);
+  pointer-events: auto;
+  user-select: none;
+}
+
+.fit-enlarged-toolbar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(20, 20, 25, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 9999px;
+  padding: 6px 14px;
+  z-index: 30;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.65);
+}
+
+.fit-toolbar-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  outline: none;
+}
+
+.fit-toolbar-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.22);
+  color: var(--accent-solid, #a6fc29);
+  transform: scale(1.08);
+}
+
+.fit-toolbar-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.fit-toolbar-scale {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #e4e4e7;
+  min-width: 46px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+
+/* Light Mode Overrides for Fit Detail & Zoom */
+[data-theme='light'] .fit-zoom-hint-badge {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 0, 0, 0.15);
+  color: #18181b;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme='light'] .fit-zoom-reset-badge {
+  background: rgba(255, 255, 255, 0.9);
+  color: #15803d;
+  border-color: #16a34a;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme='light'] .fit-enlarged-overlay {
+  background: rgba(245, 245, 247, 0.97);
+}
+
+[data-theme='light'] .fit-enlarged-uname {
+  color: #18181b;
+}
+
+[data-theme='light'] .fit-enlarged-caption {
+  color: #71717a;
+}
+
+[data-theme='light'] .fit-enlarged-close-btn {
+  background: rgba(0, 0, 0, 0.07);
+  border-color: rgba(0, 0, 0, 0.12);
+  color: #18181b;
+}
+
+[data-theme='light'] .fit-enlarged-close-btn:hover {
+  background: rgba(0, 0, 0, 0.14);
+}
+
+[data-theme='light'] .fit-enlarged-toolbar {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme='light'] .fit-toolbar-btn {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.08);
+  color: #18181b;
+}
+
+[data-theme='light'] .fit-toolbar-btn:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.12);
+  color: #15803d;
+}
+
+[data-theme='light'] .fit-toolbar-scale {
+  color: #18181b;
+}
+
+
 /* ==========================================
    Username Selection Screen Styles
    ========================================== */
