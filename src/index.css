@@ -710,51 +710,77 @@ body {
   text-align: center;
 }
 
-/* Bottom Navigation Bar style (Base Mobile: Visible & Fixed) */
+/* Bottom Navigation Bar style (Pinterest Floating Capsule Dock on Mobile) */
 .app-bottom-nav,
 .bottom-nav-dock {
-  height: 60px;
-  background: #121214 !important;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-top: 1px solid #27272A !important;
-  display: flex;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
+  height: 54px;
+  background: rgba(20, 20, 24, 0.92) !important;
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 9999px !important;
+  display: flex !important;
+  position: fixed !important;
+  bottom: max(16px, env(safe-area-inset-bottom, 16px)) !important;
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+  width: fit-content !important;
+  max-width: calc(100vw - 32px) !important;
+  z-index: 1000 !important;
   align-items: center;
-  justify-content: space-around;
-  padding: 0 8px;
+  justify-content: center;
+  padding: 4px 8px !important;
+  gap: 6px;
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.25s ease;
 }
 
 .nav-tab,
 .nav-item {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2px;
+  justify-content: center;
   color: #9CA3AF !important;
-  background: none;
+  background: transparent;
   border: none;
   cursor: pointer;
-  width: 60px;
-  padding: 6px 0;
-  font-size: 0.65rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  border-radius: 8px;
+  width: 48px;
+  height: 42px;
+  padding: 0;
+  border-radius: 9999px;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: relative;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.nav-tab svg,
+.nav-item svg {
+  transition: transform 0.2s ease, stroke 0.2s ease;
+}
+
+.nav-tab:hover:not(.active),
+.nav-item:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.08);
+  color: #F3F4F6 !important;
 }
 
 .nav-tab.active,
 .nav-item.active {
-  background: #223311 !important;
-  color: #A6FC29 !important;
+  background: #FFFFFF !important;
+  color: #000000 !important;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.2);
+}
+
+.nav-tab.active svg,
+.nav-item.active svg {
+  stroke: #000000 !important;
+  color: #000000 !important;
 }
 
 .nav-tab:active {
-  transform: scale(0.95);
+  transform: scale(0.92);
 }
 
 /* Shop Modal */
@@ -6561,9 +6587,9 @@ body {
 /* ================= LIGHT MODE: Bottom & Desktop Navigation Bar ================= */
 [data-theme='light'] .app-bottom-nav,
 [data-theme='light'] .bottom-nav-dock {
-  background: #FFFFFF !important;
-  border-top: 1px solid #E2E8F0 !important;
-  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06) !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.16), 0 4px 12px rgba(0, 0, 0, 0.08) !important;
 }
 
 [data-theme='light'] .nav-tab,
@@ -6571,16 +6597,23 @@ body {
   color: #64748B !important;
 }
 
+[data-theme='light'] .nav-tab:hover:not(.active),
+[data-theme='light'] .nav-item:hover:not(.active) {
+  background: rgba(0, 0, 0, 0.05);
+  color: #0F172A !important;
+}
+
 [data-theme='light'] .nav-tab.active,
 [data-theme='light'] .nav-item.active {
-  background: #A6FC29 !important;
-  color: #0D0D0F !important;
+  background: #000000 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 [data-theme='light'] .nav-tab.active svg,
 [data-theme='light'] .nav-item.active svg {
-  color: #0D0D0F !important;
-  stroke: #0D0D0F !important;
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
 }
 
 /* Desktop Sidebar Nav - Active page text & icon black in light mode */

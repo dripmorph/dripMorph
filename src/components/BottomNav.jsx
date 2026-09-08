@@ -15,7 +15,10 @@ export default function BottomNav({ activeTab = 'feed', onTabChange, hiddenOnMob
   ];
 
   return (
-    <nav className={`app-bottom-nav bottom-nav-dock${hiddenOnMobile ? ' nav-hidden-mobile' : ''}`}>
+    <nav
+      className={`app-bottom-nav bottom-nav-dock${hiddenOnMobile ? ' nav-hidden-mobile' : ''}`}
+      aria-label="Navigation Dock"
+    >
       {tabs.map((tab) => {
         const IconComponent = tab.icon;
         const isActive = currentTab === tab.id;
@@ -25,23 +28,24 @@ export default function BottomNav({ activeTab = 'feed', onTabChange, hiddenOnMob
             key={tab.id}
             className={`nav-tab nav-item ${isActive ? 'active' : ''}`}
             onClick={() => onTabChange(tab.id)}
+            aria-label={tab.name}
+            title={tab.name}
           >
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <IconComponent size={22} strokeWidth={isActive ? 2.5 : 2} />
               {showDot && (
                 <span style={{
                   position: 'absolute',
-                  top: '-1px',
-                  right: '-3px',
+                  top: '-2px',
+                  right: '-2px',
                   width: '8px',
                   height: '8px',
-                  backgroundColor: 'var(--accent-solid, #a6fc29)',
+                  backgroundColor: '#EF4444',
                   borderRadius: '50%',
-                  border: '1.5px solid var(--bg-color, #09090b)'
+                  border: '1.5px solid currentColor'
                 }} />
               )}
             </div>
-            <span>{tab.name}</span>
           </button>
         );
       })}
