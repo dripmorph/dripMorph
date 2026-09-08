@@ -36,9 +36,6 @@ export default function SettingsModal({ isOpen, onClose, showToast, onProfileUpd
 
   // Modals inside settings
   const [showPasswordForm, setShowPasswordForm] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
 
   // Delete Account Modal state
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
@@ -145,22 +142,7 @@ export default function SettingsModal({ isOpen, onClose, showToast, onProfileUpd
     }
   };
 
-  const handlePasswordSubmit = (e) => {
-    e.preventDefault();
-    if (!currentPassword || !newPassword) {
-      if (showToast) showToast('Please enter both current and new password.');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      if (showToast) showToast('Passwords do not match.');
-      return;
-    }
-    setShowPasswordForm(false);
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    if (showToast) showToast('Password updated successfully.');
-  };
+
 
   return (
     <div className="settings-overlay" onClick={onClose}>

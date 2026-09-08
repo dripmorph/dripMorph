@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, KeyRound, Mail, Clock, RefreshCw, Eye, EyeOff, CheckCircle2, AlertCircle, Lock } from 'lucide-react';
+import { X, KeyRound, Mail, Clock, RefreshCw, Eye, EyeOff, CheckCircle2, AlertCircle, Lock, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabaseClient';
 
 export default function ChangePasswordModal({ isOpen, onClose, showToast }) {
   const { user } = useAuth();
@@ -8,6 +9,10 @@ export default function ChangePasswordModal({ isOpen, onClose, showToast }) {
 
   // Step state: 1 = Send Code, 2 = Enter OTP, 3 = New Password, 4 = Success
   const [step, setStep] = useState(1);
+
+  // Loading states
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // OTP state
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -27,6 +32,8 @@ export default function ChangePasswordModal({ isOpen, onClose, showToast }) {
   useEffect(() => {
     if (!isOpen) {
       setStep(1);
+      setIsSendingCode(false);
+      setIsSubmitting(false);
       setOtp(['', '', '', '', '', '']);
       setTimer(60);
       setIsTimerRunning(false);
@@ -54,21 +61,63 @@ export default function ChangePasswordModal({ isOpen, onClose, showToast }) {
   if (!isOpen) return null;
 
   // Handlers
-  const handleSendCode = () => {
-    setStep(2);
-    setTimer(60);
-    setIsTimerRunning(true);
+  const handleSendCode = async () => {
+    setIsSendingCode(true);
     setOtpError('');
-    if (showToast) showToast(`Verification code sent to ${email}`);
+    try {
+      console.log('[ChangePasswordModal] Calling supabase.auth.reauthenticate()...');
+      const { error } = await supabase.auth.reauthenticate();
+      if (error) {
+        console.error('[ChangePasswordModal] reauthenticate error:', error);
+        if (error.status === 429 || error.message?.toLowerCase().includes('rate') || error.message?.toLowerCase().includes('once every')) {
+          setOtpError('Rate limit reached. Please wait a minute before requesting another code.');
+          if (showToast) showToast('Rate limit reached. Please wait a moment.');
+        } else {
+          setOtpError(error.message || 'Failed to send verification code. Please try again.');
+          if (showToast) showToast(error.message || 'Failed to send verification code.');
+        }
+        return;
+      }
+      setStep(2);
+      setTimer(60);
+      setIsTimerRunning(true);
+      setOtp(['', '', '', '', '', '']);
+      if (showToast) showToast(`Verification code sent to ${email}`);
+    } catch (err) {
+      console.error('[ChangePasswordModal] Unexpected error in handleSendCode:', err);
+      setOtpError(err.message || 'An unexpected error occurred while sending the code.');
+    } finally {
+      setIsSendingCode(false);
+    }
   };
 
-  const handleResendCode = () => {
-    if (timer > 0) return;
-    setTimer(60);
-    setIsTimerRunning(true);
-    setOtp(['', '', '', '', '', '']);
+  const handleResendCode = async () => {
+    if (timer > 0 || isSendingCode) return;
+    setIsSendingCode(true);
     setOtpError('');
-    if (showToast) showToast('New verification code sent!');
+    try {
+      console.log('[ChangePasswordModal] Resending reauthenticate code...');
+      const { error } = await supabase.auth.reauthenticate();
+      if (error) {
+        console.error('[ChangePasswordModal] Resend error:', error);
+        if (error.status === 429 || error.message?.toLowerCase().includes('rate')) {
+          setOtpError('Rate limit reached. Please wait a moment before requesting another code.');
+        } else {
+          setOtpError(error.message || 'Failed to resend verification code.');
+        }
+        if (showToast) showToast(error.message || 'Failed to resend code.');
+        return;
+      }
+      setTimer(60);
+      setIsTimerRunning(true);
+      setOtp(['', '', '', '', '', '']);
+      if (showToast) showToast('New verification code sent!');
+    } catch (err) {
+      console.error('[ChangePasswordModal] Unexpected error in handleResendCode:', err);
+      setOtpError(err.message || 'Failed to resend verification code.');
+    } finally {
+      setIsSendingCode(false);
+    }
   };
 
   const handleOtpChange = (index, value) => {
@@ -109,21 +158,17 @@ export default function ChangePasswordModal({ isOpen, onClose, showToast }) {
 
   const handleVerifyOtp = (e) => {
     if (e) e.preventDefault();
-    const code = otp.join('');
+    const code = otp.join('').trim();
     if (code.length < 6) {
       setOtpError('Please enter all 6 digits of the verification code.');
       return;
     }
-    if (code === '123456') {
-      setOtpError('');
-      setStep(3);
-      if (showToast) showToast('OTP Verified!');
-    } else {
-      setOtpError('Invalid verification code. Please enter 123456 for testing.');
-    }
+    setOtpError('');
+    setStep(3);
+    if (showToast) showToast('Verification code received. Please set your new password.');
   };
 
-  const handlePasswordSubmit = (e) => {
+  const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     setPassError('');
 
@@ -136,12 +181,44 @@ export default function ChangePasswordModal({ isOpen, onClose, showToast }) {
       return;
     }
 
-    setStep(4);
-    if (showToast) showToast('Password updated');
+    const code = otp.join('').trim();
+    if (!code || code.length < 6) {
+      setPassError('Verification code is missing. Please restart the verification process.');
+      return;
+    }
 
-    setTimeout(() => {
-      onClose();
-    }, 1500);
+    setIsSubmitting(true);
+    try {
+      console.log('[ChangePasswordModal] Submitting new password with reauthentication nonce...');
+      const { data, error } = await supabase.auth.updateUser({
+        password: newPassword,
+        nonce: code,
+      });
+
+      if (error) {
+        console.error('[ChangePasswordModal] updateUser error:', error);
+        const errMsg = error.message?.toLowerCase() || '';
+        if (errMsg.includes('nonce') || errMsg.includes('reauth') || errMsg.includes('expired') || errMsg.includes('invalid')) {
+          setPassError('Invalid or expired verification code, please try again.');
+        } else {
+          setPassError(error.message || 'Failed to update password. Please try again.');
+        }
+        return;
+      }
+
+      console.log('[ChangePasswordModal] Password updated successfully:', data);
+      setStep(4);
+      if (showToast) showToast('Password updated successfully');
+
+      setTimeout(() => {
+        onClose();
+      }, 1500);
+    } catch (err) {
+      console.error('[ChangePasswordModal] Unexpected error in handlePasswordSubmit:', err);
+      setPassError(err.message || 'An unexpected error occurred. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -176,8 +253,9 @@ export default function ChangePasswordModal({ isOpen, onClose, showToast }) {
             <button
               className="change-pass-btn-primary"
               onClick={handleSendCode}
+              disabled={isSendingCode}
             >
-              Send Code
+              {isSendingCode ? 'Sending Code...' : 'Send Code'}
             </button>
           </div>
         )}
@@ -192,9 +270,6 @@ export default function ChangePasswordModal({ isOpen, onClose, showToast }) {
             <p className="change-pass-step-desc">
               Enter the 6-digit code sent to <strong style={{ color: 'var(--text-primary)' }}>{email}</strong>
             </p>
-            <div className="change-pass-test-hint">
-              <span>💡 Mock Code: <strong>123456</strong></span>
-            </div>
 
             {/* 6-Digit Inputs */}
             <div className="otp-inputs-wrapper">
@@ -229,12 +304,12 @@ export default function ChangePasswordModal({ isOpen, onClose, showToast }) {
               </div>
               <button
                 type="button"
-                className={`change-pass-resend-btn ${timer > 0 ? 'disabled' : 'active'}`}
+                className={`change-pass-resend-btn ${timer > 0 || isSendingCode ? 'disabled' : 'active'}`}
                 onClick={handleResendCode}
-                disabled={timer > 0}
+                disabled={timer > 0 || isSendingCode}
               >
-                <RefreshCw size={13} className={isTimerRunning && timer > 0 ? 'spin' : ''} />
-                <span>Resend Code</span>
+                <RefreshCw size={13} className={isSendingCode || (isTimerRunning && timer > 0) ? 'spin' : ''} />
+                <span>{isSendingCode ? 'Sending...' : 'Resend Code'}</span>
               </button>
             </div>
 
@@ -243,7 +318,7 @@ export default function ChangePasswordModal({ isOpen, onClose, showToast }) {
               className="change-pass-btn-primary"
               disabled={otp.join('').length < 6}
             >
-              Verify Code
+              Continue
             </button>
           </form>
         )}
@@ -276,6 +351,7 @@ export default function ChangePasswordModal({ isOpen, onClose, showToast }) {
                   placeholder="Min 8 characters"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
+                  disabled={isSubmitting}
                   required
                 />
                 <button
@@ -298,6 +374,7 @@ export default function ChangePasswordModal({ isOpen, onClose, showToast }) {
                   placeholder="Re-enter new password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
+                  disabled={isSubmitting}
                   required
                 />
                 <button
@@ -310,9 +387,28 @@ export default function ChangePasswordModal({ isOpen, onClose, showToast }) {
               </div>
             </div>
 
-            <button type="submit" className="change-pass-btn-primary">
-              Update Password
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+              <button
+                type="submit"
+                className="change-pass-btn-primary"
+                disabled={isSubmitting || !newPassword || !confirmPassword}
+              >
+                {isSubmitting ? 'Updating Password...' : 'Update Password'}
+              </button>
+
+              <button
+                type="button"
+                className="change-pass-eye-btn"
+                style={{ justifyContent: 'center', width: '100%', fontSize: '0.85rem', color: 'var(--text-secondary)', padding: '6px' }}
+                onClick={() => {
+                  setStep(2);
+                  setPassError('');
+                }}
+                disabled={isSubmitting}
+              >
+                Re-enter Verification Code
+              </button>
+            </div>
           </form>
         )}
 
