@@ -1,16 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Heart, MessageSquare, Share2, Star, MoreVertical } from 'lucide-react';
+import { Heart, MessageSquare, Share2, Star, MoreVertical, ShoppingBag } from 'lucide-react';
 import { FaHeart } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import { toggleOutfitLike } from '../lib/outfitService';
 
-export default function PostCard({ post, onShopClick, onFitClick, onShareClick, showToast, onEditPost, onDeletePost, onCommentClick, onUserClick, currentUsername = 'minimalist_enzo' }) {
+export default function PostCard({
+  post,
+  onShopClick,
+  onFitClick,
+  onShareClick,
+  showToast,
+  onEditPost,
+  onDeletePost,
+  onCommentClick,
+  onUserClick,
+  currentUsername = 'minimalist_enzo'
+}) {
   const { user } = useAuth();
   const [liked, setLiked] = useState(Boolean(post.user_has_liked));
   const [likeCount, setLikeCount] = useState(post.likes_count ?? post.likes ?? 0);
   const [animateLike, setAnimateLike] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showHeartAnim, setShowHeartAnim] = useState(false);
+  const timerRef = useRef(null);
 
   useEffect(() => {
     setLiked(Boolean(post.user_has_liked));
@@ -23,6 +35,12 @@ export default function PostCard({ post, onShopClick, onFitClick, onShareClick, 
     document.addEventListener('click', closeMenu);
     return () => document.removeEventListener('click', closeMenu);
   }, [showMenu]);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   const toggleLike = async () => {
     if (!user?.id) {
@@ -42,21 +60,13 @@ export default function PostCard({ post, onShopClick, onFitClick, onShareClick, 
     setTimeout(() => setAnimateLike(false), 300);
 
     if (nextLiked && showToast) {
-      showToast("Added to Liked Outfits!");
+      showToast('Added to Liked Outfits!');
     }
 
     try {
-      console.log('[PostCard] Triggering toggleOutfitLike for post.id:', post?.id, 'user.id:', user?.id);
       await toggleOutfitLike(post.id, user.id);
-      console.log('[PostCard] toggleOutfitLike succeeded!');
     } catch (err) {
-      console.error('[PostCard] toggleLike error caught:', {
-        message: err?.message,
-        code: err?.code,
-        details: err?.details,
-        hint: err?.hint,
-        rawError: err
-      });
+      console.error('[PostCard] toggleLike error:', err);
       // Rollback on write error
       setLiked(previousLiked);
       setLikeCount(previousCount);
@@ -66,20 +76,12 @@ export default function PostCard({ post, onShopClick, onFitClick, onShareClick, 
   };
 
   const handleLike = (e) => {
-    if (e) e.stopPropagation();
+    if (e && e.stopPropagation) e.stopPropagation();
     toggleLike();
   };
 
-  const timerRef = useRef(null);
-
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, []);
-
   const handleCardClick = (e) => {
-    if (e) e.stopPropagation();
+    if (e && e.stopPropagation) e.stopPropagation();
 
     if (e.detail === 1) {
       // Single Tap: Wait 250ms to see if a second tap follows
@@ -102,7 +104,7 @@ export default function PostCard({ post, onShopClick, onFitClick, onShareClick, 
   };
 
   const handleSharePost = async (e) => {
-    if (e) e.stopPropagation();
+    if (e && e.stopPropagation) e.stopPropagation();
     if (onShareClick) {
       onShareClick(post);
       return;
@@ -125,7 +127,7 @@ export default function PostCard({ post, onShopClick, onFitClick, onShareClick, 
       try {
         await navigator.clipboard.writeText(shareUrl);
         if (showToast) {
-          showToast("Link copied to clipboard!");
+          showToast('Link copied to clipboard!');
         }
       } catch (err) {
         console.error('Failed to copy link:', err);
@@ -140,166 +142,181 @@ export default function PostCard({ post, onShopClick, onFitClick, onShareClick, 
     return num;
   };
 
-  const isOwner = post.username === currentUsername;
+  const isOwner = user?.username && (post.username === user.username || post.username === `@${user.username}` || post.poster_id === user.id);
+  const hasProducts = Array.isArray(post.products) && post.products.length > 0;
+  const username = (post.username || 'user').replace(/^@/, '');
+  const avatarUrl = post.avatar || post.user_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop';
+  const scoreVal = post.aiScore || (post.overall_score ? `${post.overall_score}/10` : (post.score ? `${post.score}/10` : '8.0/10'));
 
   return (
-    <div className="post-card feed-card-mobile" onClick={handleCardClick} style={{ cursor: 'pointer' }}>
-      {/* Background Outfit Image */}
-      <img src={post.image} alt={post.username + "'s outfit"} className="post-image" />
+    <div
+      className="pinterest-pin post-card"
+      onClick={handleCardClick}
+      title="Click to view fit details"
+    >
+      {/* Pin Image Container */}
+      <div className="pinterest-pin-image-wrapper">
+        <img
+          src={post.image}
+          alt={`${username}'s outfit`}
+          className="pinterest-pin-img post-image"
+          loading="lazy"
+        />
 
-      {/* Floating Heart Pop Animation */}
-      {showHeartAnim && (
-        <div className="heart-pop-overlay">
-          <FaHeart className="heart-pop-icon" />
-        </div>
-      )}
-
-      {/* Top vignette overlay */}
-      <div className="overlay-gradient-top" />
-
-      {/* Bottom vignette overlay */}
-      <div className="overlay-gradient-bottom" />
-
-      {/* Owner Post Options Menu */}
-      {isOwner && (
-        <>
-          <button 
-            className="post-more-btn"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowMenu(!showMenu);
-            }}
-            aria-label="More options"
-          >
-            <MoreVertical size={20} />
-          </button>
-          
-          {showMenu && (
-            <div className="post-menu-dropdown" onClick={(e) => e.stopPropagation()}>
-              <button 
-                className="post-menu-item"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMenu(false);
-                  if (onEditPost) onEditPost(post);
-                }}
-              >
-                <span>Edit Caption/Tags</span>
-              </button>
-              <button 
-                className="post-menu-item delete"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMenu(false);
-                  if (onDeletePost) onDeletePost(post);
-                }}
-              >
-                <span>Delete Post</span>
-              </button>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Right Action Icons Stack */}
-      <div className="right-actions-stack" onClick={(e) => e.stopPropagation()}>
-        {/* Like Button */}
-        <div className="action-item">
-          <button 
-            className={`action-btn ${liked ? 'active' : ''} ${animateLike ? 'pulse' : ''}`}
-            onClick={handleLike}
-            aria-label="Like post"
-          >
-            <Heart 
-              size={24} 
-              fill={liked ? '#a6fc29' : 'none'} 
-              strokeWidth={liked ? 0 : 2} 
-            />
-          </button>
-          <span className="action-label">{formatCount(likeCount)}</span>
-        </div>
-
-        {/* Comment Button */}
-        <div className="action-item">
-          <button 
-            className="action-btn"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (onCommentClick) onCommentClick(post);
-            }}
-            aria-label="Comments"
-          >
-            <MessageSquare size={24} strokeWidth={2} />
-          </button>
-          <span className="action-label">{formatCount(post.comments_count ?? post.comments ?? 0)}</span>
-        </div>
-
-        {/* Share Button */}
-        <div className="action-item">
-          <button 
-            className="action-btn"
-            onClick={handleSharePost}
-            aria-label="Share post"
-          >
-            <Share2 size={24} strokeWidth={2} />
-          </button>
-          <span className="action-label">Share</span>
-        </div>
-      </div>
-
-      {/* Bottom Left Info and Bottom Action Buttons */}
-      <div className="post-overlay">
-        {/* Profile info and AI Score Row */}
-        <div className="profile-row">
-          <div 
-            className="user-info" 
-            onClick={(e) => {
-              e.stopPropagation();
-              if (onUserClick) onUserClick(post);
-            }} 
-            style={{ cursor: 'pointer' }}
-          >
-            <div className="avatar-wrapper">
-              <img src={post.avatar || post.user_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop'} alt={post.username} className="avatar-img" />
-            </div>
-            <div className="user-text">
-              <span className="username">{post.username ? post.username.replace(/^@/, '') : 'User'}</span>
-              <span className="location">{post.location}</span>
-            </div>
+        {/* Double-tap Floating Heart Pop */}
+        {showHeartAnim && (
+          <div className="heart-pop-overlay">
+            <FaHeart className="heart-pop-icon" />
           </div>
-          
-          {/* AI Fit Score Badge */}
-          <div className="ai-badge" onClick={(e) => e.stopPropagation()}>
-            <span className="score-value">{post.aiScore || (post.overall_score ? `${post.overall_score}/10` : (post.score ? `${post.score}/10` : '8.0/10'))}</span>
-            <Star size={11} className="star-icon" />
-            <span className="label">AI</span>
-          </div>
-        </div>
-
-        {/* Post Caption */}
-        {post.caption && (
-          <p className="post-caption">{post.caption}</p>
         )}
 
-        {/* Action Buttons */}
-        {(() => {
-          const hasProducts = Array.isArray(post.products) && post.products.length > 0;
-          if (!hasProducts) return null;
-          return (
-            <div className="buttons-container" onClick={(e) => e.stopPropagation()}>
-              <button 
-                className="btn-primary" 
+        {/* Top Badges Bar */}
+        <div className="pinterest-top-bar" onClick={(e) => e.stopPropagation()}>
+          {/* AI Score Badge */}
+          <div className="pinterest-score-badge">
+            <Star size={11} className="star-icon" fill="#fbbf24" color="#fbbf24" />
+            <span className="score-text">{scoreVal}</span>
+            <span className="ai-label">AI</span>
+          </div>
+
+          {/* Right side: Shop badge / Owner More Menu */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {hasProducts && (
+              <button
+                type="button"
+                className="pinterest-shop-badge"
                 onClick={(e) => {
-                  e.preventDefault();
                   e.stopPropagation();
                   if (onShopClick) onShopClick(post);
                 }}
+                title="Shop the look"
               >
-                SHOP THE LOOK
+                <ShoppingBag size={12} />
+                <span>Shop</span>
               </button>
+            )}
+
+            {isOwner && (
+              <div style={{ position: 'relative' }}>
+                <button
+                  type="button"
+                  className="pinterest-more-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMenu(!showMenu);
+                  }}
+                  aria-label="More options"
+                >
+                  <MoreVertical size={16} />
+                </button>
+
+                {showMenu && (
+                  <div className="post-menu-dropdown" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      className="post-menu-item"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowMenu(false);
+                        if (onEditPost) onEditPost(post);
+                      }}
+                    >
+                      <span>Edit Caption/Tags</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="post-menu-item delete"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowMenu(false);
+                        if (onDeletePost) onDeletePost(post);
+                      }}
+                    >
+                      <span>Delete Post</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Bottom Vignette Overlay & Actions */}
+        <div className="pinterest-bottom-overlay">
+          {/* Creator Profile Row */}
+          <div
+            className="pinterest-user-row"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onUserClick) onUserClick(post);
+            }}
+            title={`View @${username}'s profile`}
+          >
+            <img
+              src={avatarUrl}
+              alt={username}
+              className="pinterest-user-avatar"
+              onError={(e) => {
+                e.currentTarget.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop';
+              }}
+            />
+            <div className="pinterest-user-meta">
+              <span className="pinterest-username">{username}</span>
+              {post.location && (
+                <span className="pinterest-location">{post.location}</span>
+              )}
             </div>
-          );
-        })()}
+          </div>
+
+          {/* Caption (if available) */}
+          {post.caption && (
+            <p className="pinterest-caption">{post.caption}</p>
+          )}
+
+          {/* Interactive Action Icons Row */}
+          <div className="pinterest-actions-row" onClick={(e) => e.stopPropagation()}>
+            {/* Like Button */}
+            <button
+              type="button"
+              className={`pinterest-action-btn ${liked ? 'liked' : ''} ${animateLike ? 'pulse' : ''}`}
+              onClick={handleLike}
+              aria-label="Like fit"
+            >
+              <Heart
+                size={16}
+                fill={liked ? '#a6fc29' : 'none'}
+                stroke={liked ? '#a6fc29' : 'currentColor'}
+                strokeWidth={liked ? 0 : 2}
+              />
+              <span className="action-count">{formatCount(likeCount)}</span>
+            </button>
+
+            {/* Comment Button */}
+            <button
+              type="button"
+              className="pinterest-action-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onCommentClick) onCommentClick(post);
+              }}
+              aria-label="Comments"
+            >
+              <MessageSquare size={16} strokeWidth={2} />
+              <span className="action-count">{formatCount(post.comments_count ?? post.comments ?? 0)}</span>
+            </button>
+
+            {/* Share Button */}
+            <button
+              type="button"
+              className="pinterest-action-btn icon-only"
+              onClick={handleSharePost}
+              aria-label="Share fit"
+              style={{ marginLeft: 'auto' }}
+            >
+              <Share2 size={16} strokeWidth={2} />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

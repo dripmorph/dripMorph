@@ -17,42 +17,23 @@ export default function Feed({
 }) {
   if (isLoading) {
     return (
-      <div className="feed-container">
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justify: 'center',
-            padding: '60px 20px',
-            gap: '16px',
-            color: 'rgba(255,255,255,0.7)',
-          }}
-        >
+      <div className="feed-container pinterest-grid">
+        {[260, 340, 220, 300, 240, 320].map((h, i) => (
           <div
+            key={i}
+            className="pinterest-skeleton-card"
             style={{
-              width: '120px',
-              height: '4px',
-              background: 'rgba(166, 252, 41, 0.15)',
-              borderRadius: '2px',
-              overflow: 'hidden',
+              height: `${h}px`,
+              borderRadius: '16px',
+              backgroundColor: 'rgba(255, 255, 255, 0.04)',
+              marginBottom: '16px',
+              breakInside: 'avoid',
               position: 'relative',
+              overflow: 'hidden',
+              animation: 'pinterestPulse 1.4s ease-in-out infinite alternate',
             }}
-          >
-            <div
-              style={{
-                width: '50%',
-                height: '100%',
-                background: '#A6FC29',
-                position: 'absolute',
-                animation: 'pulse 1s infinite alternate',
-              }}
-            />
-          </div>
-          <span style={{ fontSize: '0.85rem', fontWeight: 600, letterSpacing: '0.5px' }}>
-            Loading latest fits...
-          </span>
-        </div>
+          />
+        ))}
       </div>
     );
   }
@@ -123,7 +104,7 @@ export default function Feed({
   }
 
   return (
-    <div className="feed-container">
+    <div className="feed-container pinterest-grid">
       {posts.map((post) => (
         <PostCard
           key={post.id}
