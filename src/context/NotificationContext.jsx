@@ -158,13 +158,14 @@ export const NotificationProvider = ({ children }) => {
         .gt('created_at', cutoff)
         .order('created_at', { ascending: false });
 
-      // 3. Fetch user's outfits to find likes on them after cutoff (outfits has no 'title' column)
+      // 3. Fetch user's outfits to find likes & comments on them after cutoff (outfits has no 'title' column)
       const { data: myOutfits } = await supabase
         .from('outfits')
         .select('id')
         .eq('poster_id', currentUid);
 
       let recentLikes = [];
+      let recentComments = [];
       if (myOutfits && myOutfits.length > 0) {
         const outfitIds = myOutfits.map((o) => o.id);
 
@@ -177,6 +178,37 @@ export const NotificationProvider = ({ children }) => {
           .order('created_at', { ascending: false });
 
         recentLikes = likesData || [];
+
+        const { data: commentsData } = await supabase
+          .from('outfit_comments')
+          .select('id, outfit_id, user_id, content, created_at')
+          .in('outfit_id', outfitIds)
+          .neq('user_id', currentUid)
+          .gt('created_at', cutoff)
+          .order('created_at', { ascending: false });
+
+        recentComments = commentsData || [];
+      }
+
+      // 4. Fetch accounts followed by current user to get their new posts after cutoff
+      const { data: myFollowings } = await supabase
+        .from('follows')
+        .select('following_id')
+        .eq('follower_id', currentUid);
+
+      let followedOutfits = [];
+      if (myFollowings && myFollowings.length > 0) {
+        const followingIds = myFollowings.map((f) => f.following_id).filter(Boolean);
+        if (followingIds.length > 0) {
+          const { data: postsData } = await supabase
+            .from('outfits')
+            .select('id, poster_id, image_url, caption, created_at')
+            .in('poster_id', followingIds)
+            .gt('created_at', cutoff)
+            .order('created_at', { ascending: false });
+
+          followedOutfits = postsData || [];
+        }
       }
 
       // Collect all distinct actor IDs
@@ -184,6 +216,8 @@ export const NotificationProvider = ({ children }) => {
       (recentMsgs || []).forEach((m) => actorIds.add(m.sender_id));
       (recentFollows || []).forEach((f) => actorIds.add(f.follower_id));
       recentLikes.forEach((l) => actorIds.add(l.user_id));
+      recentComments.forEach((c) => actorIds.add(c.user_id));
+      followedOutfits.forEach((o) => actorIds.add(o.poster_id));
 
       const actorMap = {};
       if (actorIds.size > 0) {
@@ -277,15 +311,63 @@ export const NotificationProvider = ({ children }) => {
         });
       });
 
+      // Format comments
+      recentComments.forEach((c) => {
+        const actor = actorMap[c.user_id];
+        const rawName = actor?.username || 'user';
+        const uname = rawName.replace(/^@/, '');
+        const commentSnippet = c.content ? (c.content.length > 35 ? `${c.content.slice(0, 35)}...` : c.content) : '';
+        fetchedList.push({
+          id: `comment-${c.id || c.user_id + '-' + c.outfit_id}`,
+          type: 'comment',
+          actorUsername: uname,
+          actorAvatar: actor?.avatar_url || null,
+          title: uname,
+          text: commentSnippet ? `${uname} commented: "${commentSnippet}"` : `${uname} commented on your post.`,
+          created_at: c.created_at,
+          unread: true,
+          data: { commentId: c.id, outfitId: c.outfit_id, userId: c.user_id, username: uname }
+        });
+      });
+
+      // Format new posts by people current user follows
+      followedOutfits.forEach((o) => {
+        const actor = actorMap[o.poster_id];
+        const rawName = actor?.username || 'user';
+        const uname = rawName.replace(/^@/, '');
+        fetchedList.push({
+          id: `post-${o.id}`,
+          type: 'post',
+          actorUsername: uname,
+          actorAvatar: actor?.avatar_url || null,
+          title: uname,
+          text: `${uname} shared a new post.`,
+          created_at: o.created_at,
+          unread: true,
+          data: {
+            outfitId: o.id,
+            posterId: o.poster_id,
+            username: uname,
+            imageUrl: o.image_url,
+            caption: o.caption
+          }
+        });
+      });
+
       setNotifications((prev) => {
         const map = new Map();
         
-        // Add fresh database unread message notifications, follows, likes
+        // Add fresh database unread message notifications, follows, likes, comments, and followed posts
         fetchedList.forEach((n) => {
-          map.set(n.id, n);
+          const prevNotif = prev.find((p) => p.id === n.id);
+          if (prevNotif && prevNotif.unread === false) {
+            map.set(n.id, { ...n, unread: false });
+          } else {
+            map.set(n.id, n);
+          }
         });
 
-        // Retain non-message notifications from previous state
+        // Retain non-message notifications from previous state if any
         prev.forEach((n) => {
           if (n.type !== 'message') {
             if (!map.has(n.id)) {
@@ -296,12 +378,12 @@ export const NotificationProvider = ({ children }) => {
 
         const combined = Array.from(map.values());
         combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        return filterValidNotifications(combined, currentUid);
+        return filterValidNotifications(combined, currentUid, userMetadata);
       });
     } catch (err) {
       console.warn('[NotificationContext] fetch24hNotifications error:', err);
     }
-  }, []);
+  }, [userMetadata]);
 
   // Dismiss / clear message notifications for a specific sender (e.g. when their chat is read)
   const dismissMessageNotification = useCallback((senderId) => {
@@ -558,7 +640,112 @@ export const NotificationProvider = ({ children }) => {
       )
       .subscribe();
 
-    channelsRef.current = [followChannel, messageChannel, messageReadChannel, likeChannel];
+    // 5. Outfits Channel (when an account followed by current user publishes a new outfit)
+    const outfitChannel = supabase
+      .channel(`notifs-outfits:${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'outfits'
+        },
+        async (payload) => {
+          const posterId = payload.new?.poster_id;
+          const outfitId = payload.new?.id;
+          if (!posterId || posterId === userId || !outfitId) return;
+
+          try {
+            // Check if current user is following this poster
+            const { count, error } = await supabase
+              .from('follows')
+              .select('follower_id', { count: 'exact', head: true })
+              .eq('follower_id', userId)
+              .eq('following_id', posterId);
+
+            if (!error && count > 0) {
+              const profile = await fetchUserProfile(posterId);
+              const rawName = profile?.username || 'user';
+              const username = rawName.replace(/^@/, '');
+
+              addNotification({
+                id: `post-${outfitId}`,
+                type: 'post',
+                actorUsername: username,
+                actorAvatar: profile?.avatar_url,
+                title: username,
+                text: `${username} shared a new post.`,
+                created_at: payload.new.created_at || new Date().toISOString(),
+                data: {
+                  outfitId,
+                  posterId,
+                  username,
+                  imageUrl: payload.new.image_url,
+                  caption: payload.new.caption
+                }
+              });
+            }
+          } catch (err) {
+            console.warn('[NotificationContext] outfit follow check skipped:', err);
+          }
+        }
+      )
+      .subscribe();
+
+    // 6. Outfit Comments Channel (when someone comments on current user's outfit)
+    const commentChannel = supabase
+      .channel(`notifs-comments:${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'outfit_comments'
+        },
+        async (payload) => {
+          const commenterId = payload.new?.user_id;
+          const outfitId = payload.new?.outfit_id;
+          if (!commenterId || commenterId === userId || !outfitId) return;
+
+          try {
+            // Verify if this outfit belongs to current user
+            const { data: outfitData } = await supabase
+              .from('outfits')
+              .select('id, poster_id')
+              .eq('id', outfitId)
+              .single();
+
+            if (outfitData && outfitData.poster_id === userId) {
+              const profile = await fetchUserProfile(commenterId);
+              const rawName = profile?.username || 'user';
+              const username = rawName.replace(/^@/, '');
+              const content = payload.new.content || '';
+              const commentSnippet = content ? (content.length > 35 ? `${content.slice(0, 35)}...` : content) : '';
+
+              addNotification({
+                id: `comment-${payload.new.id || commenterId + '-' + outfitId}`,
+                type: 'comment',
+                actorUsername: username,
+                actorAvatar: profile?.avatar_url,
+                title: username,
+                text: commentSnippet ? `${username} commented: "${commentSnippet}"` : `${username} commented on your post.`,
+                created_at: payload.new.created_at || new Date().toISOString(),
+                data: {
+                  commentId: payload.new.id,
+                  outfitId,
+                  userId: commenterId,
+                  username
+                }
+              });
+            }
+          } catch (err) {
+            console.warn('[NotificationContext] comment check skipped:', err);
+          }
+        }
+      )
+      .subscribe();
+
+    channelsRef.current = [followChannel, messageChannel, messageReadChannel, likeChannel, outfitChannel, commentChannel];
 
     // Background sync every 10 seconds for real-time guarantee across all tables
     const pollInterval = setInterval(() => {

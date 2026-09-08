@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { X, Bell, UserPlus, MessageSquare, Heart, MessageCircle, Trash2, CheckCheck } from 'lucide-react';
+import { X, Bell, UserPlus, MessageSquare, Heart, MessageCircle, Trash2, CheckCheck, Camera, Sparkles } from 'lucide-react';
 import { useNotifications, formatRelativeTime } from '../context/NotificationContext';
 
 export default function NotificationsScreen({
@@ -72,9 +72,12 @@ export default function NotificationsScreen({
     } else if (item.type === 'message' && onNavigateToChat) {
       onClose();
       onNavigateToChat(item.actorUsername || 'chat');
-    } else if (item.type === 'like' && item.data?.outfitId && onFitClick) {
+    } else if ((item.type === 'like' || item.type === 'comment' || item.type === 'post' || item.type === 'new_post') && item.data?.outfitId && onFitClick) {
       onClose();
       onFitClick({ id: item.data.outfitId });
+    } else if (item.actorUsername && onUserClick) {
+      onClose();
+      onUserClick(item.actorUsername);
     }
   };
 
@@ -158,6 +161,23 @@ export default function NotificationsScreen({
             color: '#38bdf8'
           }}>
             <MessageCircle size={18} />
+          </div>
+        );
+      case 'post':
+      case 'new_post':
+        return (
+          <div style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            backgroundColor: 'rgba(166, 252, 41, 0.15)',
+            border: '1px solid rgba(166, 252, 41, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#a6fc29'
+          }}>
+            <Camera size={18} />
           </div>
         );
       default:
@@ -303,7 +323,7 @@ export default function NotificationsScreen({
                   borderRadius: '14px',
                   backgroundColor: item.unread ? 'var(--accent-light, rgba(166, 252, 41, 0.06))' : 'var(--input-bg, rgba(255, 255, 255, 0.03))',
                   border: item.unread ? '1px solid var(--accent-light-border, rgba(166, 252, 41, 0.25))' : '1px solid var(--border-color, rgba(255, 255, 255, 0.06))',
-                  cursor: (item.type === 'follow' || item.type === 'message' || item.type === 'like') ? 'pointer' : 'default',
+                  cursor: (item.type === 'follow' || item.type === 'message' || item.type === 'like' || item.type === 'comment' || item.type === 'post' || item.type === 'new_post') ? 'pointer' : 'default',
                   transition: 'all 0.15s ease'
                 }}
               >
@@ -319,6 +339,22 @@ export default function NotificationsScreen({
                     {formatRelativeTime(item.created_at)}
                   </span>
                 </div>
+
+                {/* Outfit thumbnail preview for post/like/comment notifications */}
+                {item.data?.imageUrl && (
+                  <img
+                    src={item.data.imageUrl}
+                    alt="Post preview"
+                    style={{
+                      width: '38px',
+                      height: '48px',
+                      borderRadius: '8px',
+                      objectFit: 'cover',
+                      border: '1px solid var(--border-color, rgba(255, 255, 255, 0.12))',
+                      flexShrink: 0
+                    }}
+                  />
+                )}
 
                 {item.unread && (
                   <span 
