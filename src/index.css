@@ -257,64 +257,79 @@ body {
 /* Pinterest Pin Top Floating Bar */
 .pinterest-top-bar {
   position: absolute;
-  top: 10px;
-  left: 10px;
-  right: 10px;
+  top: 8px;
+  left: 8px;
+  right: 8px;
   z-index: 10;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   pointer-events: auto;
 }
 
 .pinterest-score-badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
+  gap: 3.5px;
+  padding: 3px 8px;
   border-radius: 9999px;
-  background: rgba(0, 0, 0, 0.72);
+  background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.16);
   color: #ffffff;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 700;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
   letter-spacing: -0.01em;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .pinterest-score-badge .score-text {
   color: #ffffff;
   font-weight: 800;
+  font-size: 0.7rem;
 }
 
 .pinterest-score-badge .ai-label {
   color: var(--accent-solid, #a6fc29);
   font-weight: 800;
-  font-size: 0.68rem;
-  letter-spacing: 0.5px;
+  font-size: 0.62rem;
+  letter-spacing: 0.4px;
+  margin-left: 1px;
+}
+
+.pinterest-top-right-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .pinterest-shop-badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 11px;
+  gap: 3.5px;
+  padding: 3px 8.5px;
   border-radius: 9999px;
   background: var(--btn-gradient, linear-gradient(135deg, #a6fc29 0%, #7ceb00 100%));
   color: #000000;
   border: none;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 800;
   cursor: pointer;
   box-shadow: 0 2px 10px rgba(166, 252, 41, 0.4);
   transition: transform 0.18s ease, filter 0.18s ease;
   letter-spacing: 0.2px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .pinterest-shop-badge:hover {
-  transform: scale(1.06);
+  transform: scale(1.05);
   filter: brightness(1.08);
 }
 

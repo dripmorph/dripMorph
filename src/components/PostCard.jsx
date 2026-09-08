@@ -187,13 +187,13 @@ export default function PostCard({
         <div className="pinterest-top-bar" onClick={(e) => e.stopPropagation()}>
           {/* AI Score Badge */}
           <div className="pinterest-score-badge">
-            <Star size={11} className="star-icon" fill="#fbbf24" color="#fbbf24" />
+            <Star size={10} className="star-icon" fill="#fbbf24" color="#fbbf24" />
             <span className="score-text">{scoreVal}</span>
             <span className="ai-label">AI</span>
           </div>
 
           {/* Right side: Shop badge / Owner More Menu */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div className="pinterest-top-right-actions">
             {hasProducts && (
               <button
                 type="button"
@@ -204,7 +204,7 @@ export default function PostCard({
                 }}
                 title="Shop the look"
               >
-                <ShoppingBag size={12} />
+                <ShoppingBag size={11} />
                 <span>Shop</span>
               </button>
             )}
