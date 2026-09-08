@@ -60,43 +60,21 @@ export default function ShareModal({ isOpen, onClose, post, showToast }) {
     <div 
       className="share-modal-overlay"
       onClick={onClose}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 999,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.82)',
-        backdropFilter: 'blur(8px)',
-        padding: '16px'
-      }}
     >
       <div 
         className="share-modal-card"
         onClick={(e) => e.stopPropagation()}
-        style={{
-          width: '100%',
-          maxWidth: '380px',
-          borderRadius: '20px',
-          backgroundColor: '#16161a',
-          border: '1px solid rgba(255, 255, 255, 0.12)',
-          padding: '20px',
-          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.6)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '16px'
-        }}
       >
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
-          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Share2 size={20} color="#a6fc29" /> Share Fit
+        <div className="share-modal-header">
+          <h3 className="share-modal-title">
+            <Share2 size={20} className="share-modal-title-icon" />
+            <span>Share Fit</span>
           </h3>
           <button 
             type="button" 
+            className="share-modal-close-btn"
             onClick={onClose}
-            style={{ background: 'none', border: 'none', color: '#a0a0a0', cursor: 'pointer', padding: '4px', borderRadius: '50%', display: 'flex', alignItems: 'center' }}
             aria-label="Close"
           >
             <X size={20} />
@@ -104,137 +82,69 @@ export default function ShareModal({ isOpen, onClose, post, showToast }) {
         </div>
 
         {/* Post Preview */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', borderRadius: '12px', backgroundColor: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+        <div className="share-modal-preview">
           <img 
-            src={post.image || post.image_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop'} 
+            src={post.image || post.image_url || post.outfit_image || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop'} 
             alt="Fit preview" 
-            style={{ width: '56px', height: '56px', borderRadius: '10px', objectFit: 'cover' }}
+            className="share-modal-preview-img"
           />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div className="share-modal-preview-info">
+            <p className="share-modal-preview-username">
               {creatorName}
             </p>
-            <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#a6fc29', fontFamily: 'monospace', fontWeight: '700' }}>
+            <p className="share-modal-preview-score">
               ★ {scoreVal}/10 AI Score
             </p>
           </div>
         </div>
 
         {/* Action Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+        <div className="share-modal-grid">
           <button 
             type="button" 
+            className={`share-modal-btn share-modal-btn-copy ${copied ? 'copied' : ''}`}
             onClick={handleCopyLink}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              padding: '12px',
-              borderRadius: '12px',
-              backgroundColor: copied ? 'rgba(166, 252, 41, 0.15)' : 'rgba(255, 255, 255, 0.08)',
-              border: copied ? '1px solid #a6fc29' : '1px solid rgba(255, 255, 255, 0.1)',
-              color: copied ? '#a6fc29' : '#ffffff',
-              fontSize: '13px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }}
           >
-            {copied ? <Check size={16} color="#a6fc29" /> : <Copy size={16} color="#a0a0a0" />}
-            {copied ? 'Copied!' : 'Copy Link'}
+            {copied ? <Check size={16} /> : <Copy size={16} />}
+            <span>{copied ? 'Copied!' : 'Copy Link'}</span>
           </button>
 
           <button 
             type="button" 
+            className="share-modal-btn share-modal-btn-whatsapp"
             onClick={handleWhatsAppShare}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              padding: '12px',
-              borderRadius: '12px',
-              backgroundColor: 'rgba(16, 185, 129, 0.12)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              color: '#34d399',
-              fontSize: '13px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }}
           >
             <FaWhatsapp size={16} />
-            WhatsApp
+            <span>WhatsApp</span>
           </button>
 
           <button 
             type="button" 
+            className="share-modal-btn share-modal-btn-instagram"
             onClick={handleInstagramShare}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              padding: '12px',
-              borderRadius: '12px',
-              backgroundColor: 'rgba(236, 72, 153, 0.12)',
-              border: '1px solid rgba(236, 72, 153, 0.3)',
-              color: '#f472b6',
-              fontSize: '13px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }}
           >
             <FaInstagram size={16} />
-            Instagram
+            <span>Instagram</span>
           </button>
 
           <button 
             type="button" 
+            className="share-modal-btn share-modal-btn-twitter"
             onClick={handleTwitterShare}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              padding: '12px',
-              borderRadius: '12px',
-              backgroundColor: 'rgba(255, 255, 255, 0.08)',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              color: '#ffffff',
-              fontSize: '13px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }}
           >
             <FaXTwitter size={16} />
-            X
+            <span>X</span>
           </button>
         </div>
 
         {/* Full Width Native Share */}
         <button 
           type="button" 
+          className="share-modal-btn-more"
           onClick={handleNativeShare}
-          style={{
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            padding: '12px',
-            borderRadius: '12px',
-            backgroundColor: 'var(--accent-lime, #a6fc29)',
-            border: 'none',
-            color: '#121214',
-            fontSize: '13px',
-            fontWeight: '700',
-            cursor: 'pointer',
-            marginTop: '4px',
-            transition: 'all 0.2s ease'
-          }}
         >
           <Globe size={16} />
-          More Share Options
+          <span>More Share Options</span>
         </button>
       </div>
     </div>
