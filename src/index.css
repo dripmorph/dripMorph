@@ -5079,6 +5079,118 @@ body {
   line-height: 1.5;
 }
 
+/* ================= OTP Verification Screen ================= */
+.otp-auth-card {
+  max-width: 420px;
+}
+
+.otp-icon-badge {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  background: rgba(166, 252, 41, 0.12);
+  border: 1px solid rgba(166, 252, 41, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 20px rgba(166, 252, 41, 0.18);
+  margin-bottom: 4px;
+}
+
+.otp-inputs-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.otp-digit-box {
+  width: 48px;
+  height: 56px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+  font-size: 1.5rem;
+  font-weight: 800;
+  text-align: center;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.otp-digit-box:focus {
+  border-color: #A6FC29;
+  background: rgba(166, 252, 41, 0.08);
+  box-shadow: 0 0 16px rgba(166, 252, 41, 0.3);
+  transform: scale(1.05);
+}
+
+.otp-digit-box.filled {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+@media (max-width: 400px) {
+  .otp-digit-box {
+    width: 42px;
+    height: 50px;
+    font-size: 1.3rem;
+    border-radius: 10px;
+  }
+  .otp-inputs-wrapper {
+    gap: 6px;
+  }
+}
+
+.otp-resend-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 4px 0;
+}
+
+.otp-countdown-text {
+  color: var(--text-secondary);
+}
+
+.otp-countdown-text strong {
+  color: var(--text-primary);
+  font-family: monospace;
+  font-size: 0.88rem;
+}
+
+.otp-resend-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--accent-solid, #a6fc29);
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.otp-resend-btn:hover:not(:disabled) {
+  text-decoration: underline;
+  opacity: 0.9;
+}
+
+.otp-resend-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* City Selection Screen */
 .city-card-container {
   max-width: 420px;
@@ -6859,9 +6971,27 @@ body {
   color: #475569 !important;
 }
 
-[data-theme='light'] .menu-drawer-close-btn:hover {
-  background: #E2E8F0 !important;
+/* ================= LIGHT MODE: OTP Verification Screen ================= */
+[data-theme='light'] .otp-digit-box {
+  background: #F8FAFC !important;
+  border: 1.5px solid #E2E8F0 !important;
   color: #0F172A !important;
+}
+
+[data-theme='light'] .otp-digit-box:focus {
+  border-color: #84CC16 !important;
+  background: #FFFFFF !important;
+  box-shadow: 0 0 16px rgba(132, 204, 22, 0.25) !important;
+}
+
+[data-theme='light'] .otp-digit-box.filled {
+  border-color: #94A3B8 !important;
+  background: #FFFFFF !important;
+}
+
+[data-theme='light'] .otp-icon-badge {
+  background: rgba(132, 204, 22, 0.15) !important;
+  border-color: rgba(132, 204, 22, 0.4) !important;
 }
 
 /* Double-Tap Heart Pop Overlay Animation */

@@ -3,13 +3,18 @@ import { User, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import DripMorphLogo from '../DripMorphLogo';
 
-export default function SignUpScreen({ onNavigateToLogin, onSignUpSuccess }) {
+export default function SignUpScreen({
+  onNavigateToLogin,
+  onSignUpSuccess,
+  onRequiresOtp,
+  initialData = {}
+}) {
   const { signup, loginWithGoogle } = useAuth();
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState(initialData.username || '');
+  const [email, setEmail] = useState(initialData.email || '');
+  const [password, setPassword] = useState(initialData.password || '');
   const [showPassword, setShowPassword] = useState(false);
-  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [ageConfirmed, setAgeConfirmed] = useState(true);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -29,13 +34,32 @@ export default function SignUpScreen({ onNavigateToLogin, onSignUpSuccess }) {
 
     try {
       console.log('[SignUpScreen] Submitting signup form:', { username: username.trim(), email: email.trim(), ageConfirmed });
-      const newUser = await signup({ username: username.trim(), email: email.trim(), password, ageVerified: true });
-      console.log('[SignUpScreen] Signup completed successfully:', newUser);
+      const result = await signup({
+        username: username.trim(),
+        email: email.trim(),
+        password,
+        ageVerified: true
+      });
+
+      console.log('[SignUpScreen] Signup response:', result);
       setIsSubmitting(false);
-      onSignUpSuccess(newUser);
+
+      if (result?.requiresOtp) {
+        if (onRequiresOtp) {
+          onRequiresOtp({
+            email: email.trim(),
+            username: username.trim(),
+            password,
+            ageVerified: true
+          });
+        }
+      } else if (result?.user) {
+        onSignUpSuccess(result.user);
+      } else if (result) {
+        onSignUpSuccess(result);
+      }
     } catch (err) {
       console.error('[SignUpScreen] Error in handleSubmit during signup:', err);
-      console.error('[SignUpScreen] Error message:', err?.message, 'Full error object:', err);
       setIsSubmitting(false);
       setError(err.message || 'Signup failed. Please try again.');
     }

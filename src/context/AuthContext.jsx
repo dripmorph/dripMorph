@@ -132,38 +132,114 @@ export const AuthProvider = ({ children }) => {
       throw new Error('An account with this email address already exists. Please log in instead.');
     }
 
-    // If Supabase requires email confirmation, user is null here.
-    // The trigger creates the profile row asynchronously.
-    if (data.user) {
-      // Write age_verified alongside any other profile data
+    // If auto-confirmed session is already created:
+    if (data.session && data.user) {
       if (ageVerified) {
         console.log('[AuthContext] Updating age_verified for user:', data.user.id);
-        const { error: profileUpdateError } = await supabase
+        await supabase
           .from('profiles')
           .update({ age_verified: true })
           .eq('id', data.user.id);
-
-        if (profileUpdateError) {
-          console.error('[AuthContext] Error updating age_verified on profile:', profileUpdateError);
-        }
       }
 
       try {
-        console.log('[AuthContext] Fetching user profile for id:', data.user.id);
         const profile = await fetchProfile(data.user.id);
-        console.log('[AuthContext] Fetched profile:', profile);
-        const appUser = buildAppUser(data.user, profile);
+        const appUser = buildAppUser(data.user, profile || { username: formattedUsername });
         setUser(appUser);
-        return appUser;
+        return { user: appUser, requiresOtp: false };
       } catch (profileFetchError) {
         console.error('[AuthContext] Error fetching profile after signup:', profileFetchError);
         const appUser = buildAppUser(data.user, { username: formattedUsername });
         setUser(appUser);
-        return appUser;
+        return { user: appUser, requiresOtp: false };
       }
     }
 
-    return null;
+    // Email OTP confirmation is required
+    return {
+      user: data.user,
+      requiresOtp: true,
+      email: email.trim(),
+      username: formattedUsername,
+      ageVerified
+    };
+  };
+
+  // ── Verify Email OTP ───────────────────────────────────────────────────────
+  const verifyOtp = async ({ email, token, username, ageVerified = true }) => {
+    const cleanEmail = (email || '').trim();
+    const cleanToken = (token || '').trim();
+
+    console.log('[AuthContext] Verifying signup OTP for:', { email: cleanEmail, token: cleanToken });
+
+    if (!cleanEmail || !cleanToken) {
+      throw new Error('Please provide both email and the 6-digit verification code.');
+    }
+
+    // Attempt verifyOtp with type 'signup' first
+    let res = await supabase.auth.verifyOtp({
+      email: cleanEmail,
+      token: cleanToken,
+      type: 'signup',
+    });
+
+    if (res.error) {
+      console.warn('[AuthContext] verifyOtp type "signup" failed, trying "email":', res.error);
+      res = await supabase.auth.verifyOtp({
+        email: cleanEmail,
+        token: cleanToken,
+        type: 'email',
+      });
+    }
+
+    if (res.error) {
+      console.error('[AuthContext] verifyOtp final error:', res.error);
+      throw new Error(res.error.message || 'Invalid or expired verification code. Please check and try again.');
+    }
+
+    const authUser = res.data?.user || res.data?.session?.user;
+    if (!authUser) {
+      throw new Error('Verification succeeded, but session could not be established. Please try logging in.');
+    }
+
+    // Update age verification if requested
+    if (ageVerified) {
+      try {
+        await supabase.from('profiles').update({ age_verified: true }).eq('id', authUser.id);
+      } catch (err) {
+        console.warn('[AuthContext] Failed to update age_verified on profile:', err);
+      }
+    }
+
+    let profile = await fetchProfile(authUser.id);
+    if (!profile && username) {
+      profile = { username };
+    }
+
+    const appUser = buildAppUser(authUser, profile);
+    setUser(appUser);
+    return appUser;
+  };
+
+  // ── Resend Email OTP ───────────────────────────────────────────────────────
+  const resendOtp = async (email) => {
+    const cleanEmail = (email || '').trim();
+    if (!cleanEmail) {
+      throw new Error('Please enter a valid email address.');
+    }
+
+    console.log('[AuthContext] Resending signup OTP to:', cleanEmail);
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: cleanEmail,
+    });
+
+    if (error) {
+      console.error('[AuthContext] resendOtp error:', error);
+      throw new Error(error.message || 'Could not resend verification code. Please try again later.');
+    }
+
+    return true;
   };
 
   // ── Log In ─────────────────────────────────────────────────────────────────
@@ -348,6 +424,8 @@ export const AuthProvider = ({ children }) => {
         loading,
         login,
         signup,
+        verifyOtp,
+        resendOtp,
         loginWithGoogle,
         updateUsername,
         updateCity,

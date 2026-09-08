@@ -4,6 +4,7 @@ import { useAuth, getRequiredOnboardingStep } from '../../context/AuthContext';
 // Lazily load auth screen components for code-splitting
 const SplashScreen = lazy(() => import('./SplashScreen'));
 const SignUpScreen = lazy(() => import('./SignUpScreen'));
+const OtpVerificationScreen = lazy(() => import('./OtpVerificationScreen'));
 const LogInScreen = lazy(() => import('./LogInScreen'));
 const ForgotPasswordScreen = lazy(() => import('./ForgotPasswordScreen'));
 const UsernameSelectionScreen = lazy(() => import('./UsernameSelectionScreen'));
@@ -20,6 +21,7 @@ const AuthFallback = () => (
 
 export default function AuthFlow({ onAuthComplete }) {
   const { user } = useAuth();
+  const [pendingSignupData, setPendingSignupData] = useState(null);
   
   // Initialize screen state strictly based on user state
   const [currentScreen, setCurrentScreen] = useState(() => {
@@ -61,6 +63,11 @@ export default function AuthFlow({ onAuthComplete }) {
     }
   };
 
+  const handleRequiresOtp = (signupData) => {
+    setPendingSignupData(signupData);
+    setCurrentScreen('otp');
+  };
+
   const handleUsernameSelected = () => {
     // Step 1 completed -> Proceed strictly to Step 2 (City)
     setCurrentScreen('city');
@@ -89,8 +96,22 @@ export default function AuthFlow({ onAuthComplete }) {
     if (currentScreen === 'signup') {
       return (
         <SignUpScreen
+          initialData={pendingSignupData || {}}
           onNavigateToLogin={() => setCurrentScreen('login')}
           onSignUpSuccess={handleAuthSuccess}
+          onRequiresOtp={handleRequiresOtp}
+        />
+      );
+    }
+
+    if (currentScreen === 'otp') {
+      return (
+        <OtpVerificationScreen
+          email={pendingSignupData?.email || ''}
+          username={pendingSignupData?.username || ''}
+          ageVerified={pendingSignupData?.ageVerified ?? true}
+          onVerifySuccess={handleAuthSuccess}
+          onBackToSignUp={() => setCurrentScreen('signup')}
         />
       );
     }
