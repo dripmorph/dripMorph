@@ -159,7 +159,7 @@ function weekRangeLabel() {
 export default function App() {
   const { user } = useAuth();
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('theme') || 'dark';
+    return localStorage.getItem('theme') || 'light';
   });
 
   useEffect(() => {
