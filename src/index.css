@@ -100,47 +100,64 @@ body {
   flex-direction: column;
 }
 
+/* ================= BRAND LOGO & TITLE ================= */
 .brand-logo-badge {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 10px;
+  padding: 4px 8px;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: transparent;
+  border: 1px solid transparent;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  user-select: none;
 }
 
 .brand-logo-badge:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(166, 252, 41, 0.35);
-  box-shadow: 0 0 16px rgba(166, 252, 41, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .sidebar-brand-title,
-.desktop-logo-title {
+.desktop-logo-title,
+.brand-logo-badge .sidebar-brand-title {
   font-family: var(--font-family);
   font-weight: 900;
-  letter-spacing: 0.04em;
+  letter-spacing: 1px;
   font-size: 1.15rem;
-  background: linear-gradient(135deg, #FFFFFF 0%, #D4D4D8 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #FFFFFF !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+  background: none !important;
   text-transform: uppercase;
+  line-height: 1;
 }
 
 [data-theme='light'] .brand-logo-badge {
-  background: rgba(0, 0, 0, 0.03);
-  border-color: rgba(0, 0, 0, 0.08);
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+}
+
+[data-theme='light'] .brand-logo-badge:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
 }
 
 [data-theme='light'] .sidebar-brand-title,
-[data-theme='light'] .desktop-logo-title {
-  background: linear-gradient(135deg, #09090B 0%, #27272A 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+[data-theme='light'] .desktop-logo-title,
+[data-theme='light'] .brand-logo-badge .sidebar-brand-title {
+  color: #09090B !important;
+  -webkit-text-fill-color: #09090B !important;
+  background: none !important;
+}
+
+.dripmorph-logo-svg {
+  filter: drop-shadow(0 2px 8px rgba(166, 252, 41, 0.45));
+}
+
+[data-theme='light'] .dripmorph-logo-svg {
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.18));
 }
 
 /* Mobile Sidebars hidden by default on mobile screens (< 1024px) */
@@ -6795,15 +6812,15 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 8px;
+    padding: 4px;
   }
 
   .desktop-logo-title {
-    font-size: 1.25rem;
+    font-size: 1.2rem;
     font-weight: 900;
-    letter-spacing: -0.5px;
-    color: #FFFFFF !important;
-    -webkit-text-fill-color: #FFFFFF;
+    letter-spacing: 0.05em;
+    color: var(--text-primary) !important;
+    -webkit-text-fill-color: var(--text-primary) !important;
   }
 
   .desktop-nav-menu {
@@ -7809,52 +7826,7 @@ body {
   }
 }
 
-/* ================= HIGH-CONTRAST LOGO BADGE CONTAINER ================= */
-.brand-logo-badge {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 9999px;
-  transition: all 0.2s ease-in-out;
-}
-
-/* Light Mode Contrast Badge */
-[data-theme='light'] .brand-logo-badge {
-  background: #121214 !important; /* Sleek dark charcoal badge */
-  border: 1px solid #27272A;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-}
-
-/* Light Mode Text inside Badge */
-[data-theme='light'] .brand-logo-badge .sidebar-brand-title {
-  color: #FFFFFF !important; /* Pure crisp white text inside dark badge */
-}
-
-/* Dark Mode Default Badge */
-[data-theme='dark'] .brand-logo-badge {
-  background: transparent;
-  border: none;
-  box-shadow: none;
-}
-
-[data-theme='dark'] .brand-logo-badge .sidebar-brand-title {
-  color: #FFFFFF !important;
-}
-
-/* Pill Icon Sharpness */
-.brand-logo-badge svg,
-.brand-logo-badge img,
-.dripmorph-logo-svg {
-  filter: drop-shadow(0 0 4px rgba(166, 252, 41, 0.4));
-}
-
-.sidebar-brand-title {
-  color: var(--text-primary, #0D0D0F);
-  font-weight: 800;
-  font-size: 18px;
-  letter-spacing: 0.5px;
-}
+/* ================= SETTINGS DRAWER / MODAL STYLING ================= */
 
 /* ================= SETTINGS DRAWER / MODAL STYLING ================= */
 .settings-overlay {
