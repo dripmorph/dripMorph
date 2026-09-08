@@ -58,6 +58,7 @@ export default function ChatView({ onBack, onUserClick }) {
   const [input, setInput] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+  const chatContainerRef = useRef(null);
   const messagesEndRef = useRef(null);
   const textInputRef = useRef(null);
   const emojiPickerRef = useRef(null);
@@ -65,19 +66,85 @@ export default function ChatView({ onBack, onUserClick }) {
   const prevMsgCountRef = useRef(0);
   const prevChatIdRef = useRef(null);
 
-  // Scroll to bottom on initial open or when a new message is sent/received
+  const scrollToBottom = (smooth = false) => {
+    const container = chatContainerRef.current;
+    if (container) {
+      if (smooth) {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: 'smooth'
+        });
+      } else {
+        container.scrollTop = container.scrollHeight;
+      }
+    }
+    if (messagesEndRef.current) {
+      try {
+        messagesEndRef.current.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'end' });
+      } catch (e) {
+        // fallback
+      }
+    }
+  };
+
+  // Scroll to bottom whenever messages load, change, or when switching chats
   useEffect(() => {
     const currentMsgCount = conv?.messages?.length || 0;
     const isNewChat = prevChatIdRef.current !== activeChatId;
     const hasNewMessage = currentMsgCount > prevMsgCountRef.current;
 
-    if (isNewChat || hasNewMessage) {
-      messagesEndRef.current?.scrollIntoView({ behavior: isNewChat ? 'auto' : 'smooth' });
+    if (isNewChat) {
+      // Immediate snap to bottom on chat open / switch
+      scrollToBottom(false);
+      const raf1 = requestAnimationFrame(() => scrollToBottom(false));
+      const t1 = setTimeout(() => scrollToBottom(false), 50);
+      const t2 = setTimeout(() => scrollToBottom(false), 200);
+
+      prevChatIdRef.current = activeChatId;
+      prevMsgCountRef.current = currentMsgCount;
+
+      return () => {
+        cancelAnimationFrame(raf1);
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
     }
 
-    prevChatIdRef.current = activeChatId;
+    if (!loadingMessages && currentMsgCount > 0) {
+      if (hasNewMessage && prevMsgCountRef.current > 0) {
+        // Smooth scroll when a new message is appended to existing chat
+        scrollToBottom(true);
+      } else {
+        // Initial load of messages for the active chat
+        scrollToBottom(false);
+        const raf = requestAnimationFrame(() => scrollToBottom(false));
+        const t = setTimeout(() => scrollToBottom(false), 60);
+        return () => {
+          cancelAnimationFrame(raf);
+          clearTimeout(t);
+        };
+      }
+    }
+
     prevMsgCountRef.current = currentMsgCount;
-  }, [conv?.messages, activeChatId]);
+  }, [conv?.messages, activeChatId, loadingMessages]);
+
+  // Keep scrolled to bottom when container resizes or becomes visible
+  useEffect(() => {
+    const container = chatContainerRef.current;
+    if (!container) return;
+
+    const handleResize = () => {
+      if (container.clientHeight > 0 && (conv?.messages?.length || 0) > 0) {
+        scrollToBottom(false);
+      }
+    };
+
+    const resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(container);
+
+    return () => resizeObserver.disconnect();
+  }, [activeChatId, conv?.messages?.length]);
 
   // Close emoji picker and options dropdown when clicking outside
   useEffect(() => {
@@ -97,7 +164,7 @@ export default function ChatView({ onBack, onUserClick }) {
   const handleInputFocus = () => {
     setShowEmojiPicker(false);
     setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      scrollToBottom(true);
       textInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 350);
   };
@@ -267,7 +334,7 @@ export default function ChatView({ onBack, onUserClick }) {
       )}
 
       {/* Messages Feed */}
-      <div className="chat-messages">
+      <div className="chat-messages" ref={chatContainerRef}>
         {loadingMessages ? (
           <div className="chat-loading">
             <Loader size={24} className="chat-loading-spinner" />
@@ -336,7 +403,12 @@ export default function ChatView({ onBack, onUserClick }) {
                   >
                     <div className={`chat-bubble ${isSent ? 'sent' : 'received'}`}>
                       {msg.type === 'image' ? (
-                        <img src={msg.content} alt="Sent image" className="chat-image" />
+                        <img 
+                          src={msg.content} 
+                          alt="Sent image" 
+                          className="chat-image" 
+                          onLoad={() => scrollToBottom(false)}
+                        />
                       ) : (
                         <span>{msg.content}</span>
                       )}
