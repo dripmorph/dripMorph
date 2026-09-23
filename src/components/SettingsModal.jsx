@@ -6,6 +6,7 @@ import { parseProfileLinksData, serializeProfileLinksData } from '../lib/linkUti
 import ChangePasswordModal from './ChangePasswordModal';
 import DeleteAccountModal from './DeleteAccountModal';
 import ReportProblemModal from './ReportProblemModal';
+import TermsOfServiceModal from './TermsOfServiceModal';
 
 export default function SettingsModal({ isOpen, onClose, showToast, onProfileUpdate }) {
   const { user, updateUsername, updateProfileDetails, updateCity } = useAuth();
@@ -42,6 +43,9 @@ export default function SettingsModal({ isOpen, onClose, showToast, onProfileUpd
 
   // Report a Problem Modal state
   const [showReportProblemModal, setShowReportProblemModal] = useState(false);
+
+  // Terms of Service Modal state
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   if (!isOpen) return null;
 
@@ -363,14 +367,22 @@ export default function SettingsModal({ isOpen, onClose, showToast, onProfileUpd
             </div>
 
             {/* Terms of Service */}
-            <div className="settings-item-row">
+            <div 
+              className="settings-item-row"
+              onClick={() => setShowTermsModal(true)}
+              style={{ cursor: 'pointer' }}
+            >
               <div className="settings-item-info">
                 <span className="settings-item-label">Terms of Service</span>
                 <span className="settings-item-sub">Community guidelines & usage terms</span>
               </div>
               <button
+                type="button"
                 className="settings-action-btn"
-                onClick={() => showToast && showToast('Opening Terms of Service...')}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowTermsModal(true);
+                }}
               >
                 View
               </button>
@@ -410,6 +422,12 @@ export default function SettingsModal({ isOpen, onClose, showToast, onProfileUpd
               </button>
             </div>
           </div>
+
+          {/* Terms of Service Modal */}
+          <TermsOfServiceModal
+            isOpen={showTermsModal}
+            onClose={() => setShowTermsModal(false)}
+          />
 
           {/* Report a Problem Modal */}
           <ReportProblemModal
