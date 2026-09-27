@@ -10,6 +10,11 @@
 import { supabase } from './supabaseClient';
 import { compressImage } from './compressImage';
 
+// Blacklisted / deleted post IDs excluded permanently across all views
+export const EXCLUDED_OUTFIT_IDS = new Set([
+  '82acec37-a49b-4629-98cf-c6b509605ad2',
+]);
+
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const FUNCTIONS_BASE = `${SUPABASE_URL}/functions/v1`;
 
@@ -526,7 +531,7 @@ export async function toggleOutfitLike(outfitId, userId) {
  * joined with profiles, outfit_ratings, outfit_products, and outfit_likes.
  */
 export async function fetchFeedOutfits(currentUserId = null) {
-  const { data: outfitsData, error: outfitsError } = await supabase
+  let query = supabase
     .from('outfits')
     .select(`
       id,
@@ -551,10 +556,19 @@ export async function fetchFeedOutfits(currentUserId = null) {
     `)
     .order('created_at', { ascending: false });
 
+  // Exclude removed posts from the query
+  for (const excludedId of EXCLUDED_OUTFIT_IDS) {
+    query = query.neq('id', excludedId);
+  }
+
+  const { data: rawOutfitsData, error: outfitsError } = await query;
+
   if (outfitsError) {
     console.error('[outfitService] fetchFeedOutfits error:', outfitsError);
     throw outfitsError;
   }
+
+  const outfitsData = (rawOutfitsData || []).filter(o => !EXCLUDED_OUTFIT_IDS.has(o.id));
 
   if (!outfitsData || outfitsData.length === 0) return [];
 
@@ -689,7 +703,7 @@ export async function fetchUserOutfits(userId, currentUserId = null) {
     return [];
   }
 
-  const { data: outfitsData, error: outfitsError } = await supabase
+  let query = supabase
     .from('outfits')
     .select(`
       id,
@@ -715,10 +729,19 @@ export async function fetchUserOutfits(userId, currentUserId = null) {
     .eq('poster_id', userId)
     .order('created_at', { ascending: false });
 
+  // Exclude removed posts from the query
+  for (const excludedId of EXCLUDED_OUTFIT_IDS) {
+    query = query.neq('id', excludedId);
+  }
+
+  const { data: rawOutfitsData, error: outfitsError } = await query;
+
   if (outfitsError) {
     console.error('[outfitService.fetchUserOutfits] Supabase query error:', outfitsError);
     return [];
   }
+
+  const outfitsData = (rawOutfitsData || []).filter(o => !EXCLUDED_OUTFIT_IDS.has(o.id));
 
   console.log(`[outfitService.fetchUserOutfits] Supabase returned ${outfitsData?.length || 0} rows for poster_id = "${userId}":`, outfitsData);
 
@@ -852,7 +875,7 @@ export async function fetchUserOutfits(userId, currentUserId = null) {
 export async function fetchTrendingFits(limit = 50) {
   const queryLimit = Math.min(Math.max(limit, 1), 50);
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('outfits')
     .select(`
       id,
@@ -879,10 +902,19 @@ export async function fetchTrendingFits(limit = 50) {
     .order('created_at', { ascending: false })
     .limit(50);
 
+  // Exclude removed posts from the query
+  for (const excludedId of EXCLUDED_OUTFIT_IDS) {
+    query = query.neq('id', excludedId);
+  }
+
+  const { data: rawData, error } = await query;
+
   if (error) {
     console.error("[outfitService] Error fetching trending fits:", error);
     return [];
   }
+
+  const data = (rawData || []).filter(o => !EXCLUDED_OUTFIT_IDS.has(o.id));
 
   if (!data || data.length === 0) return [];
 
@@ -989,7 +1021,7 @@ export async function fetchTopCreatorsByCity(city, limit = 50) {
   const queryLimit = Math.min(Math.max(limit, 1), 50);
 
   try {
-    const { data: outfitsData, error: outfitsError } = await supabase
+    let query = supabase
       .from('outfits')
       .select(`
         id,
@@ -1008,10 +1040,19 @@ export async function fetchTopCreatorsByCity(city, limit = 50) {
       `)
       .order('created_at', { ascending: false });
 
+    // Exclude removed posts from the query
+    for (const excludedId of EXCLUDED_OUTFIT_IDS) {
+      query = query.neq('id', excludedId);
+    }
+
+    const { data: rawOutfitsData, error: outfitsError } = await query;
+
     if (outfitsError) {
       console.error('[outfitService] Error fetching outfits for top creators:', outfitsError);
       return [];
     }
+
+    const outfitsData = (rawOutfitsData || []).filter(o => !EXCLUDED_OUTFIT_IDS.has(o.id));
 
     if (!outfitsData || outfitsData.length === 0) return [];
 
@@ -1323,11 +1364,18 @@ export async function fetchLeaderboard(cityOrOptions = null, limitParam = 50) {
       .gte('created_at', mondayCutoff)
       .order('created_at', { ascending: false });
 
-    let { data: outfits, error } = await query;
-    if (error || !outfits) {
+    // Exclude removed posts from the query
+    for (const excludedId of EXCLUDED_OUTFIT_IDS) {
+      query = query.neq('id', excludedId);
+    }
+
+    let { data: rawOutfits, error } = await query;
+    if (error || !rawOutfits) {
       console.error("[outfitService] Error fetching outfits for leaderboard:", error);
       return [];
     }
+
+    const outfits = rawOutfits.filter(o => !EXCLUDED_OUTFIT_IDS.has(o.id));
 
     // Robust city filtering logic: check submission-locked outfit city first, then profile city
     let filteredOutfits = outfits;
