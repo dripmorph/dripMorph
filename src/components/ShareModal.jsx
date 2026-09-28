@@ -143,48 +143,6 @@ export default function ShareModal({ isOpen, onClose, post, showToast }) {
     window.open('https://www.instagram.com/', '_blank');
   };
 
-  // ── 6. Native Share with Image Blob ───────────────────────────────────────
-  const handleNativeShare = async () => {
-    if (cardRef.current && navigator.share) {
-      try {
-        setIsGenerating(true);
-        const blob = await toBlob(cardRef.current, {
-          cacheBust: true,
-          pixelRatio: 3,
-          quality: 1,
-        });
-
-        if (blob) {
-          const file = new File([blob], `DripMorph-${rawUsername}.png`, { type: 'image/png' });
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              files: [file],
-              title: 'DripMorph Fit Check',
-              text: `${shareText}\n${shareUrl}`,
-            });
-            return;
-          }
-        }
-
-        // Fallback text-only native share
-        await navigator.share({
-          title: 'DripMorph Fit Check',
-          text: shareText,
-          url: shareUrl,
-        });
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          console.error('Native share failed:', err);
-          handleCopyLink();
-        }
-      } finally {
-        setIsGenerating(false);
-      }
-    } else {
-      handleCopyLink();
-    }
-  };
-
   return (
     <div className="share-modal-overlay" onClick={onClose}>
       <div className="share-modal-card-v2" onClick={(e) => e.stopPropagation()}>
@@ -208,18 +166,42 @@ export default function ShareModal({ isOpen, onClose, post, showToast }) {
               <h3 className="share-modal-title-text">Share Drip Card</h3>
             </div>
 
-            <button
-              type="button"
-              className="share-modal-close-btn-v2"
-              onClick={onClose}
-              aria-label="Close"
-            >
-              <X size={18} />
-            </button>
+            <div className="share-modal-top-actions">
+              {/* Theme Toggle Pill for Mobile */}
+              <div className="share-theme-toggle-pill mobile-only-toggle">
+                <button
+                  type="button"
+                  className={`theme-pill-btn ${cardTheme === 'light' ? 'active' : ''}`}
+                  onClick={() => setCardTheme('light')}
+                  title="Light Mode"
+                >
+                  <Sun size={13} />
+                  <span>Light</span>
+                </button>
+                <button
+                  type="button"
+                  className={`theme-pill-btn ${cardTheme === 'dark' ? 'active' : ''}`}
+                  onClick={() => setCardTheme('dark')}
+                  title="Dark Mode"
+                >
+                  <Moon size={13} />
+                  <span>Dark</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                className="share-modal-close-btn-v2"
+                onClick={onClose}
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
           </div>
 
-          {/* Theme Selector Section */}
-          <div className="share-theme-section">
+          {/* Theme Selector Section (Desktop) */}
+          <div className="share-theme-section desktop-only-theme">
             <span className="share-section-label">Card Template Style:</span>
             <div className="share-theme-toggle-pill">
               <button
@@ -243,8 +225,8 @@ export default function ShareModal({ isOpen, onClose, post, showToast }) {
             </div>
           </div>
 
-          {/* Quick Post Info Card */}
-          <div className="share-info-card">
+          {/* Quick Post Info Card (Desktop) */}
+          <div className="share-info-card desktop-only-info">
             <div className="share-info-avatar-row">
               <img
                 src={post.image || post.image_url || post.outfit_image || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop'}
@@ -277,7 +259,7 @@ export default function ShareModal({ isOpen, onClose, post, showToast }) {
               <span>{isGenerating ? 'Generating Story PNG...' : 'Download Drip Card (PNG)'}</span>
             </button>
 
-            {/* Social Grid */}
+            {/* Social Grid (Copy Link, WhatsApp, Instagram, X) */}
             <div className="share-modal-grid-v2">
               <button
                 type="button"
@@ -316,17 +298,6 @@ export default function ShareModal({ isOpen, onClose, post, showToast }) {
                 <span>X</span>
               </button>
             </div>
-
-            {/* Native System Share */}
-            <button
-              type="button"
-              className="share-modal-more-btn-v2"
-              onClick={handleNativeShare}
-              disabled={isGenerating}
-            >
-              <Share2 size={16} />
-              <span>More Share Options</span>
-            </button>
           </div>
         </div>
       </div>

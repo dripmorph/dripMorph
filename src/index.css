@@ -6430,7 +6430,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 18px;
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -6492,6 +6492,12 @@ body {
 
 [data-theme='light'] .share-modal-title-text {
   color: #0d0d0f;
+}
+
+.share-modal-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .share-modal-close-btn-v2 {
@@ -6691,7 +6697,7 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 15px 13px 13px 13px;
+  padding: 14px 12px 12px 12px;
   box-sizing: border-box;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   user-select: none;
@@ -6729,7 +6735,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .brand-logo-group {
@@ -6745,7 +6751,7 @@ body {
 }
 
 .brand-title-text {
-  font-size: 1.1rem;
+  font-size: 1.08rem;
   font-weight: 900;
   letter-spacing: -0.3px;
 }
@@ -6759,7 +6765,7 @@ body {
 }
 
 .username-tag-text {
-  font-size: 0.95rem;
+  font-size: 0.94rem;
   font-weight: 800;
   letter-spacing: -0.2px;
 }
@@ -6772,16 +6778,16 @@ body {
   color: #ffffff;
 }
 
-/* Main Cyber Photo Frame */
+/* Main Cyber Photo Frame - Tall Portrait Proportions */
 .cyber-photo-frame-container {
   position: relative;
   z-index: 2;
   width: 100%;
-  height: 220px;
+  height: 290px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 /* Tech Corner Bracket Accents */
@@ -6832,7 +6838,7 @@ body {
   border: 3px solid #a6ff00;
   border-radius: 18px;
   overflow: hidden;
-  background-color: #111111;
+  background-color: #000000;
   box-shadow: 0 0 16px rgba(166, 255, 0, 0.35);
   position: relative;
   z-index: 1;
@@ -6842,6 +6848,7 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center 20%;
   display: block;
 }
 
@@ -6853,7 +6860,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  margin-bottom: 7px;
+  margin-bottom: 6px;
 }
 
 .speed-chevrons {
@@ -6865,18 +6872,18 @@ body {
 .chevron-bar {
   display: inline-block;
   width: 4.5px;
-  height: 13px;
+  height: 12px;
   background-color: #a6ff00;
   transform: skewX(-25deg);
   border-radius: 2px;
 }
 
 .creator-name-badge {
-  border: 2px solid #a6ff00;
+  border: 1.8px solid #a6ff00;
   border-radius: 10px;
-  padding: 4px 14px;
+  padding: 3.5px 14px;
   transform: skewX(-12deg);
-  box-shadow: 0 0 10px rgba(166, 255, 0, 0.2);
+  box-shadow: 0 0 8px rgba(166, 255, 0, 0.2);
 }
 
 .theme-light .creator-name-badge {
@@ -6890,7 +6897,7 @@ body {
 .creator-name-text {
   display: block;
   transform: skewX(12deg);
-  font-size: 0.98rem;
+  font-size: 0.95rem;
   font-weight: 900;
   font-style: italic;
   letter-spacing: -0.2px;
@@ -6912,12 +6919,12 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border: 2.2px solid #a6ff00;
+  border: 2px solid #a6ff00;
   border-radius: 12px;
-  padding: 5px 10px 5px 14px;
-  margin-bottom: 7px;
+  padding: 4.5px 10px 4.5px 14px;
+  margin-bottom: 6px;
   transform: skewX(-10deg);
-  box-shadow: 0 0 12px rgba(166, 255, 0, 0.25);
+  box-shadow: 0 0 10px rgba(166, 255, 0, 0.25);
 }
 
 .theme-light .drip-rating-banner {
@@ -6953,7 +6960,7 @@ body {
 }
 
 .drip-rating-title {
-  font-size: 1.35rem;
+  font-size: 1.25rem;
   font-weight: 900;
   font-style: italic;
   letter-spacing: -0.4px;
@@ -6970,8 +6977,8 @@ body {
 .drip-rating-badge {
   transform: skewX(10deg);
   background-color: #a6ff00;
-  border-radius: 10px;
-  padding: 4px 11px;
+  border-radius: 9px;
+  padding: 3.5px 10px;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -6979,14 +6986,14 @@ body {
 }
 
 .rating-star-icon {
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: #000000;
   line-height: 1;
 }
 
 .rating-score-value {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace, sans-serif;
-  font-size: 1.18rem;
+  font-size: 1.12rem;
   font-weight: 900;
   color: #000000;
   line-height: 1;
@@ -6998,22 +7005,22 @@ body {
   z-index: 2;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  gap: 5px;
 }
 
 .metric-card {
   position: relative;
   border: 1.8px solid #a6ff00;
-  border-radius: 13px;
-  padding: 6px 2px 5px 2px;
+  border-radius: 12px;
+  padding: 5px 2px 4px 2px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   box-sizing: border-box;
   text-align: center;
-  box-shadow: 0 0 8px rgba(166, 255, 0, 0.15);
+  box-shadow: 0 0 6px rgba(166, 255, 0, 0.15);
 }
 
 .theme-light .metric-card {
@@ -7026,10 +7033,10 @@ body {
 
 .metric-card-notch {
   position: absolute;
-  top: -2.5px;
-  left: 10px;
-  right: 10px;
-  height: 2px;
+  top: -2px;
+  left: 8px;
+  right: 8px;
+  height: 1.5px;
   background-color: #a6ff00;
 }
 
@@ -7037,35 +7044,35 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 .metric-score-pill {
   background-color: #a6ff00;
-  border-radius: 8px;
-  padding: 2px 8px;
+  border-radius: 7px;
+  padding: 2px 7px;
   width: 68%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 6px rgba(166, 255, 0, 0.35);
+  box-shadow: 0 0 5px rgba(166, 255, 0, 0.35);
 }
 
 .metric-score-pill span {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace, sans-serif;
-  font-size: 0.95rem;
+  font-size: 0.90rem;
   font-weight: 900;
   color: #000000;
   line-height: 1.1;
 }
 
 .metric-label {
-  font-size: 0.56rem;
+  font-size: 0.52rem;
   font-weight: 700;
   line-height: 1.15;
   max-width: 95%;
-  min-height: 18px;
+  min-height: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -7208,71 +7215,114 @@ body {
   color: #18181b;
 }
 
-.share-modal-more-btn-v2 {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 10px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.85);
-  font-size: 0.82rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-[data-theme='light'] .share-modal-more-btn-v2 {
-  background: rgba(0, 0, 0, 0.04);
-  border-color: rgba(0, 0, 0, 0.1);
-  color: #18181b;
-}
-
-.share-modal-more-btn-v2:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-}
-
-[data-theme='light'] .share-modal-more-btn-v2:hover:not(:disabled) {
-  background: rgba(0, 0, 0, 0.08);
-  color: #000000;
-}
-
 /* Responsive Mobile Rules for Share Modal */
 @media (max-width: 720px) {
-  .share-modal-card-v2 {
-    max-width: 380px;
-    flex-direction: column;
-    max-height: 94vh;
+  .share-modal-overlay {
+    padding: 8px;
+    align-items: center;
   }
 
+  .share-modal-card-v2 {
+    max-width: 360px;
+    flex-direction: column;
+    max-height: 96vh;
+    border-radius: 22px;
+  }
+
+  /* Preview column on mobile */
   .share-modal-preview-col {
     flex: none;
     border-right: none;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 14px;
-    max-height: 48vh;
-    overflow-y: auto;
+    padding: 10px 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    background: transparent;
   }
 
   [data-theme='light'] .share-modal-preview-col {
+    background: transparent;
     border-bottom-color: rgba(0, 0, 0, 0.08);
   }
 
+  /* Scale the card on mobile so the whole card + buttons fit in viewport */
+  .share-story-scale-container {
+    transform: scale(0.86);
+    transform-origin: center center;
+    margin: -36px 0;
+  }
+
+  @media (max-height: 700px) {
+    .share-story-scale-container {
+      transform: scale(0.75);
+      margin: -65px 0;
+    }
+  }
+
   .share-modal-controls-col {
-    padding: 14px 16px;
-    gap: 12px;
+    padding: 10px 14px 14px 14px;
+    gap: 10px;
+    flex: none;
+    overflow-y: visible;
   }
 
   .share-modal-header-v2 {
-    padding-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
-  .share-info-card {
-    display: none; /* Keep mobile view compact */
+  [data-theme='light'] .share-modal-header-v2 {
+    border-bottom-color: rgba(0, 0, 0, 0.08);
+  }
+
+  .share-modal-title-text {
+    font-size: 1.05rem;
+  }
+
+  .share-modal-top-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mobile-only-toggle {
+    display: flex;
+  }
+
+  .desktop-only-theme,
+  .desktop-only-info {
+    display: none !important;
+  }
+
+  .share-download-hero-btn {
+    padding: 11px;
+    font-size: 0.88rem;
+    border-radius: 12px;
+  }
+
+  .share-modal-grid-v2 {
+    gap: 6px;
+  }
+
+  .share-action-pill {
+    padding: 6px 2px;
+    font-size: 0.70rem;
+    border-radius: 10px;
+  }
+}
+
+/* Desktop styles: Hide mobile-only toggle */
+@media (min-width: 721px) {
+  .mobile-only-toggle {
+    display: none !important;
+  }
+  .desktop-only-theme {
+    display: flex !important;
+  }
+  .desktop-only-info {
+    display: flex !important;
   }
 }
 

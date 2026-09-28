@@ -216,7 +216,7 @@ export default function DripShareCard({ post, theme = 'dark', cardRef }) {
           <div className="metric-card-notch" />
           <div className="metric-icon-box">
             {/* Palette SVG */}
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={isLight ? "#000000" : "#ffffff"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={isLight ? "#000000" : "#ffffff"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="13.5" cy="6.5" r="1" fill="#a6ff00" stroke="#a6ff00" />
               <circle cx="17.5" cy="10.5" r="1" fill="#a6ff00" stroke="#a6ff00" />
               <circle cx="8.5" cy="7.5" r="1" fill="#a6ff00" stroke="#a6ff00" />
@@ -235,7 +235,7 @@ export default function DripShareCard({ post, theme = 'dark', cardRef }) {
           <div className="metric-card-notch" />
           <div className="metric-icon-box">
             {/* Sparkles SVG */}
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={isLight ? "#000000" : "#ffffff"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={isLight ? "#000000" : "#ffffff"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
               <circle cx="19" cy="5" r="1" fill="#a6ff00" stroke="#a6ff00" />
             </svg>
@@ -251,7 +251,7 @@ export default function DripShareCard({ post, theme = 'dark', cardRef }) {
           <div className="metric-card-notch" />
           <div className="metric-icon-box">
             {/* Clothes Hanger SVG */}
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={isLight ? "#000000" : "#ffffff"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={isLight ? "#000000" : "#ffffff"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 7a2 2 0 1 0-2-2 2 2 0 0 0 2 2v2" />
               <path d="M12 9 2.5 15.5a1.5 1.5 0 0 0 .9 2.5h17.2a1.5 1.5 0 0 0 .9-2.5L12 9z" />
             </svg>
