@@ -1,4 +1,5 @@
 import React from 'react';
+import DripMorphLogo from './DripMorphLogo';
 
 /**
  * DripShareCard - High-fidelity Cybernetic 9:16 Share Card Template
@@ -129,22 +130,9 @@ export default function DripShareCard({ post, theme = 'dark', cardRef }) {
       {/* ── Top Header: Pill Brand Logo + Username ── */}
       <div className="card-top-header">
         <div className="brand-logo-group">
-          {/* DripMorph Slanted Capsule Logo */}
+          {/* DripMorph Official Capsule Logo */}
           <div className="capsule-logo-wrapper">
-            <svg width="24" height="24" viewBox="0 0 100 100" fill="none">
-              <g transform="rotate(-40 50 50)">
-                {/* Capsule Container Outline */}
-                <rect x="15" y="28" width="70" height="44" rx="22" fill={isLight ? "#ffffff" : "#000000"} stroke="#a6ff00" strokeWidth="7" />
-                {/* Green Left Half */}
-                <path d="M 37 28 A 22 22 0 0 0 37 72 L 50 72 L 50 28 Z" fill="#a6ff00" />
-                {/* Dark/Light Right Half */}
-                <path d="M 50 28 L 50 72 L 63 72 A 22 22 0 0 0 63 28 Z" fill={isLight ? "#111111" : "#000000"} />
-                {/* Center Divider Line */}
-                <line x1="50" y1="28" x2="50" y2="72" stroke="#ffffff" strokeWidth="4" />
-                {/* Pill Gloss Highlight */}
-                <rect x="25" y="38" width="18" height="6" rx="3" fill="#ffffff" opacity="0.9" />
-              </g>
-            </svg>
+            <DripMorphLogo size={24} />
           </div>
           <span className="brand-title-text">DRIPMORPH</span>
         </div>
