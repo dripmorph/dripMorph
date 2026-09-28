@@ -75,7 +75,8 @@ export default function PostUpload({ showToast, onPostCreated }) {
     { id: Date.now(), category: '', name: '', price: '', link: '' },
   ]);
 
-  const fileInputRef = useRef(null);
+  const cameraInputRef  = useRef(null);
+  const galleryInputRef = useRef(null);
 
   // ── Tagged item helpers ──────────────────────────────────────────────────────
   const toggleTagging = () => {
@@ -364,9 +365,20 @@ export default function PostUpload({ showToast, onPostCreated }) {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
+        {/* Camera input (direct capture on mobile devices) */}
         <input
           type="file"
-          ref={fileInputRef}
+          ref={cameraInputRef}
+          accept="image/*"
+          capture="environment"
+          onChange={handleImageChange}
+          style={{ display: 'none' }}
+        />
+
+        {/* Gallery / File picker input (opens device files/photos) */}
+        <input
+          type="file"
+          ref={galleryInputRef}
           accept="image/*"
           onChange={handleImageChange}
           style={{ display: 'none' }}
@@ -375,7 +387,7 @@ export default function PostUpload({ showToast, onPostCreated }) {
         {selectedImage ? (
           <div
             className="preview-container"
-            onClick={() => !isAnalyzing && fileInputRef.current.click()}
+            onClick={() => !isAnalyzing && galleryInputRef.current?.click()}
           >
             <img src={selectedImage} alt="Outfit Preview" className="preview-image" />
 
@@ -406,13 +418,13 @@ export default function PostUpload({ showToast, onPostCreated }) {
         ) : (
           <div
             className={`upload-placeholder ${isDragOver ? 'drag-over' : ''}`}
-            onClick={() => fileInputRef.current.click()}
+            onClick={() => cameraInputRef.current?.click()}
           >
             <div className="placeholder-icon-wrapper">
               <span style={{ fontSize: '2rem', fontWeight: '500', color: 'var(--accent-solid)', lineHeight: 1 }}>+</span>
             </div>
-            <span className="placeholder-title">Click or Drag & Drop your outfit photo here</span>
-            <span className="placeholder-subtitle">Supports JPG, PNG</span>
+            <span className="placeholder-title">Tap + to snap fit with camera</span>
+            <span className="placeholder-subtitle">Or choose photo from device below</span>
           </div>
         )}
 
@@ -421,7 +433,7 @@ export default function PostUpload({ showToast, onPostCreated }) {
           <button
             type="button"
             className="change-img-floating-btn"
-            onClick={() => fileInputRef.current.click()}
+            onClick={() => galleryInputRef.current?.click()}
             style={{ border: 'none', cursor: 'pointer' }}
           >
             <RefreshCw size={16} />
@@ -467,7 +479,7 @@ export default function PostUpload({ showToast, onPostCreated }) {
                     if (selectedImage && selectedImage.startsWith('blob:')) URL.revokeObjectURL(selectedImage);
                     setSelectedImage(null);
                     setUploadedUrl(null);
-                    fileInputRef.current?.click();
+                    galleryInputRef.current?.click();
                   }}
                   style={{
                     marginTop: '4px',
@@ -510,7 +522,7 @@ export default function PostUpload({ showToast, onPostCreated }) {
                 <button
                   type="button"
                   className="sheet-upload-btn"
-                  onClick={() => fileInputRef.current.click()}
+                  onClick={() => galleryInputRef.current?.click()}
                   style={{ border: 'none', cursor: 'pointer' }}
                 >
                   <Upload size={16} />
