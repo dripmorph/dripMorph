@@ -1,5 +1,10 @@
 import React from 'react';
 
+/**
+ * DripMorph Official Brand Logo
+ * Pixel-accurate, zero-dependency vector SVG with inlined colors.
+ * Eliminates gradient-ID collisions to ensure vibrant neon green rendering everywhere.
+ */
 export default function DripMorphLogo({ size = 32, className = '' }) {
   return (
     <svg
@@ -12,62 +17,59 @@ export default function DripMorphLogo({ size = 32, className = '' }) {
       style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}
       aria-label="DripMorph Logo"
     >
-      <defs>
-        {/* Vibrant Neon Lime Gradient */}
-        <linearGradient id="dmLimeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#b4fd3b" />
-          <stop offset="100%" stopColor="#8ae610" />
-        </linearGradient>
-      </defs>
-
       {/* 45-degree Rotated Capsule / Drip Pill */}
       <g transform="rotate(45 50 50)">
-        {/* Outer White Border / Sticker Shell */}
+        {/* Top-Right Half: Solid Electric Neon Lime Fill */}
+        <path
+          d="M 30 50 L 30 32 A 20 20 0 0 1 70 32 L 70 50 Z"
+          fill="#a6fc29"
+        />
+
+        {/* Bottom-Left Half: Obsidian Black Fill */}
+        <path
+          d="M 30 50 L 30 68 A 20 20 0 0 0 70 68 L 70 50 Z"
+          fill="#000000"
+        />
+
+        {/* Bottom-Left Half: Neon Lime Inner Contour Stroke */}
+        <path
+          d="M 35.5 50 L 35.5 67.5 A 14.5 14.5 0 0 0 64.5 67.5 L 64.5 50"
+          stroke="#a6fc29"
+          strokeWidth="3.5"
+          strokeLinecap="round"
+          fill="none"
+        />
+
+        {/* Top-Right Half: Crisp White Gloss Arc Highlight */}
+        <path
+          d="M 57 23 A 13 13 0 0 1 63 36"
+          stroke="#FFFFFF"
+          strokeWidth="4"
+          strokeLinecap="round"
+          fill="none"
+        />
+
+        {/* Outer White Shell Outline */}
         <rect
           x="30"
           y="12"
           width="40"
           height="76"
           rx="20"
-          fill="#FFFFFF"
-        />
-
-        {/* Inner Neon Lime Base (forms solid top half and green halo ring in bottom half) */}
-        <rect
-          x="34"
-          y="16"
-          width="32"
-          height="68"
-          rx="16"
-          fill="url(#dmLimeGrad)"
-        />
-
-        {/* Bottom Half Black Obsidian Cap (creates green ring around inner black chamber) */}
-        <rect
-          x="37.5"
-          y="47"
-          width="25"
-          height="34"
-          rx="12.5"
-          fill="#000000"
+          stroke="#FFFFFF"
+          strokeWidth="5.5"
+          fill="none"
         />
 
         {/* Center Crisp White Divider Line */}
-        <rect
-          x="30"
-          y="48.5"
-          width="40"
-          height="3.5"
-          fill="#FFFFFF"
-        />
-
-        {/* Top Gloss Arc Highlight */}
-        <path
-          d="M 55.5 24 A 12 12 0 0 1 61.5 37.5"
+        <line
+          x1="28"
+          y1="50"
+          x2="72"
+          y2="50"
           stroke="#FFFFFF"
-          strokeWidth="3.5"
+          strokeWidth="5.5"
           strokeLinecap="round"
-          fill="none"
         />
       </g>
     </svg>
