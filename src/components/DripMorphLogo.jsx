@@ -18,17 +18,11 @@ export default function DripMorphLogo({ size = 32, className = '' }) {
           <stop offset="0%" stopColor="#b4fd3b" />
           <stop offset="100%" stopColor="#8ae610" />
         </linearGradient>
-
-        {/* Gloss Highlight Gradient */}
-        <linearGradient id="dmGloss" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.9" />
-          <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.1" />
-        </linearGradient>
       </defs>
 
       {/* 45-degree Rotated Capsule / Drip Pill */}
       <g transform="rotate(45 50 50)">
-        {/* Outer White Border / Sticker Silhouette */}
+        {/* Outer White Border / Sticker Shell */}
         <rect
           x="30"
           y="12"
@@ -38,7 +32,7 @@ export default function DripMorphLogo({ size = 32, className = '' }) {
           fill="#FFFFFF"
         />
 
-        {/* Inner Neon Lime Base */}
+        {/* Inner Neon Lime Base (forms solid top half and green halo ring in bottom half) */}
         <rect
           x="34"
           y="16"
@@ -48,29 +42,29 @@ export default function DripMorphLogo({ size = 32, className = '' }) {
           fill="url(#dmLimeGrad)"
         />
 
-        {/* Bottom Half Black Obsidian Cap */}
+        {/* Bottom Half Black Obsidian Cap (creates green ring around inner black chamber) */}
         <rect
-          x="38"
-          y="48"
-          width="24"
-          height="32"
-          rx="12"
-          fill="#0B0B0E"
+          x="37.5"
+          y="47"
+          width="25"
+          height="34"
+          rx="12.5"
+          fill="#000000"
         />
 
         {/* Center Crisp White Divider Line */}
         <rect
-          x="34"
-          y="48"
-          width="32"
-          height="3"
+          x="30"
+          y="48.5"
+          width="40"
+          height="3.5"
           fill="#FFFFFF"
         />
 
         {/* Top Gloss Arc Highlight */}
         <path
-          d="M 56 22 A 12 12 0 0 1 62 35"
-          stroke="url(#dmGloss)"
+          d="M 55.5 24 A 12 12 0 0 1 61.5 37.5"
+          stroke="#FFFFFF"
           strokeWidth="3.5"
           strokeLinecap="round"
           fill="none"

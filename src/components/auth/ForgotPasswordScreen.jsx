@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Mail, Layers, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
+import DripMorphLogo from '../DripMorphLogo';
 
 export default function ForgotPasswordScreen({ onNavigateToLogin }) {
   const [email, setEmail] = useState('');
@@ -21,9 +22,7 @@ export default function ForgotPasswordScreen({ onNavigateToLogin }) {
       <div className="auth-card">
         {/* Header Branding */}
         <div className="auth-brand">
-          <div className="auth-brand-logo">
-            <Layers size={28} />
-          </div>
+          <DripMorphLogo size={32} />
           <span className="auth-brand-title">DRIPMORPH</span>
         </div>
 

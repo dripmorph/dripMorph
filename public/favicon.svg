@@ -1,16 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
-  <g transform="rotate(45 200 200)">
-    {/* Outer White Sticker Shell */}
-    <rect x="120" y="50" width="160" height="300" rx="80" fill="#FFFFFF" />
-    {/* Inner Capsule Outline (Neon Green) */}
-    <rect x="136" y="66" width="128" height="268" rx="64" fill="#a6fc29" />
-    {/* Top Half Green Cap */}
-    <path d="M 136 200 L 136 130 A 64 64 0 0 1 264 130 L 264 200 Z" fill="#a6fc29" />
-    {/* Bottom Half Black Cap (with Green Ring around it) */}
-    <rect x="152" y="186" width="96" height="134" rx="48" fill="#000000" />
-    {/* Divider Line (White) */}
-    <rect x="136" y="194" width="128" height="12" fill="#FFFFFF" />
-    {/* White Glossy Highlight Arc on Top Right of Green Cap */}
-    <path d="M 222 96 A 48 48 0 0 1 246 150" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round" fill="none" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="favLimeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#b4fd3b" />
+      <stop offset="100%" stopColor="#8ae610" />
+    </linearGradient>
+  </defs>
+  <g transform="rotate(45 50 50)">
+    <!-- Outer White Border / Sticker Shell -->
+    <rect x="30" y="12" width="40" height="76" rx="20" fill="#FFFFFF" />
+    <!-- Inner Neon Lime Base -->
+    <rect x="34" y="16" width="32" height="68" rx="16" fill="url(#favLimeGrad)" />
+    <!-- Bottom Half Black Cap -->
+    <rect x="37.5" y="47" width="25" height="34" rx="12.5" fill="#000000" />
+    <!-- Center Crisp White Divider Line -->
+    <rect x="30" y="48.5" width="40" height="3.5" fill="#FFFFFF" />
+    <!-- Top Gloss Arc Highlight -->
+    <path d="M 55.5 24 A 12 12 0 0 1 61.5 37.5" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" fill="none" />
   </g>
 </svg>
