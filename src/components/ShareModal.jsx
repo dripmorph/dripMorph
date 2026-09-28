@@ -1,55 +1,157 @@
-import React, { useState } from 'react';
-import { X, Copy, Check, Send, Share2, Globe } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { X, Copy, Check, Download, Share2, Sun, Moon, Sparkles, Send } from 'lucide-react';
 import { FaWhatsapp, FaInstagram } from 'react-icons/fa';
 import { FaXTwitter } from 'react-icons/fa6';
+import { toPng, toBlob } from 'html-to-image';
+import DripShareCard from './DripShareCard';
 
 export default function ShareModal({ isOpen, onClose, post, showToast }) {
   const [copied, setCopied] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  // Read the app's current theme on open, default to 'dark'
+  const getAppTheme = () => {
+    return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  };
+
+  const [cardTheme, setCardTheme] = useState('dark');
+  const cardRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setCardTheme(getAppTheme());
+    }
+  }, [isOpen]);
 
   if (!isOpen || !post) return null;
 
   const shareUrl = `${window.location.origin}/?post=${post.id}`;
   const scoreVal = post.overall_score || post.score || '8.0';
   const creatorName = (post.username || 'creator').replace(/^@/, '');
-  const shareText = `Check out ${creatorName}'s fit on DripMorph! AI Score: ${scoreVal}/10`;
+  const shareText = `Check out ${creatorName}'s fit on DripMorph! 🔥 AI Drip Rating: ${scoreVal}/10`;
 
+  // ── 1. Copy Link ──────────────────────────────────────────────────────────
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
-      if (showToast) showToast("Link copied to clipboard!");
+      if (showToast) showToast('Link copied to clipboard!');
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error("Failed to copy:", err);
+      console.error('Failed to copy:', err);
     }
   };
 
+  // ── 2. Download High-Res PNG Card ─────────────────────────────────────────
+  const handleDownloadCard = async () => {
+    if (!cardRef.current) return;
+    try {
+      setIsGenerating(true);
+      if (showToast) showToast('Generating high-res Drip Card...');
+
+      const dataUrl = await toPng(cardRef.current, {
+        cacheBust: true,
+        pixelRatio: 3, // Crisp 1080x1920 export
+        quality: 1,
+      });
+
+      const link = document.createElement('a');
+      link.download = `DripMorph-${creatorName}-${cardTheme}.png`;
+      link.href = dataUrl;
+      link.click();
+
+      if (showToast) showToast('Drip Card downloaded successfully!');
+    } catch (err) {
+      console.error('Error generating card image:', err);
+      if (showToast) showToast('Failed to download image. Try copying link instead.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // ── 3. WhatsApp Share ─────────────────────────────────────────────────────
   const handleWhatsAppShare = () => {
     const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`;
     window.open(waUrl, '_blank');
   };
 
+  // ── 4. X (Twitter) Share ──────────────────────────────────────────────────
   const handleTwitterShare = () => {
     const xUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
     window.open(xUrl, '_blank');
   };
 
+  // ── 5. Instagram Share / Story Share ──────────────────────────────────────
   const handleInstagramShare = async () => {
-    await handleCopyLink();
-    if (showToast) showToast("Link copied! Opening Instagram...");
+    if (cardRef.current && navigator.canShare) {
+      try {
+        setIsGenerating(true);
+        const blob = await toBlob(cardRef.current, {
+          cacheBust: true,
+          pixelRatio: 3,
+          quality: 1,
+        });
+
+        if (blob) {
+          const file = new File([blob], `DripMorph-${creatorName}.png`, { type: 'image/png' });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: 'DripMorph Fit Check',
+              text: `${shareText}\n${shareUrl}`,
+            });
+            return;
+          }
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') console.error('Instagram share error:', err);
+      } finally {
+        setIsGenerating(false);
+      }
+    }
+
+    // Fallback: Download card & open Instagram
+    await handleDownloadCard();
+    if (showToast) showToast('Drip card saved! Opening Instagram...');
     window.open('https://www.instagram.com/', '_blank');
   };
 
+  // ── 6. Native Share with Image Blob ───────────────────────────────────────
   const handleNativeShare = async () => {
-    if (navigator.share) {
+    if (cardRef.current && navigator.share) {
       try {
+        setIsGenerating(true);
+        const blob = await toBlob(cardRef.current, {
+          cacheBust: true,
+          pixelRatio: 3,
+          quality: 1,
+        });
+
+        if (blob) {
+          const file = new File([blob], `DripMorph-${creatorName}.png`, { type: 'image/png' });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: 'DripMorph Fit Check',
+              text: `${shareText}\n${shareUrl}`,
+            });
+            return;
+          }
+        }
+
+        // Fallback text-only native share
         await navigator.share({
           title: 'DripMorph Fit Check',
           text: shareText,
           url: shareUrl,
         });
       } catch (err) {
-        if (err.name !== 'AbortError') console.error(err);
+        if (err.name !== 'AbortError') {
+          console.error('Native share failed:', err);
+          handleCopyLink();
+        }
+      } finally {
+        setIsGenerating(false);
       }
     } else {
       handleCopyLink();
@@ -57,95 +159,124 @@ export default function ShareModal({ isOpen, onClose, post, showToast }) {
   };
 
   return (
-    <div 
-      className="share-modal-overlay"
-      onClick={onClose}
-    >
-      <div 
-        className="share-modal-card"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="share-modal-header">
-          <h3 className="share-modal-title">
-            <Share2 size={20} className="share-modal-title-icon" />
-            <span>Share Fit</span>
-          </h3>
-          <button 
-            type="button" 
-            className="share-modal-close-btn"
-            onClick={onClose}
-            aria-label="Close"
-          >
-            <X size={20} />
-          </button>
-        </div>
+    <div className="share-modal-overlay" onClick={onClose}>
+      <div className="share-modal-card-v2" onClick={(e) => e.stopPropagation()}>
+        {/* Modal Top Header */}
+        <div className="share-modal-header-v2">
+          <div className="share-modal-title-row">
+            <Share2 size={18} className="share-modal-title-icon" />
+            <h3 className="share-modal-title-text">Share Drip Card</h3>
+          </div>
 
-        {/* Post Preview */}
-        <div className="share-modal-preview">
-          <img 
-            src={post.image || post.image_url || post.outfit_image || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop'} 
-            alt="Fit preview" 
-            className="share-modal-preview-img"
-          />
-          <div className="share-modal-preview-info">
-            <p className="share-modal-preview-username">
-              {creatorName}
-            </p>
-            <p className="share-modal-preview-score">
-              ★ {scoreVal}/10 AI Score
-            </p>
+          <div className="share-modal-header-actions">
+            {/* Light / Dark Mode Template Switcher */}
+            <div className="share-theme-toggle-pill">
+              <button
+                type="button"
+                className={`theme-pill-btn ${cardTheme === 'light' ? 'active' : ''}`}
+                onClick={() => setCardTheme('light')}
+                title="Light Mode Template"
+              >
+                <Sun size={13} />
+                <span>Light</span>
+              </button>
+              <button
+                type="button"
+                className={`theme-pill-btn ${cardTheme === 'dark' ? 'active' : ''}`}
+                onClick={() => setCardTheme('dark')}
+                title="Dark Mode Template"
+              >
+                <Moon size={13} />
+                <span>Dark</span>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              className="share-modal-close-btn-v2"
+              onClick={onClose}
+              aria-label="Close"
+            >
+              <X size={18} />
+            </button>
           </div>
         </div>
 
-        {/* Action Grid */}
-        <div className="share-modal-grid">
-          <button 
-            type="button" 
-            className={`share-modal-btn share-modal-btn-copy ${copied ? 'copied' : ''}`}
-            onClick={handleCopyLink}
-          >
-            {copied ? <Check size={16} /> : <Copy size={16} />}
-            <span>{copied ? 'Copied!' : 'Copy Link'}</span>
-          </button>
-
-          <button 
-            type="button" 
-            className="share-modal-btn share-modal-btn-whatsapp"
-            onClick={handleWhatsAppShare}
-          >
-            <FaWhatsapp size={16} />
-            <span>WhatsApp</span>
-          </button>
-
-          <button 
-            type="button" 
-            className="share-modal-btn share-modal-btn-instagram"
-            onClick={handleInstagramShare}
-          >
-            <FaInstagram size={16} />
-            <span>Instagram</span>
-          </button>
-
-          <button 
-            type="button" 
-            className="share-modal-btn share-modal-btn-twitter"
-            onClick={handleTwitterShare}
-          >
-            <FaXTwitter size={16} />
-            <span>X</span>
-          </button>
+        {/* Scrollable Story Preview Area */}
+        <div className="share-story-preview-scroll">
+          <div className="share-story-scale-container">
+            <DripShareCard
+              post={post}
+              theme={cardTheme}
+              cardRef={cardRef}
+            />
+          </div>
         </div>
 
-        {/* Full Width Native Share */}
-        <button 
-          type="button" 
-          className="share-modal-btn-more"
-          onClick={handleNativeShare}
-        >
-          <Globe size={16} />
-          <span>More Share Options</span>
-        </button>
+        {/* Action Buttons Bar */}
+        <div className="share-modal-actions-v2">
+          {/* Primary Download PNG Button */}
+          <button
+            type="button"
+            className="share-download-hero-btn"
+            onClick={handleDownloadCard}
+            disabled={isGenerating}
+          >
+            <Download size={18} />
+            <span>{isGenerating ? 'Generating Story PNG...' : 'Download Drip Card (PNG)'}</span>
+          </button>
+
+          {/* Social Platform Grid */}
+          <div className="share-modal-grid-v2">
+            <button
+              type="button"
+              className={`share-action-pill share-pill-copy ${copied ? 'copied' : ''}`}
+              onClick={handleCopyLink}
+            >
+              {copied ? <Check size={16} /> : <Copy size={16} />}
+              <span>{copied ? 'Copied!' : 'Copy Link'}</span>
+            </button>
+
+            <button
+              type="button"
+              className="share-action-pill share-pill-whatsapp"
+              onClick={handleWhatsAppShare}
+            >
+              <FaWhatsapp size={16} />
+              <span>WhatsApp</span>
+            </button>
+
+            <button
+              type="button"
+              className="share-action-pill share-pill-instagram"
+              onClick={handleInstagramShare}
+              disabled={isGenerating}
+            >
+              <FaInstagram size={16} />
+              <span>Instagram</span>
+            </button>
+
+            <button
+              type="button"
+              className="share-action-pill share-pill-twitter"
+              onClick={handleTwitterShare}
+            >
+              <FaXTwitter size={16} />
+              <span>X (Twitter)</span>
+            </button>
+          </div>
+
+          {/* Native System Share */}
+          <button
+            type="button"
+            className="share-modal-more-btn-v2"
+            onClick={handleNativeShare}
+            disabled={isGenerating}
+          >
+            <Share2 size={16} />
+            <span>More Share Options</span>
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -6372,6 +6372,9 @@ body {
 
 /* ==========================================
    Share Fit Modal Styles
+/* ==========================================
+   DripMorph Share Card & Modal v2 Styles
+   (Cybernetic Light & Dark Mode Story Templates)
    ========================================== */
 .share-modal-overlay {
   position: fixed;
@@ -6380,18 +6383,18 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(0, 0, 0, 0.82);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  padding: 16px;
+  background-color: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  padding: 14px;
   box-sizing: border-box;
-  animation: shareModalFade 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: shareModalFade 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes shareModalFade {
   from {
     opacity: 0;
-    transform: scale(0.96);
+    transform: scale(0.95);
   }
   to {
     opacity: 1;
@@ -6399,43 +6402,105 @@ body {
   }
 }
 
-.share-modal-card {
+.share-modal-card-v2 {
   width: 100%;
-  max-width: 390px;
-  border-radius: 24px;
-  background-color: #16161a;
+  max-width: 440px;
+  max-height: 94vh;
+  border-radius: 26px;
+  background-color: #121216;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  padding: 22px;
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85), 0 0 40px rgba(166, 255, 0, 0.1);
   display: flex;
   flex-direction: column;
-  gap: 16px;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
-.share-modal-header {
+[data-theme='light'] .share-modal-card-v2 {
+  background-color: #ffffff;
+  border-color: rgba(0, 0, 0, 0.12);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2), 0 0 30px rgba(166, 255, 0, 0.2);
+}
+
+.share-modal-header-v2 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 16px 18px 12px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
 }
 
-.share-modal-title {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #ffffff;
+[data-theme='light'] .share-modal-header-v2 {
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+
+.share-modal-title-row {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.share-modal-title-icon {
-  color: var(--accent-solid, #a6fc29);
+.share-modal-title-text {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.2px;
 }
 
-.share-modal-close-btn {
+[data-theme='light'] .share-modal-title-text {
+  color: #0d0d0f;
+}
+
+.share-modal-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Light / Dark Mode Template Switcher Pill */
+.share-theme-toggle-pill {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 2px;
+  gap: 2px;
+}
+
+[data-theme='light'] .share-theme-toggle-pill {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.theme-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 16px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+[data-theme='light'] .theme-pill-btn {
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.theme-pill-btn.active {
+  background: #a6ff00;
+  color: #000000;
+  box-shadow: 0 0 10px rgba(166, 255, 0, 0.5);
+}
+
+.share-modal-close-btn-v2 {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: #a0a0a0;
@@ -6449,331 +6514,611 @@ body {
   transition: all 0.2s ease;
 }
 
-.share-modal-close-btn:hover {
+[data-theme='light'] .share-modal-close-btn-v2 {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #555555;
+}
+
+.share-modal-close-btn-v2:hover {
   background: rgba(255, 255, 255, 0.18);
   color: #ffffff;
   transform: scale(1.05);
 }
 
-.share-modal-preview {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  border-radius: 14px;
-  background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+[data-theme='light'] .share-modal-close-btn-v2:hover {
+  background: rgba(0, 0, 0, 0.12);
+  color: #000000;
 }
 
-.share-modal-preview-img {
-  width: 56px;
-  height: 56px;
-  border-radius: 10px;
-  object-fit: cover;
+/* Scrollable Story Preview Area */
+.share-story-preview-scroll {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px 14px;
+  box-sizing: border-box;
+  max-height: 52vh;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(166, 255, 0, 0.3) transparent;
+}
+
+.share-story-scale-container {
+  width: 100%;
+  max-width: 335px;
+  display: flex;
+  justify-content: center;
+}
+
+/* ==========================================
+   DripShareCard Template Styles
+   ========================================== */
+.drip-share-card {
+  position: relative;
+  width: 335px;
+  min-height: 595px;
+  border-radius: 28px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 18px 16px 16px 16px;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  user-select: none;
   flex-shrink: 0;
 }
 
-.share-modal-preview-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+/* Light Theme Card */
+.drip-share-card.theme-light {
+  background-color: #ffffff;
+  color: #000000;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.14), 0 0 20px rgba(166, 255, 0, 0.2);
 }
 
-.share-modal-preview-username {
-  margin: 0;
-  font-size: 0.92rem;
-  font-weight: 700;
+/* Dark Theme Card */
+.drip-share-card.theme-dark {
+  background-color: #000000;
   color: #ffffff;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.9), 0 0 25px rgba(166, 255, 0, 0.15);
+}
+
+/* Background Cyber SVG */
+.cyber-bg-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Top Header */
+.card-top-header {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.brand-logo-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.capsule-logo-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand-title-text {
+  font-size: 1.22rem;
+  font-weight: 900;
+  letter-spacing: -0.4px;
+}
+
+.theme-light .brand-title-text {
+  color: #000000;
+}
+
+.theme-dark .brand-title-text {
+  color: #ffffff;
+}
+
+.username-tag-text {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+}
+
+.theme-light .username-tag-text {
+  color: #000000;
+}
+
+.theme-dark .username-tag-text {
+  color: #ffffff;
+}
+
+/* Main Cyber Photo Frame */
+.cyber-photo-frame-container {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 255px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+/* Tech Corner Bracket Accents */
+.tech-corner {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 3.5px solid #a6ff00;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.corner-tl {
+  top: -4px;
+  left: -4px;
+  border-right: none;
+  border-bottom: none;
+  border-top-left-radius: 18px;
+}
+
+.corner-tr {
+  top: -4px;
+  right: -4px;
+  border-left: none;
+  border-bottom: none;
+  border-top-right-radius: 18px;
+}
+
+.corner-bl {
+  bottom: -4px;
+  left: -4px;
+  border-right: none;
+  border-top: none;
+  border-bottom-left-radius: 18px;
+}
+
+.corner-br {
+  bottom: -4px;
+  right: -4px;
+  border-left: none;
+  border-top: none;
+  border-bottom-right-radius: 18px;
+}
+
+.cyber-photo-inner-wrapper {
+  width: 100%;
+  height: 100%;
+  border: 3.5px solid #a6ff00;
+  border-radius: 22px;
   overflow: hidden;
-  text-overflow: ellipsis;
+  background-color: #111111;
+  box-shadow: 0 0 20px rgba(166, 255, 0, 0.35);
+  position: relative;
+  z-index: 1;
+}
+
+.cyber-fit-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Creator Name Banner Row */
+.creator-name-banner-row {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 9px;
+}
+
+.speed-chevrons {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.chevron-bar {
+  display: inline-block;
+  width: 5px;
+  height: 15px;
+  background-color: #a6ff00;
+  transform: skewX(-25deg);
+  border-radius: 2px;
+}
+
+.creator-name-badge {
+  border: 2px solid #a6ff00;
+  border-radius: 12px;
+  padding: 5px 18px;
+  transform: skewX(-12deg);
+  box-shadow: 0 0 10px rgba(166, 255, 0, 0.2);
+}
+
+.theme-light .creator-name-badge {
+  background-color: #ffffff;
+}
+
+.theme-dark .creator-name-badge {
+  background-color: #0a0a0a;
+}
+
+.creator-name-text {
+  display: block;
+  transform: skewX(12deg);
+  font-size: 1.08rem;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: -0.3px;
   white-space: nowrap;
 }
 
-.share-modal-preview-score {
-  margin: 0;
-  font-size: 0.78rem;
-  color: var(--accent-solid, #a6fc29);
-  font-family: monospace;
-  font-weight: 700;
+.theme-light .creator-name-text {
+  color: #000000;
 }
 
-.share-modal-grid {
+.theme-dark .creator-name-text {
+  color: #ffffff;
+}
+
+/* Main Drip Rating Banner */
+.drip-rating-banner {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 2.5px solid #a6ff00;
+  border-radius: 14px;
+  padding: 6px 12px 6px 16px;
+  margin-bottom: 9px;
+  transform: skewX(-10deg);
+  box-shadow: 0 0 14px rgba(166, 255, 0, 0.25);
+}
+
+.theme-light .drip-rating-banner {
+  background-color: #ffffff;
+}
+
+.theme-dark .drip-rating-banner {
+  background-color: #000000;
+}
+
+.rating-notch-top-left {
+  position: absolute;
+  top: -4px;
+  left: 16px;
+  width: 24px;
+  height: 3px;
+  background-color: #a6ff00;
+  border-radius: 2px;
+}
+
+.rating-notch-bottom-right {
+  position: absolute;
+  bottom: -4px;
+  right: 16px;
+  width: 24px;
+  height: 3px;
+  background-color: #a6ff00;
+  border-radius: 2px;
+}
+
+.drip-rating-left {
+  transform: skewX(10deg);
+}
+
+.drip-rating-title {
+  font-size: 1.55rem;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: -0.5px;
+}
+
+.theme-light .drip-rating-title {
+  color: #111111;
+}
+
+.theme-dark .drip-rating-title {
+  color: #ffffff;
+}
+
+.drip-rating-badge {
+  transform: skewX(10deg);
+  background-color: #a6ff00;
+  border-radius: 12px;
+  padding: 5px 14px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 0 12px rgba(166, 255, 0, 0.45);
+}
+
+.rating-star-icon {
+  font-size: 1.15rem;
+  color: #000000;
+  line-height: 1;
+}
+
+.rating-score-value {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace, sans-serif;
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #000000;
+  line-height: 1;
+}
+
+/* Bottom Metric Sub-Cards Grid */
+.metric-cards-grid {
+  position: relative;
+  z-index: 2;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
 }
 
-.share-modal-btn {
-  display: inline-flex;
+.metric-card {
+  position: relative;
+  border: 2px solid #a6ff00;
+  border-radius: 15px;
+  padding: 8px 3px 7px 3px;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-  border: none;
-  outline: none;
-  user-select: none;
+  gap: 5px;
+  box-sizing: border-box;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(166, 255, 0, 0.15);
 }
 
-.share-modal-btn:hover {
-  transform: translateY(-1px);
+.theme-light .metric-card {
+  background-color: #ffffff;
 }
 
-.share-modal-btn:active {
-  transform: scale(0.96);
+.theme-dark .metric-card {
+  background-color: #000000;
 }
 
-.share-modal-btn-copy {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+.metric-card-notch {
+  position: absolute;
+  top: -3px;
+  left: 12px;
+  right: 12px;
+  height: 2px;
+  background-color: #a6ff00;
+}
+
+.metric-icon-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+}
+
+.metric-score-pill {
+  background-color: #a6ff00;
+  border-radius: 9px;
+  padding: 3px 10px;
+  width: 68%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 8px rgba(166, 255, 0, 0.35);
+}
+
+.metric-score-pill span {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace, sans-serif;
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #000000;
+  line-height: 1.1;
+}
+
+.metric-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.15;
+  max-width: 95%;
+  min-height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-light .metric-label {
+  color: #000000;
+}
+
+.theme-dark .metric-label {
   color: #ffffff;
 }
 
-.share-modal-btn-copy:hover {
-  background: rgba(255, 255, 255, 0.14);
+/* ==========================================
+   Share Modal Actions Bar
+   ========================================== */
+.share-modal-actions-v2 {
+  padding: 12px 18px 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
 }
 
-.share-modal-btn-copy.copied {
-  background: rgba(166, 252, 41, 0.18) !important;
-  border-color: var(--accent-solid, #a6fc29) !important;
-  color: var(--accent-solid, #a6fc29) !important;
+[data-theme='light'] .share-modal-actions-v2 {
+  border-top-color: rgba(0, 0, 0, 0.08);
 }
 
-.share-modal-btn-whatsapp {
-  background: rgba(16, 185, 129, 0.12);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  color: #34d399;
-}
-
-.share-modal-btn-whatsapp:hover {
-  background: rgba(16, 185, 129, 0.22);
-}
-
-.share-modal-btn-instagram {
-  background: rgba(236, 72, 153, 0.12);
-  border: 1px solid rgba(236, 72, 153, 0.3);
-  color: #f472b6;
-}
-
-.share-modal-btn-instagram:hover {
-  background: rgba(236, 72, 153, 0.22);
-}
-
-.share-modal-btn-twitter {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-}
-
-.share-modal-btn-twitter:hover {
-  background: rgba(255, 255, 255, 0.14);
-}
-
-.share-modal-btn-more {
+.share-download-hero-btn {
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   padding: 13px;
-  border-radius: 12px;
-  background: var(--btn-gradient, linear-gradient(135deg, #a6fc29 0%, #7ceb00 100%));
+  border-radius: 14px;
+  background: linear-gradient(135deg, #a6ff00 0%, #76ff03 100%);
   border: none;
   color: #000000;
-  font-size: 0.9rem;
-  font-weight: 800;
+  font-size: 0.94rem;
+  font-weight: 900;
   cursor: pointer;
-  margin-top: 4px;
-  box-shadow: 0 4px 16px rgba(166, 252, 41, 0.35);
+  box-shadow: 0 4px 18px rgba(166, 255, 0, 0.4);
   transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.share-modal-btn-more:hover {
+.share-download-hero-btn:hover:not(:disabled) {
   filter: brightness(1.08);
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(166, 252, 41, 0.45);
+  box-shadow: 0 6px 24px rgba(166, 255, 0, 0.55);
 }
 
-.share-modal-btn-more:active {
-  transform: scale(0.97);
+.share-download-hero-btn:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
-/* ── Light Mode Overrides for Fit Detail Modal ── */
-[data-theme='light'] .fit-detail-overlay {
-  background: rgba(0, 0, 0, 0.45);
+.share-download-hero-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
-[data-theme='light'] .fit-detail-modal {
-  background-color: #ffffff;
-  border-color: rgba(13, 13, 15, 0.12);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.16);
+.share-modal-grid-v2 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
 }
 
-[data-theme='light'] .fit-detail-username {
-  color: #0D0D0F;
+.share-action-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 4px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  outline: none;
 }
 
-[data-theme='light'] .fit-detail-location {
-  color: #5A6560;
+.share-action-pill:hover:not(:disabled) {
+  transform: translateY(-1px);
 }
 
-[data-theme='light'] .fit-detail-close-btn {
-  background-color: rgba(0, 0, 0, 0.06);
+.share-action-pill:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.share-pill-copy {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+[data-theme='light'] .share-pill-copy {
+  background: rgba(0, 0, 0, 0.05);
   border-color: rgba(0, 0, 0, 0.1);
-  color: #0D0D0F;
-}
-
-[data-theme='light'] .fit-detail-close-btn:hover {
-  background-color: rgba(0, 0, 0, 0.12);
-}
-
-[data-theme='light'] .fit-modal-score-badge {
-  background: rgba(166, 252, 41, 0.2);
-  border-color: rgba(166, 252, 41, 0.6);
-  color: #15803d;
-}
-
-[data-theme='light'] .fit-detail-image-container {
-  background-color: #f4f5f7;
-  border-color: rgba(13, 13, 15, 0.08);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-
-[data-theme='light'] .fit-detail-title {
-  color: #0D0D0F;
-}
-
-[data-theme='light'] .fit-detail-brands {
-  color: #16a34a;
-}
-
-[data-theme='light'] .fit-detail-action-pill {
-  background: #f4f5f7;
-  border-color: rgba(13, 13, 15, 0.12);
   color: #18181b;
 }
 
-[data-theme='light'] .fit-detail-action-pill:hover {
-  background: #e4e4e7;
-  border-color: rgba(13, 13, 15, 0.2);
-  color: #000000;
+.share-pill-copy.copied {
+  background: rgba(166, 255, 0, 0.2) !important;
+  border-color: #a6ff00 !important;
+  color: #a6ff00 !important;
 }
 
-[data-theme='light'] .fit-detail-action-pill.like-pill.liked {
-  background: rgba(166, 252, 41, 0.2) !important;
-  border-color: rgba(166, 252, 41, 0.6) !important;
+[data-theme='light'] .share-pill-copy.copied {
+  background: rgba(166, 255, 0, 0.3) !important;
   color: #15803d !important;
 }
 
-[data-theme='light'] .fit-detail-action-pill.like-pill.liked svg {
-  fill: #16a34a !important;
-  stroke: #16a34a !important;
-}
-
-[data-theme='light'] .fit-avatar-fallback {
-  background-color: #e4e4e7;
-  color: #15803d;
-}
-
-/* ── Light Mode Overrides for Share Modal ── */
-[data-theme='light'] .share-modal-overlay {
-  background-color: rgba(0, 0, 0, 0.45);
-}
-
-[data-theme='light'] .share-modal-card {
-  background-color: #ffffff;
-  border-color: rgba(13, 13, 15, 0.12);
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.15);
-}
-
-[data-theme='light'] .share-modal-header {
-  border-bottom-color: rgba(13, 13, 15, 0.1);
-}
-
-[data-theme='light'] .share-modal-title {
-  color: #0D0D0F;
-}
-
-[data-theme='light'] .share-modal-title-icon {
-  color: #16a34a;
-}
-
-[data-theme='light'] .share-modal-close-btn {
-  background: rgba(0, 0, 0, 0.06);
-  border-color: rgba(0, 0, 0, 0.1);
-  color: #52525b;
-}
-
-[data-theme='light'] .share-modal-close-btn:hover {
-  background: rgba(0, 0, 0, 0.12);
-  color: #18181b;
-}
-
-[data-theme='light'] .share-modal-preview {
-  background-color: #f4f5f7;
-  border-color: rgba(13, 13, 15, 0.08);
-}
-
-[data-theme='light'] .share-modal-preview-username {
-  color: #0D0D0F;
-}
-
-[data-theme='light'] .share-modal-preview-score {
-  color: #15803d;
-}
-
-[data-theme='light'] .share-modal-btn-copy {
-  background: #f4f5f7;
-  border-color: rgba(13, 13, 15, 0.12);
-  color: #18181b;
-}
-
-[data-theme='light'] .share-modal-btn-copy:hover {
-  background: #e4e4e7;
-  border-color: rgba(13, 13, 15, 0.2);
-}
-
-[data-theme='light'] .share-modal-btn-copy.copied {
-  background: rgba(166, 252, 41, 0.2) !important;
-  border-color: #16a34a !important;
-  color: #15803d !important;
-}
-
-[data-theme='light'] .share-modal-btn-whatsapp {
+.share-pill-whatsapp {
   background: rgba(16, 185, 129, 0.12);
-  border-color: rgba(16, 185, 129, 0.35);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #34d399;
+}
+
+[data-theme='light'] .share-pill-whatsapp {
+  background: rgba(16, 185, 129, 0.14);
   color: #059669;
 }
 
-[data-theme='light'] .share-modal-btn-whatsapp:hover {
-  background: rgba(16, 185, 129, 0.2);
+.share-pill-instagram {
+  background: rgba(236, 72, 153, 0.12);
+  border-color: rgba(236, 72, 153, 0.3);
+  color: #f472b6;
 }
 
-[data-theme='light'] .share-modal-btn-instagram {
-  background: rgba(236, 72, 153, 0.12);
-  border-color: rgba(236, 72, 153, 0.35);
+[data-theme='light'] .share-pill-instagram {
+  background: rgba(236, 72, 153, 0.14);
   color: #db2777;
 }
 
-[data-theme='light'] .share-modal-btn-instagram:hover {
-  background: rgba(236, 72, 153, 0.2);
+.share-pill-twitter {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
 }
 
-[data-theme='light'] .share-modal-btn-twitter {
-  background: #f4f5f7;
-  border-color: rgba(13, 13, 15, 0.12);
+[data-theme='light'] .share-pill-twitter {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
   color: #18181b;
 }
 
-[data-theme='light'] .share-modal-btn-twitter:hover {
-  background: #e4e4e7;
-  border-color: rgba(13, 13, 15, 0.2);
+.share-modal-more-btn-v2 {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+[data-theme='light'] .share-modal-more-btn-v2 {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #18181b;
+}
+
+.share-modal-more-btn-v2:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+[data-theme='light'] .share-modal-more-btn-v2:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.08);
+  color: #000000;
 }
 
 
