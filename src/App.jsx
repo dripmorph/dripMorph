@@ -719,6 +719,7 @@ export default function App() {
     setFitsCount(prev => prev + 1);
     setTotalScoreSum(prev => prev + parsedScore);
     setRefreshTrigger(Date.now());
+    window.dispatchEvent(new CustomEvent('dripmorph:refresh-feed'));
 
     setActiveTab('feed');
   };
@@ -795,6 +796,7 @@ export default function App() {
 
       // 7. AFTER Supabase deletion completes, trigger background refresh
       setRefreshTrigger(Date.now());
+      window.dispatchEvent(new CustomEvent('dripmorph:refresh-feed'));
     } catch (err) {
       console.error('[App] Failed to delete outfit from Supabase:', err);
       showToast(err.message || "Failed to delete post.");

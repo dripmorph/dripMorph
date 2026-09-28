@@ -33,12 +33,22 @@ export default function Header({
   // Load trending fits whenever dropdown opens or refreshTrigger changes
   useEffect(() => {
     loadTrending();
-    const t = setTimeout(loadTrending, 400);
-    return () => clearTimeout(t);
+    const t1 = setTimeout(loadTrending, 350);
+    const t2 = setTimeout(loadTrending, 1100);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, [showTrendingDropdown, refreshTrigger]);
 
-  // Realtime subscription for instant trending updates
+  // Realtime subscription and window event for instant trending updates
   useEffect(() => {
+    const handleGlobalRefresh = () => {
+      loadTrending();
+      setTimeout(loadTrending, 500);
+    };
+    window.addEventListener('dripmorph:refresh-feed', handleGlobalRefresh);
+
     const channel = supabase
       .channel('public:header-trending-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'outfits' }, () => {
@@ -47,6 +57,7 @@ export default function Header({
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'outfit_ratings' }, () => {
         loadTrending();
+        setTimeout(loadTrending, 500);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'outfit_likes' }, () => {
         loadTrending();
@@ -54,6 +65,7 @@ export default function Header({
       .subscribe();
 
     return () => {
+      window.removeEventListener('dripmorph:refresh-feed', handleGlobalRefresh);
       supabase.removeChannel(channel);
     };
   }, []);

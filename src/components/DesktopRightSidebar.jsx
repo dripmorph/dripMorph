@@ -44,15 +44,23 @@ export default function DesktopRightSidebar({ onUserClick, onFitClick, userCity 
   // Initial load and whenever refreshTrigger or userCity changes
   useEffect(() => {
     loadSidebarData();
-    // Subsequent check in 400ms to catch any async rating row insertion
-    const t = setTimeout(() => {
-      loadSidebarData();
-    }, 400);
-    return () => clearTimeout(t);
+    // Subsequent checks to catch async rating row insertions
+    const t1 = setTimeout(loadSidebarData, 350);
+    const t2 = setTimeout(loadSidebarData, 1100);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, [userCity, refreshTrigger]);
 
-  // Realtime subscription for automatic updates on new posts, ratings, and likes
+  // Realtime subscription and window event for automatic updates on new posts, ratings, and likes
   useEffect(() => {
+    const handleGlobalRefresh = () => {
+      loadSidebarData();
+      setTimeout(loadSidebarData, 500);
+    };
+    window.addEventListener('dripmorph:refresh-feed', handleGlobalRefresh);
+
     const channel = supabase
       .channel('public:sidebar-realtime-feed')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'outfits' }, () => {
@@ -61,6 +69,7 @@ export default function DesktopRightSidebar({ onUserClick, onFitClick, userCity 
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'outfit_ratings' }, () => {
         loadSidebarData();
+        setTimeout(loadSidebarData, 500);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'outfit_likes' }, () => {
         loadSidebarData();
@@ -68,6 +77,7 @@ export default function DesktopRightSidebar({ onUserClick, onFitClick, userCity 
       .subscribe();
 
     return () => {
+      window.removeEventListener('dripmorph:refresh-feed', handleGlobalRefresh);
       supabase.removeChannel(channel);
     };
   }, [userCity]);

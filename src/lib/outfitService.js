@@ -900,7 +900,7 @@ export async function fetchTrendingFits(limit = 50) {
       outfit_comments (count)
     `)
     .order('created_at', { ascending: false })
-    .limit(50);
+    .limit(100);
 
   // Exclude removed posts from the query
   for (const excludedId of EXCLUDED_OUTFIT_IDS) {
@@ -957,13 +957,24 @@ export async function fetchTrendingFits(limit = 50) {
   }
 
   const formatted = data.map(item => {
-    const ratingObj = Array.isArray(item.outfit_ratings) ? item.outfit_ratings[0] : item.outfit_ratings;
-    const profileObj = item.profiles;
+    // Robust rating extraction: find highest or first valid overall_score
+    const ratings = Array.isArray(item.outfit_ratings) ? item.outfit_ratings : (item.outfit_ratings ? [item.outfit_ratings] : []);
+    let bestRatingObj = ratings[0] || null;
+    let numericScore = 0;
+    for (const r of ratings) {
+      if (r?.overall_score != null) {
+        const val = parseFloat(r.overall_score);
+        if (!isNaN(val) && val > numericScore) {
+          numericScore = val;
+          bestRatingObj = r;
+        }
+      }
+    }
+
+    const profileObj = Array.isArray(item.profiles) ? item.profiles[0] : item.profiles;
     const rawUsername = profileObj?.username || 'anonymous';
     const usernameStr = rawUsername.startsWith('@') ? rawUsername : `@${rawUsername}`;
 
-    const scoreVal = ratingObj?.overall_score;
-    const numericScore = scoreVal != null ? parseFloat(scoreVal) : 0;
     const overallScoreStr = numericScore > 0 ? numericScore.toFixed(1) : '8.0';
     const likesCount = likesCountMap[item.id] || 0;
 
@@ -1000,15 +1011,17 @@ export async function fetchTrendingFits(limit = 50) {
       likes: likesCount,
       image: item.image_url,
       image_url: item.image_url,
-      outfit_ratings: ratingObj,
+      outfit_ratings: bestRatingObj,
       products: products,
       created_at: item.created_at,
       postedAt: item.created_at,
     };
   });
 
+  // Rank by Overall Score (best AI rating) descending as PRIMARY,
+  // then likes_count, then newest created_at as tiebreaker
   return formatted
-    .sort((a, b) => (b.likes_count - a.likes_count) || (b.overall_score - a.overall_score) || (new Date(b.created_at) - new Date(a.created_at)))
+    .sort((a, b) => (b.overall_score - a.overall_score) || (b.likes_count - a.likes_count) || (new Date(b.created_at) - new Date(a.created_at)))
     .slice(0, queryLimit);
 }
 
