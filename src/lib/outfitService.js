@@ -284,10 +284,55 @@ export async function computeImageHash(input) {
   }
 }
 
+// ── 3.8. Check 24-Hour Post Limit ───────────────────────────────────────────
+/**
+ * Checks how many outfits the user has published in the rolling last 24 hours.
+ * Enforces a strict 2-post per 24 hours limit across the app.
+ * Returns { count: number, limit: 2, canPost: boolean, posts: Array }
+ */
+export async function checkUser24HourPostLimit(userId) {
+  if (!userId) return { count: 0, limit: 2, canPost: true, posts: [] };
+
+  try {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    let query = supabase
+      .from('outfits')
+      .select('id, created_at')
+      .eq('poster_id', userId)
+      .gte('created_at', twentyFourHoursAgo);
+
+    // Exclude blacklisted/removed posts
+    for (const excludedId of EXCLUDED_OUTFIT_IDS) {
+      query = query.neq('id', excludedId);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.warn('[outfitService] checkUser24HourPostLimit query error:', error);
+      return { count: 0, limit: 2, canPost: true, posts: [] };
+    }
+
+    const count = Array.isArray(data) ? data.length : 0;
+    const canPost = count < 2;
+
+    return {
+      count,
+      limit: 2,
+      canPost,
+      posts: data || []
+    };
+  } catch (err) {
+    console.error('[outfitService] checkUser24HourPostLimit exception:', err);
+    return { count: 0, limit: 2, canPost: true, posts: [] };
+  }
+}
+
 // ── 4. Publish outfit ─────────────────────────────────────────────────────────
 /**
  * Inserts into outfits + outfit_ratings + outfit_products tables with step-by-step debug logs.
  * Computes and includes image_hash to satisfy not-null and duplicate check constraints.
+ * Enforces 2-post limit per 24 hours.
  * Returns the inserted outfit row (with its id).
  */
 export async function publishOutfit({ userId, imageUrl, imageHash, imageFile, city, caption, rating, taggedItems }) {
@@ -300,6 +345,15 @@ export async function publishOutfit({ userId, imageUrl, imageHash, imageFile, ci
     rating,
     taggedItems
   });
+
+  // Step 0: Enforce 2-post limit per 24 hours
+  const limitCheck = await checkUser24HourPostLimit(userId);
+  if (!limitCheck.canPost) {
+    console.warn(`[outfitService] publishOutfit REJECTED: User ${userId} has already posted ${limitCheck.count}/2 outfits in the last 24h.`);
+    const limitErr = new Error('Max post limit reached');
+    limitErr.code = 'POST_LIMIT_REACHED';
+    throw limitErr;
+  }
 
   // Calculate image_hash if not provided directly
   let computedHash = imageHash;

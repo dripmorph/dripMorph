@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { Sparkles, Upload, RefreshCw, Trash2, Plus, X, Tag } from 'lucide-react';
+import { Sparkles, Upload, RefreshCw, Trash2, Plus, X, Tag, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { uploadOutfitImage, moderateImage, rateOutfit, publishOutfit } from '../lib/outfitService';
+import { uploadOutfitImage, moderateImage, rateOutfit, publishOutfit, checkUser24HourPostLimit } from '../lib/outfitService';
 
 // Pipeline step labels shown during the scan animation
 const PIPELINE_STEPS = [
@@ -63,6 +63,7 @@ export default function PostUpload({ showToast, onPostCreated }) {
   const [analysisResult, setAnalysisResult] = useState(null);
   const [analysisError, setAnalysisError] = useState(null);   // string | null — generic errors
   const [aiGeneratedError, setAiGeneratedError] = useState(null); // string | null — AI-image rejection
+  const [postLimitError, setPostLimitError] = useState(null); // string | null — 24h limit reached
 
   // ── Post detail & style archetype state ───────────────────────────────────────
   const [selectedStyle, setSelectedStyle] = useState('');
@@ -274,8 +275,18 @@ export default function PostUpload({ showToast, onPostCreated }) {
       return;
     }
 
+    setPostLimitError(null);
     setIsPublishing(true);
     try {
+      // Step 0: Check 24-hour post limit (Max 2 posts per 24 hours)
+      const limitCheck = await checkUser24HourPostLimit(user.id);
+      if (!limitCheck.canPost) {
+        setPostLimitError('Max post limit reached: You can only post 2 outfits every 24 hours. You can still check your AI rating anytime!');
+        showToast('Max post limit reached');
+        setIsPublishing(false);
+        return;
+      }
+
       console.log('[PostUpload] Calling publishOutfit()...');
       const validTaggedItems = enableTagging
         ? taggedItems.filter(item => item && item.name && item.name.trim() !== '')
@@ -339,13 +350,19 @@ export default function PostUpload({ showToast, onPostCreated }) {
       setUploadedUrl(null);
       setAnalysisResult(null);
       setAnalysisError(null);
+      setPostLimitError(null);
       setCaption('');
       setEnableTagging(false);
       setTaggedItems([{ id: Date.now(), category: '', name: '', price: '', link: '' }]);
       showToast('Outfit shared to your DripMorph Feed!');
     } catch (err) {
       console.error('[PostUpload] publish error caught in handlePostSubmit:', err);
-      showToast('Failed to publish. Please try again.');
+      if (err.code === 'POST_LIMIT_REACHED' || err.message?.includes('Max post limit reached') || err.message?.includes('limit reached')) {
+        setPostLimitError('Max post limit reached: You can only post 2 outfits every 24 hours. You can still check your AI rating anytime!');
+        showToast('Max post limit reached');
+      } else {
+        showToast(err.message || 'Failed to publish. Please try again.');
+      }
     } finally {
       setIsPublishing(false);
       console.log('[PostUpload] handlePostSubmit FINISHED (isPublishing reset to false)');
@@ -716,6 +733,19 @@ export default function PostUpload({ showToast, onPostCreated }) {
               </div>
             )}
 
+            {/* Max Post Limit Banner */}
+            {postLimitError && (
+              <div className="post-limit-banner">
+                <AlertCircle size={17} className="post-limit-icon" />
+                <div className="post-limit-text-col">
+                  <span className="post-limit-title">Max post limit reached</span>
+                  <span className="post-limit-desc">
+                    You can only post 2 outfits every 24 hours. You can still check your AI rating and look insights anytime!
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="result-actions-column">
               <button
@@ -730,6 +760,7 @@ export default function PostUpload({ showToast, onPostCreated }) {
                 onClick={() => {
                   setAnalysisResult(null);
                   setAnalysisError(null);
+                  setPostLimitError(null);
                 }}
                 disabled={isPublishing}
               >
