@@ -18,6 +18,34 @@ const ITEM_CATEGORIES = [
   'Accessory',
 ];
 
+export const OUTFIT_STYLES = [
+  'Old Money',
+  'Quiet Luxury',
+  'Preppy/Ivy League',
+  'Sartorial/Classic Menswear',
+  'Dark Academia',
+  'Light Academia',
+  'Smart Casual',
+  'Minimalist/Clean Fit',
+  'Normcore/Elevated Basics',
+  'Classic Streetwear',
+  'Techwear',
+  'Gorpcore',
+  'Y2K/Cyberpunk',
+  'Skater',
+  'Grunge',
+  'Indie Sleaze',
+  'Punk',
+  'Goth',
+  'Whimsigoth',
+  'Biker/Rocker',
+  'Workwear/Americana',
+  'Cottagecore',
+  'Bohemian',
+  'Athleisure',
+  'Blokecore',
+];
+
 export default function PostUpload({ showToast, onPostCreated }) {
   const { user } = useAuth();
 
@@ -36,7 +64,9 @@ export default function PostUpload({ showToast, onPostCreated }) {
   const [analysisError, setAnalysisError] = useState(null);   // string | null — generic errors
   const [aiGeneratedError, setAiGeneratedError] = useState(null); // string | null — AI-image rejection
 
-  // ── Post detail state ────────────────────────────────────────────────────────
+  // ── Post detail & style archetype state ───────────────────────────────────────
+  const [selectedStyle, setSelectedStyle] = useState('');
+  const [aiSuggestedStyle, setAiSuggestedStyle] = useState('');
   const [caption, setCaption]     = useState('');
   const [isDragOver, setIsDragOver] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -86,6 +116,8 @@ export default function PostUpload({ showToast, onPostCreated }) {
     setAnalysisError(null);
     setAiGeneratedError(null);
     setUploadedUrl(null);
+    setSelectedStyle('');
+    setAiSuggestedStyle('');
     setCaption('');
     showToast('Outfit photo loaded!');
   };
@@ -147,10 +179,36 @@ export default function PostUpload({ showToast, onPostCreated }) {
       const rating = await rateOutfit(publicUrl);
 
       // Shape the result into the format the existing UI expects
+      const detectedArchetype = rating.style_archetype || '';
+      let matchedStyle = OUTFIT_STYLES.find(
+        s => s.toLowerCase() === detectedArchetype.toLowerCase()
+      );
+
+      if (!matchedStyle && detectedArchetype) {
+        matchedStyle = OUTFIT_STYLES.find(
+          s => detectedArchetype.toLowerCase().includes(s.toLowerCase()) || s.toLowerCase().includes(detectedArchetype.toLowerCase())
+        );
+      }
+
+      if (!matchedStyle && rating.summary) {
+        for (const s of OUTFIT_STYLES) {
+          if (rating.summary.toLowerCase().includes(s.toLowerCase())) {
+            matchedStyle = s;
+            break;
+          }
+        }
+      }
+
+      const finalStyle = matchedStyle || detectedArchetype || 'Classic Streetwear';
+      setSelectedStyle(finalStyle);
+      setAiSuggestedStyle(finalStyle);
+      setCaption(finalStyle);
+
       setAnalysisResult({
         overall: rating.overall.toFixed(1),
         summary: rating.summary,
         suggestion: rating.improvement_tip,
+        style_archetype: finalStyle,
         // Raw rating kept for publishing
         _raw: rating,
         categories: [
@@ -172,7 +230,7 @@ export default function PostUpload({ showToast, onPostCreated }) {
         ],
       });
 
-      showToast('Analysis complete! Score calculated.');
+      showToast(`Analyzed! Match: ${finalStyle}`);
     } catch (err) {
       console.error('[PostUpload] pipeline error:', err);
       if (err.code === 'AI_GENERATED') {
@@ -506,16 +564,45 @@ export default function PostUpload({ showToast, onPostCreated }) {
               ))}
             </div>
 
-            {/* Caption Input */}
-            <div className="upload-caption-container">
-              <label className="upload-caption-label" htmlFor="upload-caption">Add Caption</label>
-              <textarea
-                id="upload-caption"
-                className="upload-caption-textarea"
-                placeholder="Describe your fit... (e.g. #techwear #minimalist)"
-                value={caption}
-                onChange={(e) => setCaption(e.target.value)}
-              />
+            {/* Style Archetype Selector (Replaces raw Add Caption input) */}
+            <div className="upload-style-selector-container">
+              <div className="upload-style-header-row">
+                <div className="upload-style-label-group">
+                  <Sparkles size={15} className="upload-style-icon" />
+                  <label className="upload-style-label" htmlFor="outfit-style-select">
+                    Outfit Type & Aesthetic
+                  </label>
+                </div>
+                {aiSuggestedStyle && (
+                  <div className="ai-suggested-pill">
+                    <span className="ai-pill-dot" />
+                    <span>AI Match: <strong>{aiSuggestedStyle}</strong></span>
+                  </div>
+                )}
+              </div>
+
+              <div className="upload-style-select-wrapper">
+                <select
+                  id="outfit-style-select"
+                  className="upload-style-select"
+                  value={selectedStyle || caption}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSelectedStyle(val);
+                    setCaption(val);
+                  }}
+                >
+                  <option value="" disabled>Select Outfit Type / Aesthetic...</option>
+                  {OUTFIT_STYLES.map((style) => (
+                    <option key={style} value={style}>
+                      {style} {style === aiSuggestedStyle ? '✨ (AI Best Match)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <span className="upload-style-hint">
+                AI automatically identified this style archetype. Tap to select or change.
+              </span>
             </div>
 
             {/* Tag Outfit Items Section (Optional Toggle) */}
