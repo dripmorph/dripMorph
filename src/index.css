@@ -361,36 +361,45 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 36px 12px 12px;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.55) 60%, transparent 100%);
+  padding: 32px 10px 10px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.45) 60%, transparent 100%);
   z-index: 8;
   display: flex;
   flex-direction: column;
-  gap: 7px;
   pointer-events: auto;
+}
+
+.pinterest-bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
 }
 
 .pinterest-user-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   cursor: pointer;
   transition: opacity 0.18s ease;
   user-select: none;
+  min-width: 0;
+  flex: 1;
 }
 
 .pinterest-user-row:hover {
-  opacity: 0.9;
+  opacity: 0.88;
 }
 
 .pinterest-user-avatar {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   object-fit: cover;
   border: 1.5px solid var(--accent-solid, #a6fc29);
   flex-shrink: 0;
-  box-shadow: 0 0 8px rgba(166, 252, 41, 0.3);
+  box-shadow: 0 0 6px rgba(166, 252, 41, 0.3);
 }
 
 .pinterest-user-meta {
@@ -401,7 +410,7 @@ body {
 }
 
 .pinterest-username {
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 700;
   color: #ffffff;
   white-space: nowrap;
@@ -409,6 +418,7 @@ body {
   text-overflow: ellipsis;
   line-height: 1.2;
   letter-spacing: -0.01em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
 
 .pinterest-location {

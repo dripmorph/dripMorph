@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Heart, MessageSquare, Share2, Star, MoreVertical, ShoppingBag } from 'lucide-react';
+import { Heart, Star } from 'lucide-react';
 import { FaHeart } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import { toggleOutfitLike } from '../lib/outfitService';
@@ -21,7 +21,6 @@ export default function PostCard({
   const [liked, setLiked] = useState(Boolean(post.user_has_liked));
   const [likeCount, setLikeCount] = useState(post.likes_count ?? post.likes ?? 0);
   const [animateLike, setAnimateLike] = useState(false);
-  const [showMenu, setShowMenu] = useState(false);
   const [showHeartAnim, setShowHeartAnim] = useState(false);
   const timerRef = useRef(null);
 
@@ -29,13 +28,6 @@ export default function PostCard({
     setLiked(Boolean(post.user_has_liked));
     setLikeCount(post.likes_count ?? post.likes ?? 0);
   }, [post.user_has_liked, post.likes_count, post.likes]);
-
-  useEffect(() => {
-    if (!showMenu) return;
-    const closeMenu = () => setShowMenu(false);
-    document.addEventListener('click', closeMenu);
-    return () => document.removeEventListener('click', closeMenu);
-  }, [showMenu]);
 
   useEffect(() => {
     return () => {
@@ -116,38 +108,6 @@ export default function PostCard({
     }
   };
 
-  const handleSharePost = async (e) => {
-    if (e && e.stopPropagation) e.stopPropagation();
-    if (onShareClick) {
-      onShareClick(post);
-      return;
-    }
-
-    const shareUrl = `${window.location.origin}/?post=${post.id}`;
-    const shareData = {
-      title: `Check out ${post.username || 'this'} fit on DripMorph!`,
-      text: `Rate this fit on DripMorph! AI Score: ${post.overall_score || post.score || '8.0'}/10`,
-      url: shareUrl,
-    };
-
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-      } catch (err) {
-        if (err.name !== 'AbortError') console.error('Error sharing:', err);
-      }
-    } else {
-      try {
-        await navigator.clipboard.writeText(shareUrl);
-        if (showToast) {
-          showToast('Link copied to clipboard!');
-        }
-      } catch (err) {
-        console.error('Failed to copy link:', err);
-      }
-    }
-  };
-
   const formatCount = (num) => {
     if (num >= 1000) {
       return (num / 1000).toFixed(1) + 'K';
@@ -155,8 +115,6 @@ export default function PostCard({
     return num;
   };
 
-  const isOwner = user?.username && (post.username === user.username || post.username === `@${user.username}` || post.poster_id === user.id);
-  const hasProducts = Array.isArray(post.products) && post.products.length > 0;
   const username = (post.username || 'user').replace(/^@/, '');
   const avatarUrl = post.avatar || post.user_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop';
   const scoreVal = post.aiScore || (post.overall_score ? `${post.overall_score}/10` : (post.score ? `${post.score}/10` : '8.0/10'));
@@ -183,112 +141,39 @@ export default function PostCard({
           </div>
         )}
 
-        {/* Top Badges Bar */}
+        {/* Top Badges Bar: Clean AI Score Badge only */}
         <div className="pinterest-top-bar" onClick={(e) => e.stopPropagation()}>
-          {/* AI Score Badge */}
           <div className="pinterest-score-badge">
             <Star size={10} className="star-icon" fill="#fbbf24" color="#fbbf24" />
             <span className="score-text">{scoreVal}</span>
             <span className="ai-label">AI</span>
           </div>
-
-          {/* Right side: Shop badge / Owner More Menu */}
-          <div className="pinterest-top-right-actions">
-            {hasProducts && (
-              <button
-                type="button"
-                className="pinterest-shop-badge"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (onShopClick) onShopClick(post);
-                }}
-                title="Shop the look"
-              >
-                <ShoppingBag size={11} />
-                <span>Shop</span>
-              </button>
-            )}
-
-            {isOwner && (
-              <div style={{ position: 'relative' }}>
-                <button
-                  type="button"
-                  className="pinterest-more-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowMenu(!showMenu);
-                  }}
-                  aria-label="More options"
-                >
-                  <MoreVertical size={16} />
-                </button>
-
-                {showMenu && (
-                  <div className="post-menu-dropdown" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      className="post-menu-item"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowMenu(false);
-                        if (onEditPost) onEditPost(post);
-                      }}
-                    >
-                      <span>Edit Caption/Tags</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="post-menu-item delete"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowMenu(false);
-                        if (onDeletePost) onDeletePost(post);
-                      }}
-                    >
-                      <span>Delete Post</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
         </div>
 
-        {/* Bottom Vignette Overlay & Actions */}
+        {/* Bottom Vignette Overlay: User PFP + Name on left, Like Button on right */}
         <div className="pinterest-bottom-overlay">
-          {/* Creator Profile Row */}
-          <div
-            className="pinterest-user-row"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (onUserClick) onUserClick(post);
-            }}
-            title={`View @${username}'s profile`}
-          >
-            <img
-              src={avatarUrl}
-              alt={username}
-              className="pinterest-user-avatar"
-              onError={(e) => {
-                e.currentTarget.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop';
+          <div className="pinterest-bottom-row">
+            {/* Left: Creator Profile */}
+            <div
+              className="pinterest-user-row"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onUserClick) onUserClick(post);
               }}
-            />
-            <div className="pinterest-user-meta">
-              <span className="pinterest-username">{username}</span>
-              {post.location && (
-                <span className="pinterest-location">{post.location}</span>
-              )}
+              title={`View @${username}'s profile`}
+            >
+              <img
+                src={avatarUrl}
+                alt={username}
+                className="pinterest-user-avatar"
+                onError={(e) => {
+                  e.currentTarget.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop';
+                }}
+              />
+              <span className="pinterest-username">@{username}</span>
             </div>
-          </div>
 
-          {/* Caption (if available) */}
-          {post.caption && (
-            <p className="pinterest-caption">{post.caption}</p>
-          )}
-
-          {/* Interactive Action Icons Row */}
-          <div className="pinterest-actions-row" onClick={(e) => e.stopPropagation()}>
-            {/* Like Button */}
+            {/* Right: Like Button */}
             <button
               type="button"
               className={`pinterest-action-btn ${liked ? 'liked' : ''} ${animateLike ? 'pulse' : ''}`}
@@ -296,37 +181,12 @@ export default function PostCard({
               aria-label="Like fit"
             >
               <Heart
-                size={16}
+                size={14}
                 fill={liked ? '#a6fc29' : 'none'}
                 stroke={liked ? '#a6fc29' : 'currentColor'}
                 strokeWidth={liked ? 0 : 2}
               />
               <span className="action-count">{formatCount(likeCount)}</span>
-            </button>
-
-            {/* Comment Button */}
-            <button
-              type="button"
-              className="pinterest-action-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (onCommentClick) onCommentClick(post);
-              }}
-              aria-label="Comments"
-            >
-              <MessageSquare size={16} strokeWidth={2} />
-              <span className="action-count">{formatCount(post.comments_count ?? post.comments ?? 0)}</span>
-            </button>
-
-            {/* Share Button */}
-            <button
-              type="button"
-              className="pinterest-action-btn icon-only"
-              onClick={handleSharePost}
-              aria-label="Share fit"
-              style={{ marginLeft: 'auto' }}
-            >
-              <Share2 size={16} strokeWidth={2} />
             </button>
           </div>
         </div>
