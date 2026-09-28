@@ -7,6 +7,7 @@ import ChangePasswordModal from './ChangePasswordModal';
 import DeleteAccountModal from './DeleteAccountModal';
 import ReportProblemModal from './ReportProblemModal';
 import TermsOfServiceModal from './TermsOfServiceModal';
+import PrivacyPolicyModal from './PrivacyPolicyModal';
 
 export default function SettingsModal({ isOpen, onClose, showToast, onProfileUpdate }) {
   const { user, updateUsername, updateProfileDetails, updateCity } = useAuth();
@@ -46,6 +47,9 @@ export default function SettingsModal({ isOpen, onClose, showToast, onProfileUpd
 
   // Terms of Service Modal state
   const [showTermsModal, setShowTermsModal] = useState(false);
+
+  // Privacy Policy Modal state
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   if (!isOpen) return null;
 
@@ -353,14 +357,22 @@ export default function SettingsModal({ isOpen, onClose, showToast, onProfileUpd
             </div>
 
             {/* Privacy Policy */}
-            <div className="settings-item-row">
+            <div 
+              className="settings-item-row"
+              onClick={() => setShowPrivacyModal(true)}
+              style={{ cursor: 'pointer' }}
+            >
               <div className="settings-item-info">
                 <span className="settings-item-label">Privacy Policy</span>
                 <span className="settings-item-sub">How we handle your style & profile data</span>
               </div>
               <button
+                type="button"
                 className="settings-action-btn"
-                onClick={() => showToast && showToast('Opening Privacy Policy...')}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowPrivacyModal(true);
+                }}
               >
                 View
               </button>
@@ -422,6 +434,12 @@ export default function SettingsModal({ isOpen, onClose, showToast, onProfileUpd
               </button>
             </div>
           </div>
+
+          {/* Privacy Policy Modal */}
+          <PrivacyPolicyModal
+            isOpen={showPrivacyModal}
+            onClose={() => setShowPrivacyModal(false)}
+          />
 
           {/* Terms of Service Modal */}
           <TermsOfServiceModal
