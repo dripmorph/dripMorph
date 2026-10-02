@@ -1,14 +1,92 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useChat } from '../context/ChatContext';
 import { useAuth } from '../context/AuthContext';
-import { ArrowLeft, Send, Smile, MessageSquare, Loader, MoreVertical, Trash2, Settings } from 'lucide-react';
+import { ArrowLeft, Send, MessageSquare, Loader, MoreVertical, Trash2 } from 'lucide-react';
+import {
+  FaFaceSmile,
+  FaFaceGrinSquintTears,
+  FaFaceGrinHearts,
+  FaFaceSmileBeam,
+  FaFaceGrinStars,
+  FaFaceSadTear,
+  FaFaceAngry,
+  FaFaceSurprise,
+  FaFaceKissWinkHeart,
+  FaFaceLaughSquint,
+  FaFaceFlushed,
+  FaFaceGrimace,
+  FaFire,
+  FaHeart,
+  FaCrown,
+  FaSkull,
+  FaThumbsUp,
+  FaThumbsDown,
+  FaHandsClapping,
+  FaHandPeace,
+  FaHandshake,
+  FaHandFist,
+  FaHandPointUp,
+  FaBolt,
+  FaStar,
+  FaMoon,
+  FaSun,
+  FaGhost,
+  FaPoo,
+  FaEye,
+  FaDroplet,
+  FaExplosion,
+  FaTrophy,
+  FaMedal,
+  FaGem,
+  FaWandMagicSparkles,
+} from 'react-icons/fa6';
+import { BsEmojiSmileFill } from 'react-icons/bs';
 
-// Common emojis for the picker
-const EMOJI_LIST = [
-  '😀','😂','🥲','😍','🥰','😎','🤩','🥳','😏','😢','😭','😤','🤯','🥶','😴',
-  '👀','🔥','💯','✨','🎉','💀','👑','🫶','❤️','🧡','💚','💙','💜','🖤','🤍',
-  '👍','👎','🙌','🤝','💪','🫡','🤙','👏','🙏','✌️','🤞','🫰','💅','🤌','👌',
-  '😮','😱','🥱','🤔','🫠','😈','👾','💩','🤡','👻','💫','⭐','🌙','☀️','🌈',
+// React Icons Emoji Collection for the Messages tab
+const REACT_ICONS_EMOJIS = [
+  // Reactions & Vibes
+  { char: '🔥', label: 'Fire', Icon: FaFire, color: '#f97316' },
+  { char: '❤️', label: 'Heart', Icon: FaHeart, color: '#ef4444' },
+  { char: '✨', label: 'Sparkles', Icon: FaWandMagicSparkles, color: '#eab308' },
+  { char: '👑', label: 'Crown', Icon: FaCrown, color: '#f59e0b' },
+  { char: '💀', label: 'Skull', Icon: FaSkull, color: '#cbd5e1' },
+  { char: '⚡', label: 'Lightning', Icon: FaBolt, color: '#eab308' },
+  { char: '💎', label: 'Gem', Icon: FaGem, color: '#38bdf8' },
+  { char: '🏆', label: 'Trophy', Icon: FaTrophy, color: '#f59e0b' },
+  
+  // Faces & Emotions
+  { char: '😂', label: 'Laughing', Icon: FaFaceGrinSquintTears, color: '#facc15' },
+  { char: '😍', label: 'Heart Eyes', Icon: FaFaceGrinHearts, color: '#f43f5e' },
+  { char: '😎', label: 'Cool', Icon: FaFaceSmileBeam, color: '#38bdf8' },
+  { char: '🤩', label: 'Star Eyes', Icon: FaFaceGrinStars, color: '#fbbf24' },
+  { char: '😘', label: 'Kiss', Icon: FaFaceKissWinkHeart, color: '#fb7185' },
+  { char: '😆', label: 'Grin', Icon: FaFaceLaughSquint, color: '#facc15' },
+  { char: '😀', label: 'Smile', Icon: FaFaceSmile, color: '#facc15' },
+  { char: '😬', label: 'Grimace', Icon: FaFaceGrimace, color: '#94a3b8' },
+  { char: '😳', label: 'Flushed', Icon: FaFaceFlushed, color: '#fb923c' },
+  { char: '😭', label: 'Crying', Icon: FaFaceSadTear, color: '#60a5fa' },
+  { char: '😤', label: 'Angry', Icon: FaFaceAngry, color: '#f87171' },
+  { char: '😮', label: 'Surprise', Icon: FaFaceSurprise, color: '#fb923c' },
+
+  // Gestures & Hands
+  { char: '👍', label: 'Thumbs Up', Icon: FaThumbsUp, color: '#3b82f6' },
+  { char: '👎', label: 'Thumbs Down', Icon: FaThumbsDown, color: '#64748b' },
+  { char: '👏', label: 'Clap', Icon: FaHandsClapping, color: '#f59e0b' },
+  { char: '🤝', label: 'Handshake', Icon: FaHandshake, color: '#10b981' },
+  { char: '✌️', label: 'Peace', Icon: FaHandPeace, color: '#ec4899' },
+  { char: '👊', label: 'Fist', Icon: FaHandFist, color: '#f97316' },
+  { char: '👆', label: 'Point Up', Icon: FaHandPointUp, color: '#3b82f6' },
+
+  // Fun & Atmosphere
+  { char: '👀', label: 'Eyes', Icon: FaEye, color: '#94a3b8' },
+  { char: '👻', label: 'Ghost', Icon: FaGhost, color: '#e2e8f0' },
+  { char: '💩', label: 'Poo', Icon: FaPoo, color: '#a16207' },
+  { char: '💥', label: 'Explosion', Icon: FaExplosion, color: '#ef4444' },
+  { char: '⭐', label: 'Star', Icon: FaStar, color: '#facc15' },
+  { char: '🌙', label: 'Moon', Icon: FaMoon, color: '#93c5fd' },
+  { char: '☀️', label: 'Sun', Icon: FaSun, color: '#fbbf24' },
+  { char: '💧', label: 'Droplet', Icon: FaDroplet, color: '#38bdf8' },
+  { char: '🥇', label: 'Medal', Icon: FaMedal, color: '#eab308' },
 ];
 
 function formatMessageDateDivider(dateString) {
@@ -425,20 +503,27 @@ export default function ChatView({ onBack, onUserClick }) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Emoji Picker */}
+      {/* React Icons Emoji Picker */}
       {showEmojiPicker && (
         <div className="emoji-picker" ref={emojiPickerRef}>
-          {EMOJI_LIST.map(emoji => (
-            <button
-              key={emoji}
-              className="emoji-btn"
-              onClick={() => handleEmojiClick(emoji)}
-              type="button"
-              aria-label={emoji}
-            >
-              {emoji}
-            </button>
-          ))}
+          <div className="emoji-picker-header">
+            <span className="emoji-picker-title">REACT EMOJIS</span>
+            <span className="emoji-picker-count">{REACT_ICONS_EMOJIS.length} icons</span>
+          </div>
+          <div className="emoji-picker-grid">
+            {REACT_ICONS_EMOJIS.map(({ char, label, Icon, color }) => (
+              <button
+                key={char + label}
+                className="emoji-btn react-icon-emoji-btn"
+                onClick={() => handleEmojiClick(char)}
+                type="button"
+                title={label}
+                aria-label={label}
+              >
+                <Icon size={20} color={color} className="react-emoji-icon" />
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -450,7 +535,7 @@ export default function ChatView({ onBack, onUserClick }) {
           aria-label="Emoji"
           onClick={() => setShowEmojiPicker(v => !v)}
         >
-          <Smile size={20} />
+          <BsEmojiSmileFill size={20} />
         </button>
         <input
           ref={textInputRef}

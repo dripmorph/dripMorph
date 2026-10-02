@@ -4667,17 +4667,56 @@ body {
   cursor: pointer;
 }
 
-/* Emoji Picker */
+/* React Icons Emoji Picker */
 .emoji-picker {
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg, #131317);
+  border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.09));
+  max-height: 220px;
+  animation: slideUpFade 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 8px 10px 12px;
+  gap: 8px;
+  user-select: none;
+}
+
+.emoji-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 6px;
+}
+
+.emoji-picker-title {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: var(--text-secondary, #94949e);
+  text-transform: uppercase;
+}
+
+.emoji-picker-count {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--accent-solid, #a6fc29);
+}
+
+.emoji-picker-grid {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  gap: 2px;
-  padding: 10px 12px;
-  background: var(--card-bg);
-  border-top: 1px solid var(--border-color);
+  grid-template-columns: repeat(9, 1fr);
+  gap: 4px;
   max-height: 160px;
   overflow-y: auto;
-  animation: slideUpFade 0.15s ease-out;
+  padding-right: 2px;
+}
+
+.emoji-picker-grid::-webkit-scrollbar {
+  width: 4px;
+}
+
+.emoji-picker-grid::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
 }
 
 @keyframes slideUpFade {
@@ -4699,9 +4738,43 @@ body {
   justify-content: center;
 }
 
-.emoji-btn:hover {
-  background: rgba(166, 252, 41, 0.12);
-  transform: scale(1.2);
+.emoji-btn.react-icon-emoji-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid transparent;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  padding: 0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.emoji-btn.react-icon-emoji-btn:hover {
+  background: rgba(166, 252, 41, 0.16);
+  border-color: rgba(166, 252, 41, 0.35);
+  transform: scale(1.18);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.emoji-btn.react-icon-emoji-btn:active {
+  transform: scale(0.92);
+}
+
+.react-emoji-icon {
+  transition: transform 0.15s ease;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
+}
+
+[data-theme='light'] .emoji-btn.react-icon-emoji-btn {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme='light'] .emoji-btn.react-icon-emoji-btn:hover {
+  background: rgba(22, 163, 74, 0.14);
+  border-color: rgba(22, 163, 74, 0.3);
 }
 
 .chat-action-btn.active {
