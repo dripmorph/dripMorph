@@ -51,17 +51,27 @@ Score 3 categories, 1.0-10.0 each:
 ## CRITIQUE & SCORING RULES:
 - Be brutally honest and direct — vague praise helps no one.
 - Never insult the person's body, face, or weight; critique only the clothing and styling choices.
-- Calibrate scores across the FULL 1-10 range based on genuine execution quality — most outfits should land 5.5-7.5, reserve 9.0+ for outfits that nail their archetype's conventions with real precision.
+- Calibrate scores strictly across the FULL 1-10 range based on genuine execution quality:
+  * Most outfits should now land in the 4.0-6.0 range (this is the new 'solid, unremarkable execution' baseline).
+  * A merely 'fine, nothing wrong with it' outfit should score around 5.0, not 7.0 — only outfits with real intention, precision, and archetype-correct execution should clear 6.5+.
+  * Reserve 8.0+ for genuinely excellent archetype execution (outfits that nail their archetype's conventions with true precision and distinction).
 - Every category needs a specific comment referencing what you actually see.
 - The improvement_tip must name the exact garment, the exact change, and why — framed within the outfit's own archetype (e.g. 'swap the crew socks for no-show — visible socks break the clean-lined silhouette Quiet Luxury depends on', not a generic 'wear better shoes').
 
 ## OUTPUT FORMAT:
-Return ONLY valid JSON, no markdown formatting or preamble.
+Return ONLY valid JSON matching the schema, with no markdown formatting or preamble.
 
 If is_ai_generated is TRUE:
 {
   "is_ai_generated": true,
-  "ai_generated_confidence": "low" | "medium" | "high"
+  "ai_generated_confidence": "low" | "medium" | "high",
+  "style_archetype": "N/A",
+  "color_harmony": {"score": 1.0, "comment": "AI-generated image detected"},
+  "silhouette_proportions": {"score": 1.0, "comment": "AI-generated image detected"},
+  "coherence_styling": {"score": 1.0, "comment": "AI-generated image detected"},
+  "overall": 1.0,
+  "summary": "AI-generated image detected",
+  "improvement_tip": "N/A"
 }
 
 If is_ai_generated is FALSE:
@@ -74,7 +84,8 @@ If is_ai_generated is FALSE:
   "overall": 1.0-10.0,
   "summary": "one sentence, naming the archetype",
   "improvement_tip": "string, archetype-specific, naming exact garment + change + why"
-}`;
+}
+`;
 
 serve(async (req: Request) => {
   // Handle CORS preflight
@@ -248,6 +259,70 @@ serve(async (req: Request) => {
             // thinkingBudget: 0 disables extended thinking, keeping latency low on gemini-3.1-flash-lite
             thinkingConfig: { thinkingBudget: 0 },
             responseMimeType: 'application/json',
+            responseSchema: {
+              type: 'OBJECT',
+              properties: {
+                is_ai_generated: {
+                  type: 'BOOLEAN',
+                  description: 'Whether the image is AI-generated or synthetic.',
+                },
+                ai_generated_confidence: {
+                  type: 'STRING',
+                  enum: ['low', 'medium', 'high'],
+                  description: 'Confidence level if is_ai_generated is true.',
+                },
+                style_archetype: {
+                  type: 'STRING',
+                  description: 'Classified style archetype from the specified list (e.g. Classic Streetwear, Techwear, Quiet Luxury, etc.).',
+                },
+                color_harmony: {
+                  type: 'OBJECT',
+                  properties: {
+                    score: { type: 'NUMBER', description: 'Score between 1.0 and 10.0' },
+                    comment: { type: 'STRING', description: 'Specific critique comment' },
+                  },
+                  required: ['score', 'comment'],
+                },
+                silhouette_proportions: {
+                  type: 'OBJECT',
+                  properties: {
+                    score: { type: 'NUMBER', description: 'Score between 1.0 and 10.0' },
+                    comment: { type: 'STRING', description: 'Specific critique comment' },
+                  },
+                  required: ['score', 'comment'],
+                },
+                coherence_styling: {
+                  type: 'OBJECT',
+                  properties: {
+                    score: { type: 'NUMBER', description: 'Score between 1.0 and 10.0' },
+                    comment: { type: 'STRING', description: 'Specific critique comment' },
+                  },
+                  required: ['score', 'comment'],
+                },
+                overall: {
+                  type: 'NUMBER',
+                  description: 'Overall outfit score between 1.0 and 10.0',
+                },
+                summary: {
+                  type: 'STRING',
+                  description: 'One sentence summarizing the outfit and naming the style archetype',
+                },
+                improvement_tip: {
+                  type: 'STRING',
+                  description: 'Archetype-specific improvement tip naming exact garment + change + why',
+                },
+              },
+              required: [
+                'is_ai_generated',
+                'style_archetype',
+                'color_harmony',
+                'silhouette_proportions',
+                'coherence_styling',
+                'overall',
+                'summary',
+                'improvement_tip',
+              ],
+            },
           },
         }),
       });
@@ -296,7 +371,7 @@ serve(async (req: Request) => {
     }
 
     const geminiData = await geminiResponse.json();
-    console.log('[rate-outfit] Gemini raw response:', JSON.stringify(geminiData));
+    console.log('[rate-outfit] FULL RAW GEMINI RESPONSE:', JSON.stringify(geminiData, null, 2));
 
     const rawText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
     console.log('[rate-outfit] Extracted text from Gemini:', rawText);
@@ -304,11 +379,12 @@ serve(async (req: Request) => {
     // ── Parse Gemini JSON response ───────────────────────────────────────────
     type AIFlaggedResult = {
       is_ai_generated: true;
-      ai_generated_confidence: 'low' | 'medium' | 'high';
+      ai_generated_confidence?: 'low' | 'medium' | 'high';
+      style_archetype?: string;
     };
     type RatingResult = {
       is_ai_generated: false;
-      style_archetype?: string;
+      style_archetype: string;
       color_harmony: { score: number; comment: string };
       silhouette_proportions: { score: number; comment: string };
       coherence_styling: { score: number; comment: string };
@@ -356,7 +432,12 @@ serve(async (req: Request) => {
       );
     }
 
-    console.log('[rate-outfit] Success — overall score:', (result as RatingResult).overall);
+    console.log(
+      '[rate-outfit] Success — style_archetype:',
+      (result as RatingResult).style_archetype,
+      '| overall score:',
+      (result as RatingResult).overall,
+    );
     return new Response(JSON.stringify(result), {
       status: 200,
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
