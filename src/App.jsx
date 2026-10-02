@@ -844,6 +844,7 @@ export default function App() {
         hasNotifications={hasNotifications}
         onTabChange={handleTabChange}
         onFitClick={handleOpenFitDetail}
+        activeTab={activeTab}
         refreshTrigger={refreshTrigger}
       />
 

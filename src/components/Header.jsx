@@ -10,13 +10,62 @@ export default function Header({
   hasNotifications, 
   onTabChange,
   onFitClick,
+  activeTab = 'feed',
   refreshTrigger = 0
 }) {
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const [showTrendingDropdown, setShowTrendingDropdown] = useState(false);
   const [trendingFits, setTrendingFits] = useState([]);
   const [loadingFits, setLoadingFits] = useState(false);
   const dropdownRef = useRef(null);
   const buttonRef = useRef(null);
+
+  // Always show header when tab changes or trending dropdown is toggled
+  useEffect(() => {
+    setIsHeaderVisible(true);
+  }, [activeTab, showTrendingDropdown]);
+
+  // Instagram-style scroll direction detector (Scroll Down -> Hide, Scroll Up -> Show)
+  useEffect(() => {
+    let lastY = 0;
+    let ticking = false;
+
+    const handleScroll = (e) => {
+      const target = e.target === document ? (document.documentElement || document.body) : e.target;
+      const currentY = target && target.scrollTop !== undefined 
+        ? target.scrollTop 
+        : (window.scrollY || window.pageYOffset || 0);
+
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const diff = currentY - lastY;
+
+          // Always show header at top of feed
+          if (currentY <= 20) {
+            setIsHeaderVisible(true);
+          } else if (showTrendingDropdown) {
+            // Keep header visible while trending modal is open
+            setIsHeaderVisible(true);
+          } else if (diff > 8 && currentY > 40) {
+            // Scrolling down -> hide header
+            setIsHeaderVisible(false);
+          } else if (diff < -8) {
+            // Scrolling up -> show header
+            setIsHeaderVisible(true);
+          }
+
+          lastY = Math.max(0, currentY);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { capture: true, passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll, { capture: true });
+    };
+  }, [showTrendingDropdown]);
 
   const loadTrending = async () => {
     setLoadingFits(true);
@@ -101,7 +150,7 @@ export default function Header({
   };
 
   return (
-    <header className="app-header">
+    <header className={`app-header ${isHeaderVisible ? 'header-visible' : 'header-hidden'}`}>
       <button className="header-btn" onClick={onMenuClick} aria-label="Menu">
         <Menu size={22} strokeWidth={2} />
       </button>
