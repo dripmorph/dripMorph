@@ -19,58 +19,100 @@ export default function Header({
   const [loadingFits, setLoadingFits] = useState(false);
   const dropdownRef = useRef(null);
   const buttonRef = useRef(null);
+  const scrollPositions = useRef(new WeakMap());
+  const lastScrollY = useRef(0);
+  const ticking = useRef(false);
 
   // Always show header when tab changes or trending dropdown is toggled
   useEffect(() => {
     setIsHeaderVisible(true);
+    scrollPositions.current = new WeakMap();
+    lastScrollY.current = 0;
   }, [activeTab, showTrendingDropdown]);
 
-  // Smart hide-and-reveal on scroll behavior
+  // Smart hide-and-reveal on scroll behavior (delta-based direction tracking)
   useEffect(() => {
-    let lastY = 0;
-    let ticking = false;
-    const SCROLL_THRESHOLD = 6; // 6px threshold to prevent jitter from rubber-banding / micro-touches
+    const SCROLL_THRESHOLD = 5; // 5px threshold to prevent jitter from micro-touches
+
+    const getTargetKey = (target) => {
+      if (!target || target === document || target === window || target === document.documentElement || target === document.body) {
+        return window;
+      }
+      return target;
+    };
 
     const handleScroll = (e) => {
-      const target = e.target === document ? (document.documentElement || document.body) : e.target;
-      const currentY = target && target.scrollTop !== undefined 
-        ? target.scrollTop 
-        : (window.scrollY || window.pageYOffset || 0);
+      const target = e.target;
+      // Skip inner overlays, modals, and dropdowns so they don't affect main navbar
+      if (
+        target && 
+        target.closest && 
+        target.closest('.mobile-trending-dropdown-list, .comments-modal-container, .modal-backdrop, .stl-overlay, .menu-drawer-overlay, .settings-modal-overlay, .report-modal-overlay, .emoji-picker-container, .emoji-picker-grid')
+      ) {
+        return;
+      }
 
-      if (!ticking) {
+      if (showTrendingDropdown) {
+        setIsHeaderVisible(true);
+        return;
+      }
+
+      if (!ticking.current) {
         window.requestAnimationFrame(() => {
-          // 1. At the very top of the page (scrollY <= 0): Always keep header visible
-          if (currentY <= 0) {
+          let currentY = 0;
+          let maxScroll = Infinity;
+
+          if (
+            !target || 
+            target === document || 
+            target === window || 
+            target === document.documentElement || 
+            target === document.body
+          ) {
+            currentY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || (document.body ? document.body.scrollTop : 0) || 0;
+            const docEl = document.documentElement;
+            const body = document.body;
+            const scrollHeight = Math.max(docEl.scrollHeight, body ? body.scrollHeight : 0);
+            const clientHeight = window.innerHeight || docEl.clientHeight || 0;
+            maxScroll = Math.max(0, scrollHeight - clientHeight);
+          } else if (target && typeof target.scrollTop === 'number') {
+            currentY = target.scrollTop;
+            if (target.scrollHeight && target.clientHeight) {
+              maxScroll = Math.max(0, target.scrollHeight - target.clientHeight);
+            }
+          }
+
+          // Handle rubber-banding / momentum overscroll (clamped between 0 and maxScroll)
+          const normalizedY = Math.min(Math.max(0, currentY), maxScroll);
+          const targetKey = getTargetKey(target);
+          const prevY = scrollPositions.current.get(targetKey) ?? normalizedY;
+          const deltaY = normalizedY - prevY;
+
+          // 1. Near the very top of the page (<= 10px): always show navbar
+          if (normalizedY <= 10) {
             setIsHeaderVisible(true);
-            lastY = 0;
-            ticking = false;
+            scrollPositions.current.set(targetKey, normalizedY);
+            lastScrollY.current = normalizedY;
+            ticking.current = false;
             return;
           }
 
-          // Keep visible if trending modal dropdown is active
-          if (showTrendingDropdown) {
-            setIsHeaderVisible(true);
-            lastY = currentY;
-            ticking = false;
-            return;
-          }
-
-          const diff = currentY - lastY;
-
-          // 2. When scrolling down beyond threshold: Hide header (translate up off-screen)
-          if (diff > SCROLL_THRESHOLD && currentY > 20) {
+          // 2. Scrolling DOWN by > 5px and past initial header threshold (> 60px): hide navbar
+          if (deltaY > SCROLL_THRESHOLD && normalizedY > 60) {
             setIsHeaderVisible(false);
-            lastY = currentY;
-          } 
-          // 3. When scrolling up at ANY position beyond threshold: Immediately show header again (slide back down)
-          else if (diff < -SCROLL_THRESHOLD) {
+            scrollPositions.current.set(targetKey, normalizedY);
+            lastScrollY.current = normalizedY;
+          }
+          // 3. Scrolling UP by > 5px at ANY position: immediately reveal navbar
+          else if (deltaY < -SCROLL_THRESHOLD) {
             setIsHeaderVisible(true);
-            lastY = currentY;
+            scrollPositions.current.set(targetKey, normalizedY);
+            lastScrollY.current = normalizedY;
           }
 
-          ticking = false;
+          ticking.current = false;
         });
-        ticking = true;
+        ticking.current = true;
       }
     };
 
