@@ -151,7 +151,14 @@ export default function Header({
       loadTrending();
       setTimeout(loadTrending, 500);
     };
+    const handleScrollToTop = () => {
+      setIsHeaderVisible(true);
+      scrollPositions.current = new WeakMap();
+      lastScrollY.current = 0;
+    };
+
     window.addEventListener('dripmorph:refresh-feed', handleGlobalRefresh);
+    window.addEventListener('dripmorph:scroll-to-top', handleScrollToTop);
 
     const channel = supabase
       .channel('public:header-trending-realtime')
@@ -170,6 +177,7 @@ export default function Header({
 
     return () => {
       window.removeEventListener('dripmorph:refresh-feed', handleGlobalRefresh);
+      window.removeEventListener('dripmorph:scroll-to-top', handleScrollToTop);
       supabase.removeChannel(channel);
     };
   }, []);
