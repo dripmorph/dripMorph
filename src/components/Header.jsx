@@ -25,10 +25,11 @@ export default function Header({
     setIsHeaderVisible(true);
   }, [activeTab, showTrendingDropdown]);
 
-  // Instagram-style scroll direction detector (Scroll Down -> Hide, Scroll Up -> Show)
+  // Smart hide-and-reveal on scroll behavior
   useEffect(() => {
     let lastY = 0;
     let ticking = false;
+    const SCROLL_THRESHOLD = 6; // 6px threshold to prevent jitter from rubber-banding / micro-touches
 
     const handleScroll = (e) => {
       const target = e.target === document ? (document.documentElement || document.body) : e.target;
@@ -38,23 +39,35 @@ export default function Header({
 
       if (!ticking) {
         window.requestAnimationFrame(() => {
-          const diff = currentY - lastY;
-
-          // Always show header at top of feed
-          if (currentY <= 20) {
+          // 1. At the very top of the page (scrollY <= 0): Always keep header visible
+          if (currentY <= 0) {
             setIsHeaderVisible(true);
-          } else if (showTrendingDropdown) {
-            // Keep header visible while trending modal is open
-            setIsHeaderVisible(true);
-          } else if (diff > 8 && currentY > 40) {
-            // Scrolling down -> hide header
-            setIsHeaderVisible(false);
-          } else if (diff < -8) {
-            // Scrolling up -> show header
-            setIsHeaderVisible(true);
+            lastY = 0;
+            ticking = false;
+            return;
           }
 
-          lastY = Math.max(0, currentY);
+          // Keep visible if trending modal dropdown is active
+          if (showTrendingDropdown) {
+            setIsHeaderVisible(true);
+            lastY = currentY;
+            ticking = false;
+            return;
+          }
+
+          const diff = currentY - lastY;
+
+          // 2. When scrolling down beyond threshold: Hide header (translate up off-screen)
+          if (diff > SCROLL_THRESHOLD && currentY > 20) {
+            setIsHeaderVisible(false);
+            lastY = currentY;
+          } 
+          // 3. When scrolling up at ANY position beyond threshold: Immediately show header again (slide back down)
+          else if (diff < -SCROLL_THRESHOLD) {
+            setIsHeaderVisible(true);
+            lastY = currentY;
+          }
+
           ticking = false;
         });
         ticking = true;
@@ -150,7 +163,7 @@ export default function Header({
   };
 
   return (
-    <header className={`app-header ${isHeaderVisible ? 'header-visible' : 'header-hidden'}`}>
+    <header className={`app-header transition-transform duration-300 ease-in-out ${isHeaderVisible ? 'header-visible translate-y-0' : 'header-hidden -translate-y-full'}`}>
       <button className="header-btn" onClick={onMenuClick} aria-label="Menu">
         <Menu size={22} strokeWidth={2} />
       </button>
