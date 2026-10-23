@@ -697,6 +697,104 @@ export async function toggleOutfitLike(outfitId, userId) {
   }
 }
 
+// ── 5a. Fetch single outfit by ID (for shared links) ─────────────────────────
+/**
+ * Fetches a single outfit by its UUID and returns a fully-normalised post
+ * object that FitDetailModal can consume directly.
+ */
+export async function fetchOutfitById(outfitId, currentUserId = null) {
+  const { data: item, error } = await supabase
+    .from('outfits')
+    .select(`
+      id,
+      poster_id,
+      image_url,
+      city,
+      caption,
+      created_at,
+      profiles:poster_id (
+        username,
+        avatar_url,
+        city
+      ),
+      outfit_ratings (
+        overall_score,
+        improvement_tip,
+        color_harmony_score,
+        silhouette_proportions_score,
+        coherence_styling_score
+      ),
+      outfit_comments (count)
+    `)
+    .eq('id', outfitId)
+    .single();
+
+  if (error || !item) {
+    console.error('[outfitService] fetchOutfitById error:', error);
+    return null;
+  }
+
+  const ratingObj = Array.isArray(item.outfit_ratings) ? item.outfit_ratings[0] : item.outfit_ratings;
+  const profileObj = item.profiles;
+  const rawUsername = profileObj?.username || 'anonymous';
+  const usernameStr = rawUsername.startsWith('@') ? rawUsername : `@${rawUsername}`;
+  const avatarUrl = profileObj?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=240&h=240&fit=crop';
+
+  const scoreVal = ratingObj?.overall_score ?? ratingObj?.overall;
+  const numericScore = scoreVal != null ? parseFloat(scoreVal) : null;
+  const overallScoreStr = numericScore != null ? numericScore.toFixed(1) : 'N/A';
+  const aiScoreStr = numericScore != null ? `${overallScoreStr}/10` : 'No Rating';
+
+  // Likes
+  let likeCount = 0;
+  let userHasLiked = false;
+  try {
+    const { data: likesData } = await supabase
+      .from('outfit_likes')
+      .select('user_id')
+      .eq('outfit_id', outfitId);
+    if (likesData) {
+      likeCount = likesData.length;
+      if (currentUserId) userHasLiked = likesData.some(r => r.user_id === currentUserId);
+    }
+  } catch (_) {}
+
+  // Comments count
+  let commentCount = 0;
+  try {
+    const { data: commData } = await supabase
+      .from('outfit_comments')
+      .select('id')
+      .eq('outfit_id', outfitId);
+    if (commData) commentCount = commData.length;
+  } catch (_) {}
+
+  return {
+    ...item,
+    id: item.id,
+    user_id: item.poster_id,
+    username: usernameStr,
+    user_avatar: avatarUrl,
+    avatar: avatarUrl,
+    location: item.city || profileObj?.city || 'Kolkata',
+    image_url: item.image_url,
+    image: item.image_url,
+    score: aiScoreStr,
+    aiScore: aiScoreStr,
+    overall_score: numericScore,
+    likes: likeCount,
+    likes_count: likeCount,
+    user_has_liked: userHasLiked,
+    comments: commentCount,
+    comments_count: commentCount,
+    comment_count: commentCount,
+    caption: item.caption || '',
+    created_at: item.created_at,
+    postedAt: item.created_at,
+    products: [],
+  };
+}
+
 // ── 5. Fetch feed outfits ──────────────────────────────────────────────────────
 /**
  * Fetches outfits from Supabase ordered by created_at DESC,

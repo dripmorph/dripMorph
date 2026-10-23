@@ -18,7 +18,7 @@ import techwearImg from './assets/techwear_look.png';
 import cyberpunkImg from './assets/cyberpunk_look.png';
 import minimalistImg from './assets/minimalist_look.png';
 import { MOCK_POSTS } from './data/mockPosts';
-import { fetchFeedOutfits, deleteOutfit } from './lib/outfitService';
+import { fetchFeedOutfits, deleteOutfit, fetchOutfitById } from './lib/outfitService';
 import { lazyWithRetry } from './lib/lazyWithRetry';
 
 // Code-split major screens with auto-retry protection
@@ -451,7 +451,44 @@ export default function App() {
     setSelectedFitForDetail(freshFit);
   };
 
-  // Auto-hide toast after 2.5 seconds
+  // ── Deep-link handler: open the shared post when ?post=<id> is in the URL ──
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sharedPostId = params.get('post');
+    if (!sharedPostId) return;
+
+    // Clean the URL immediately so refreshing doesn't re-trigger
+    const cleanUrl = window.location.pathname;
+    window.history.replaceState({}, '', cleanUrl);
+
+    let isMounted = true;
+    async function openSharedPost() {
+      try {
+        // Try the already-loaded feed first (instant, no extra request)
+        const fromFeed = posts.find(p => String(p.id) === String(sharedPostId));
+        if (fromFeed) {
+          if (isMounted) setSelectedFitForDetail(fromFeed);
+          return;
+        }
+        // Fall back to a direct DB fetch for the single post
+        const post = await fetchOutfitById(sharedPostId, user?.id || null);
+        if (isMounted && post) {
+          setSelectedFitForDetail(post);
+          // Also inject into the feed list so likes/comments sync correctly
+          setPosts(prev => {
+            if (prev.some(p => p.id === post.id)) return prev;
+            return [post, ...prev];
+          });
+        }
+      } catch (err) {
+        console.error('[App] Failed to open shared post:', err);
+      }
+    }
+    openSharedPost();
+    return () => { isMounted = false; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]); // run once per auth session; posts intentionally omitted to avoid loop
+
   const [debugError, setDebugError] = useState(null);
 
   // Global unhandled rejection listener for mobile error capture
