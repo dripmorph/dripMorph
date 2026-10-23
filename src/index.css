@@ -2528,6 +2528,134 @@ body {
   transform: scale(0.98);
 }
 
+.btn-get-rating.btn-cooldown {
+  background: rgba(255, 152, 0, 0.12) !important;
+  color: #ffb74d !important;
+  border: 1px solid rgba(255, 152, 0, 0.4) !important;
+  box-shadow: none !important;
+  cursor: not-allowed !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  letter-spacing: 0.5px;
+}
+
+.btn-get-rating.btn-cooldown:hover {
+  background: rgba(255, 152, 0, 0.18) !important;
+}
+
+/* AI Rating Cooldown Timer Card */
+.cooldown-timer-card {
+  background: rgba(255, 140, 0, 0.08);
+  border: 1px solid rgba(255, 140, 0, 0.35);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  backdrop-filter: blur(8px);
+}
+
+.cooldown-timer-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cooldown-icon-pulse {
+  color: #ff9800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulseGlow 2s infinite ease-in-out;
+}
+
+.cooldown-timer-title {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #ffb74d;
+  letter-spacing: 0.3px;
+  flex: 1;
+}
+
+.cooldown-limit-tag {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: rgba(255, 183, 77, 0.9);
+  background: rgba(255, 152, 0, 0.15);
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 152, 0, 0.3);
+}
+
+.cooldown-countdown-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.cooldown-countdown-digits {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #ff9800;
+  letter-spacing: 2px;
+  line-height: 1;
+  text-shadow: 0 0 12px rgba(255, 152, 0, 0.4);
+}
+
+.cooldown-countdown-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cooldown-progress-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.cooldown-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff9800, #ffb74d);
+  border-radius: 999px;
+  transition: width 1s linear;
+}
+
+.cooldown-timer-desc {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.cooldown-info-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  color: var(--accent-solid);
+  background: rgba(200, 255, 0, 0.08);
+  border: 1px solid rgba(200, 255, 0, 0.25);
+  padding: 4px 10px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(0.92);
+  }
+}
+
 .analysis-result-panel {
   display: flex;
   flex-direction: column;

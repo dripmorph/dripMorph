@@ -8,8 +8,12 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 const GEMINI_ENDPOINT =
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent';
 
-const RATE_LIMIT_MAX = 10;
-const RATE_LIMIT_WINDOW_HOURS = 1;
+const RATE_LIMIT_MAX = 2; // 2 pics
+const RATE_LIMIT_WINDOW_MINUTES = 20; // 20-minute cooldown
+const RATE_LIMIT_WINDOW_MS = RATE_LIMIT_WINDOW_MINUTES * 60 * 1000;
+
+// In-memory caller timestamp cache (persists within warm Deno isolates across requests)
+const userCallHistory = new Map<string, number[]>();
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -145,33 +149,52 @@ serve(async (req: Request) => {
     }
     console.log('[rate-outfit] Auth OK — user:', user.id);
 
-    // ── Rate Limiting ────────────────────────────────────────────────────────
-    console.log('[rate-outfit] Step: checking rate limit');
-    const windowStart = new Date(
-      Date.now() - RATE_LIMIT_WINDOW_HOURS * 60 * 60 * 1000,
-    ).toISOString();
+    // ── Rate Limiting (20-min cooldown for every 2 pics) ─────────────────────
+    console.log('[rate-outfit] Step: checking rate limit (2 pics per 20 minutes)');
+    const now = Date.now();
+    const windowStartMs = now - RATE_LIMIT_WINDOW_MS;
+    const windowStartIso = new Date(windowStartMs).toISOString();
 
-    const { count: recentCallCount, error: countError } = await supabase
+    // 1. Check in-memory history
+    const userTimestamps = (userCallHistory.get(user.id) || []).filter(
+      (t) => t > windowStartMs,
+    );
+    userCallHistory.set(user.id, userTimestamps);
+
+    // 2. Query rate_limit_log table if present
+    const { data: dbLogRows, count: recentCallCount, error: countError } = await supabase
       .from('rate_limit_log')
-      .select('*', { count: 'exact', head: true })
+      .select('called_at', { count: 'exact' })
       .eq('user_id', user.id)
       .eq('function_name', 'rate-outfit')
-      .gte('called_at', windowStart);
+      .gte('called_at', windowStartIso)
+      .order('called_at', { ascending: true });
 
-    if (countError) {
-      console.warn('[rate-outfit] rate_limit_log query error (non-fatal):', countError.message, countError.code);
-    } else {
-      console.log('[rate-outfit] Recent call count:', recentCallCount);
-      if (recentCallCount !== null && recentCallCount >= RATE_LIMIT_MAX) {
-        console.warn('[rate-outfit] Rate limit hit for user:', user.id);
-        return new Response(
-          JSON.stringify({
-            error: `Rate limit exceeded — you can rate at most ${RATE_LIMIT_MAX} outfits per hour. Please try again later.`,
-            retry_after_minutes: RATE_LIMIT_WINDOW_HOURS * 60,
-          }),
-          { status: 429, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
-        );
-      }
+    let effectiveCount = userTimestamps.length;
+    let earliestCallMs = userTimestamps[0] || (now - RATE_LIMIT_WINDOW_MS);
+
+    if (!countError && dbLogRows && dbLogRows.length > 0) {
+      effectiveCount = Math.max(effectiveCount, dbLogRows.length);
+      const dbEarliest = new Date(dbLogRows[0].called_at).getTime();
+      earliestCallMs = Math.min(earliestCallMs, dbEarliest);
+    }
+
+    if (effectiveCount >= RATE_LIMIT_MAX) {
+      const remainingMs = Math.max(0, earliestCallMs + RATE_LIMIT_WINDOW_MS - now);
+      const retryAfterSeconds = Math.ceil(remainingMs / 1000);
+      console.warn(
+        `[rate-outfit] Cooldown active for user ${user.id}: ${effectiveCount}/${RATE_LIMIT_MAX} ratings in last 20m. Remaining: ${retryAfterSeconds}s`,
+      );
+      return new Response(
+        JSON.stringify({
+          error: `Cooldown active — you can rate at most 2 outfits every 20 minutes. Please wait before rating another outfit.`,
+          code: 'RATE_LIMITED',
+          retry_after_seconds: retryAfterSeconds,
+          retry_after_minutes: Math.ceil(retryAfterSeconds / 60),
+          cooldown_until: new Date(now + remainingMs).toISOString(),
+        }),
+        { status: 429, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
+      );
     }
 
     // ── Parse Request Body ───────────────────────────────────────────────────
@@ -422,15 +445,21 @@ serve(async (req: Request) => {
       );
     }
 
-    // ── Log this call to the rate limit table ────────────────────────────────
-    console.log('[rate-outfit] Step: inserting rate_limit_log row');
+    // ── Log this call to cooldown history ──────────────────────────────────
+    console.log('[rate-outfit] Step: updating cooldown call history');
+    const activeCalls = (userCallHistory.get(user.id) || []).filter(
+      (t) => t > Date.now() - RATE_LIMIT_WINDOW_MS,
+    );
+    activeCalls.push(Date.now());
+    userCallHistory.set(user.id, activeCalls);
+
     const { error: insertError } = await supabase.from('rate_limit_log').insert({
       user_id: user.id,
       function_name: 'rate-outfit',
       called_at: new Date().toISOString(),
     });
     if (insertError) {
-      console.warn('[rate-outfit] rate_limit_log insert failed (non-fatal):', insertError.message, insertError.code);
+      console.warn('[rate-outfit] rate_limit_log insert notice (non-fatal):', insertError.message, insertError.code);
     }
 
     // ── AI-generated gate: reject before publishing ──────────────────────────

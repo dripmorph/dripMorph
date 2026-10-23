@@ -174,16 +174,126 @@ export async function moderateImage(imageUrl) {
   return data; // { is_appropriate, reason }
 }
 
+// ── 2.9. AI Rating Cooldown (20 mins per 2 pics) ─────────────────────────────
+export const RATING_LIMIT_COUNT = 2;
+export const RATING_COOLDOWN_MINUTES = 20;
+export const RATING_COOLDOWN_MS = RATING_COOLDOWN_MINUTES * 60 * 1000;
+
+/**
+ * Checks if the user is currently on cooldown for AI outfit ratings.
+ * Rule: 2 pics per 20 minutes.
+ * Returns: { isCoolingDown, remainingMs, remainingSeconds, count, limit, progressPercent }
+ */
+export function getRatingCooldownStatus(userId) {
+  if (!userId) {
+    return {
+      isCoolingDown: false,
+      remainingMs: 0,
+      remainingSeconds: 0,
+      count: 0,
+      limit: RATING_LIMIT_COUNT,
+      progressPercent: 100,
+    };
+  }
+
+  const storageKey = `dripmorph_rating_history_${userId}`;
+  let timestamps = [];
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (raw) timestamps = JSON.parse(raw);
+    if (!Array.isArray(timestamps)) timestamps = [];
+  } catch {
+    timestamps = [];
+  }
+
+  const now = Date.now();
+  // Filter out any entries older than 20 minutes
+  timestamps = timestamps
+    .filter((t) => typeof t === 'number' && now - t < RATING_COOLDOWN_MS)
+    .sort((a, b) => a - b);
+
+  // If 2 or more ratings within the rolling 20-minute window
+  if (timestamps.length >= RATING_LIMIT_COUNT) {
+    const oldestInWindow = timestamps[0];
+    const remainingMs = Math.max(0, oldestInWindow + RATING_COOLDOWN_MS - now);
+    if (remainingMs > 0) {
+      const remainingSeconds = Math.ceil(remainingMs / 1000);
+      const elapsedMs = RATING_COOLDOWN_MS - remainingMs;
+      const progressPercent = Math.min(100, Math.max(0, Math.round((elapsedMs / RATING_COOLDOWN_MS) * 100)));
+      return {
+        isCoolingDown: true,
+        remainingMs,
+        remainingSeconds,
+        count: timestamps.length,
+        limit: RATING_LIMIT_COUNT,
+        progressPercent,
+      };
+    }
+  }
+
+  return {
+    isCoolingDown: false,
+    remainingMs: 0,
+    remainingSeconds: 0,
+    count: timestamps.length,
+    limit: RATING_LIMIT_COUNT,
+    progressPercent: 100,
+  };
+}
+
+/**
+ * Records a successful AI rating timestamp for the user.
+ */
+export function recordRatingTimestamp(userId, timestamp = Date.now()) {
+  if (!userId) return;
+  const storageKey = `dripmorph_rating_history_${userId}`;
+  let timestamps = [];
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (raw) timestamps = JSON.parse(raw);
+    if (!Array.isArray(timestamps)) timestamps = [];
+  } catch {
+    timestamps = [];
+  }
+
+  const now = Date.now();
+  timestamps = timestamps.filter((t) => typeof t === 'number' && now - t < RATING_COOLDOWN_MS);
+  timestamps.push(timestamp);
+  timestamps.sort((a, b) => a - b);
+
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(timestamps));
+  } catch (err) {
+    console.warn('[outfitService] Failed to save rating history:', err);
+  }
+}
+
+/**
+ * Sets cooldown from server response (e.g. if Edge Function returns 429 with retry_after_seconds)
+ */
+export function setServerRatingCooldown(userId, retryAfterSeconds) {
+  if (!userId || !retryAfterSeconds || retryAfterSeconds <= 0) return;
+  const now = Date.now();
+  const storageKey = `dripmorph_rating_history_${userId}`;
+  const oldestTimestamp = now - RATING_COOLDOWN_MS + (retryAfterSeconds * 1000);
+  const timestamps = [oldestTimestamp, now];
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(timestamps));
+  } catch (err) {
+    console.warn('[outfitService] Failed to set server cooldown:', err);
+  }
+}
+
 // ── 3. Rate outfit ────────────────────────────────────────────────────────────
 /**
  * Calls the rate-outfit Edge Function.
  * Returns the full rating object or throws a typed error.
  *
- * Throws { code: 'RATE_LIMITED' }  on 429 so callers can surface a specific message.
+ * Throws { code: 'RATE_LIMITED' } on 429 so callers can surface a specific message.
  * Throws { code: 'AI_GENERATED', ai_generated_confidence } on 422 so callers can
  *   show a rejection message and return the user to the upload step.
  */
-export async function rateOutfit(imageUrl) {
+export async function rateOutfit(imageUrl, userId = null) {
   const token = await getAccessToken();
 
   let response;
@@ -205,12 +315,20 @@ export async function rateOutfit(imageUrl) {
     let body = {};
     try { body = await response.json(); } catch { /* ignore */ }
     const isGeminiQuota = body?.error === 'gemini_quota';
+    const retryAfterSec = body?.retry_after_seconds || (20 * 60);
+
+    if (userId) {
+      setServerRatingCooldown(userId, retryAfterSec);
+    }
+
     const err = new Error(
       isGeminiQuota
         ? 'AI rating is temporarily unavailable — quota limit reached. Please try again in a minute.'
-        : 'You\'ve rated 10 outfits this hour. Take a break and come back soon!',
+        : `Cooldown active — you can rate at most 2 outfits every 20 minutes. Please wait before rating another look.`,
     );
     err.code = 'RATE_LIMITED';
+    err.retry_after_seconds = retryAfterSec;
+    err.cooldown_until = body?.cooldown_until;
     throw err;
   }
 

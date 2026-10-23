@@ -1,7 +1,16 @@
-import React, { useState, useRef } from 'react';
-import { Sparkles, Upload, RefreshCw, Trash2, Plus, X, Tag, AlertCircle } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Sparkles, Upload, RefreshCw, Trash2, Plus, X, Tag, AlertCircle, Clock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { uploadOutfitImage, moderateImage, rateOutfit, publishOutfit, checkUser24HourPostLimit } from '../lib/outfitService';
+import {
+  uploadOutfitImage,
+  moderateImage,
+  rateOutfit,
+  publishOutfit,
+  checkUser24HourPostLimit,
+  getRatingCooldownStatus,
+  recordRatingTimestamp,
+  setServerRatingCooldown,
+} from '../lib/outfitService';
 
 // Pipeline step labels shown during the scan animation
 const PIPELINE_STEPS = [
@@ -64,6 +73,24 @@ export default function PostUpload({ showToast, onPostCreated }) {
   const [analysisError, setAnalysisError] = useState(null);   // string | null — generic errors
   const [aiGeneratedError, setAiGeneratedError] = useState(null); // string | null — AI-image rejection
   const [postLimitError, setPostLimitError] = useState(null); // string | null — 24h limit reached
+  const [cooldownStatus, setCooldownStatus] = useState(() => getRatingCooldownStatus(user?.id));
+
+  // Live 1-second interval to update remaining cooldown timer
+  useEffect(() => {
+    const updateCooldown = () => {
+      setCooldownStatus(getRatingCooldownStatus(user?.id));
+    };
+    updateCooldown();
+    const timer = setInterval(updateCooldown, 1000);
+    return () => clearInterval(timer);
+  }, [user?.id]);
+
+  const formatCooldownTime = (totalSeconds) => {
+    if (!totalSeconds || totalSeconds <= 0) return '00:00';
+    const m = Math.floor(totalSeconds / 60);
+    const s = totalSeconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
 
   // ── Post detail & style archetype state ───────────────────────────────────────
   const [selectedStyle, setSelectedStyle] = useState('');
@@ -151,6 +178,14 @@ export default function PostUpload({ showToast, onPostCreated }) {
       return;
     }
 
+    // Check 20-minute / 2-pic cooldown before doing anything
+    const currentCooldown = getRatingCooldownStatus(user.id);
+    if (currentCooldown.isCoolingDown) {
+      setCooldownStatus(currentCooldown);
+      showToast(`AI rating cooldown active: ${formatCooldownTime(currentCooldown.remainingSeconds)} remaining.`);
+      return;
+    }
+
     setIsAnalyzing(true);
     setAnalysisResult(null);
     setAnalysisError(null);
@@ -178,7 +213,11 @@ export default function PostUpload({ showToast, onPostCreated }) {
       // ── Step 3: AI Rating ────────────────────────────────────────────────────
       setPipelineStep('rating');
       showToast('DripMorph AI is analyzing your look...');
-      const rating = await rateOutfit(publicUrl);
+      const rating = await rateOutfit(publicUrl, user.id);
+
+      // Record this rating timestamp for the 20-minute / 2-pic cooldown
+      recordRatingTimestamp(user.id);
+      setCooldownStatus(getRatingCooldownStatus(user.id));
 
       // Shape the result into the format the existing UI expects
       const detectedArchetype = rating.style_archetype || '';
@@ -239,6 +278,10 @@ export default function PostUpload({ showToast, onPostCreated }) {
         // Distinct branch: surface a clear rejection, keep user on upload step
         setAiGeneratedError(err.message);
       } else if (err.code === 'RATE_LIMITED') {
+        if (err.retry_after_seconds) {
+          setServerRatingCooldown(user.id, err.retry_after_seconds);
+          setCooldownStatus(getRatingCooldownStatus(user.id));
+        }
         setAnalysisError(err.message);
       } else if (err.code === 'FILE_TOO_LARGE') {
         setAnalysisError(err.message);
@@ -467,6 +510,40 @@ export default function PostUpload({ showToast, onPostCreated }) {
               Our AI will review your silhouette, color blocking, and details to provide a real-time rating.
             </p>
 
+            {/* AI Rating 20-min / 2-pic Cooldown Card with live timer */}
+            {cooldownStatus.isCoolingDown ? (
+              <div className="cooldown-timer-card">
+                <div className="cooldown-timer-header">
+                  <div className="cooldown-icon-pulse">
+                    <Clock size={16} />
+                  </div>
+                  <span className="cooldown-timer-title">AI Rating Cooldown Active</span>
+                  <span className="cooldown-limit-tag">2 pics / 20 mins</span>
+                </div>
+                <div className="cooldown-countdown-row">
+                  <span className="cooldown-countdown-digits">
+                    {formatCooldownTime(cooldownStatus.remainingSeconds)}
+                  </span>
+                  <span className="cooldown-countdown-label">time remaining</span>
+                </div>
+                <div className="cooldown-progress-bar">
+                  <div
+                    className="cooldown-progress-fill"
+                    style={{ width: `${cooldownStatus.progressPercent}%` }}
+                  />
+                </div>
+                <p className="cooldown-timer-desc">
+                  You've rated 2 outfits in the last 20 minutes. Next rating unlocks in{' '}
+                  {Math.floor(cooldownStatus.remainingSeconds / 60)}m {cooldownStatus.remainingSeconds % 60}s.
+                </p>
+              </div>
+            ) : cooldownStatus.count === 1 ? (
+              <div className="cooldown-info-badge">
+                <Clock size={13} />
+                <span>1 of 2 AI ratings used in this 20-min window</span>
+              </div>
+            ) : null}
+
             {/* AI-generated rejection banner — distinct from generic errors */}
             {aiGeneratedError && (
               <div
@@ -547,11 +624,19 @@ export default function PostUpload({ showToast, onPostCreated }) {
                 </button>
               ) : (
                 <button
-                  className="btn-get-rating"
-                  onClick={startAnalysis}
-                  disabled={isAnalyzing}
+                  className={`btn-get-rating ${cooldownStatus.isCoolingDown ? 'btn-cooldown' : ''}`}
+                  onClick={
+                    cooldownStatus.isCoolingDown
+                      ? () => showToast(`AI rating cooldown active: ${formatCooldownTime(cooldownStatus.remainingSeconds)} remaining.`)
+                      : startAnalysis
+                  }
+                  disabled={isAnalyzing || cooldownStatus.isCoolingDown}
                 >
-                  {isAnalyzing ? stepLabel.toUpperCase() : 'GET AI RATING'}
+                  {isAnalyzing
+                    ? stepLabel.toUpperCase()
+                    : cooldownStatus.isCoolingDown
+                    ? `COOLDOWN (${formatCooldownTime(cooldownStatus.remainingSeconds)})`
+                    : 'GET AI RATING'}
                 </button>
               )}
             </div>
