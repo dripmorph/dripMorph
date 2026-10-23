@@ -333,14 +333,23 @@ export async function rateOutfit(imageUrl, userId = null) {
   }
 
   if (response.status === 422) {
-    // AI-generated image detected — parse the confidence level out of the body
-    let confidence = 'unknown';
+    let body = {};
     try {
-      const body = await response.json();
-      confidence = body?.ai_generated_confidence ?? 'unknown';
+      body = await response.json();
     } catch { /* ignore parse failures */ }
+
+    if (body?.error === 'incomplete_outfit') {
+      const err = new Error(
+        body?.message || 'Only photos showing your entire outfit are accepted. Selfies and incomplete outfits cannot be rated or posted.',
+      );
+      err.code = 'INCOMPLETE_OUTFIT';
+      throw err;
+    }
+
+    // AI-generated image detected — parse the confidence level out of the body
+    const confidence = body?.ai_generated_confidence ?? 'unknown';
     const err = new Error(
-      'This image appears to be AI-generated and can\'t be rated or published. Please upload a real photo of your outfit.',
+      body?.message || 'This image appears to be AI-generated and can\'t be rated or published. Please upload a real photo of your outfit.',
     );
     err.code = 'AI_GENERATED';
     err.ai_generated_confidence = confidence;
@@ -463,6 +472,13 @@ export async function publishOutfit({ userId, imageUrl, imageHash, imageFile, ci
     rating,
     taggedItems
   });
+
+  // Step 0A: Ensure outfit was successfully evaluated and is complete
+  if (!rating || rating.is_complete_outfit === false || rating.is_ai_generated === true) {
+    const err = new Error('Only photos showing your entire outfit can be posted. Selfies and incomplete outfits are not accepted.');
+    err.code = 'INCOMPLETE_OUTFIT';
+    throw err;
+  }
 
   // Step 0: Enforce 2-post limit per 24 hours
   const limitCheck = await checkUser24HourPostLimit(userId);

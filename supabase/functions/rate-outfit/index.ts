@@ -23,7 +23,7 @@ const CORS_HEADERS = {
 
 const RATING_SYSTEM_PROMPT = `You are an expert fashion critic rating an outfit photo for a style-rating app (DripMorph).
 
-## STEP 0 — AI-Generated Image Detection (always run first)
+## STEP 0A — AI-Generated Image Detection (always check first)
 Before rating, assess whether this image is AI-generated or synthetic (not a real photo of a real person in real clothes).
 Look for these tells:
 - Unnatural fabric physics: fabric that folds impossibly, floats, or has no weight
@@ -33,10 +33,30 @@ Look for these tells:
 - Background incoherence: objects or surfaces that don't obey perspective or gravity
 - Over-idealized proportions that no real garment could produce
 
-Set "is_ai_generated" to true if you observe clear, concrete evidence of synthesis. Set it to false if the image reads as a genuine photograph.
+Set "is_ai_generated" to true if you observe clear evidence of synthesis. Set it to false if the image reads as a genuine photograph.
 If is_ai_generated is true, also set "ai_generated_confidence" to one of: "low", "medium", or "high".
 
-## STEP 1 — Classify Style Archetype (if is_ai_generated is false)
+## STEP 0B — Full Outfit Completeness & Selfie Verification (CRITICAL STRICT GATE)
+DripMorph ONLY accepts photos that clearly show the user's ENTIRE outfit so the silhouette, proportions, and styling can be fairly evaluated.
+
+STRICT REJECTION RULES (Set "is_complete_outfit" to false):
+1. NO SELFIES OF ANY KIND:
+   - Front-camera selfies, portrait selfies, or close-up selfies focusing on the face, head, or chest.
+   - Mirror selfies where only the torso/chest and face are visible.
+2. NO INCOMPLETE OR CROPPED OUTFITS:
+   - Photos cropped at the waist, ribs, or chest showing only a top/shirt/jacket without the lower garments.
+   - Extreme close-ups of single clothing items (only sneakers/shoes, only a watch, only a cap, only a bag, only a jacket collar/graphic).
+   - Any angle where key parts of the outfit (upper body, lower body, or overall silhouette) are cut off or hidden.
+
+ACCEPTANCE REQUIREMENTS (Set "is_complete_outfit" to true):
+- The photo MUST show the person wearing a complete outfit — clearly displaying BOTH the upper-body garments (top/shirt/jacket) AND lower-body garments (pants/jeans/shorts/skirt) together, presenting the full outfit silhouette.
+
+If rejected because it is a selfie or incomplete outfit:
+- Set "is_complete_outfit" to false.
+- Set "rejection_reason" to "Only photos showing your entire outfit from head to toe are accepted. Selfies and incomplete outfits cannot be rated or posted."
+- Set "style_archetype" to "N/A", all scores to 1.0, and "improvement_tip" to "N/A".
+
+## STEP 1 — Classify Style Archetype (if is_ai_generated is false AND is_complete_outfit is true)
 Classify the outfit's dominant style archetype from this list (pick the single best match, or the closest blend if genuinely mixed):
 Old Money, Quiet Luxury, Preppy/Ivy League, Sartorial/Classic Menswear, Dark Academia, Light Academia, Smart Casual, Minimalist/Clean Fit, Normcore/Elevated Basics, Classic Streetwear, Techwear, Gorpcore, Y2K/Cyberpunk, Skater, Grunge, Indie Sleaze, Punk, Goth, Whimsigoth, Biker/Rocker, Workwear/Americana, Cottagecore, Bohemian, Athleisure, Blokecore
 
@@ -69,6 +89,8 @@ If is_ai_generated is TRUE:
 {
   "is_ai_generated": true,
   "ai_generated_confidence": "low" | "medium" | "high",
+  "is_complete_outfit": false,
+  "rejection_reason": "AI-generated image detected",
   "style_archetype": "N/A",
   "color_harmony": {"score": 1.0, "comment": "AI-generated image detected"},
   "silhouette_proportions": {"score": 1.0, "comment": "AI-generated image detected"},
@@ -78,9 +100,27 @@ If is_ai_generated is TRUE:
   "improvement_tip": "N/A"
 }
 
-If is_ai_generated is FALSE:
+If is_complete_outfit is FALSE (selfie, cropped torso, or incomplete outfit):
 {
   "is_ai_generated": false,
+  "ai_generated_confidence": "low",
+  "is_complete_outfit": false,
+  "rejection_reason": "Only photos showing your entire outfit from head to toe are accepted. Selfies and incomplete outfits cannot be rated or posted.",
+  "style_archetype": "N/A",
+  "color_harmony": {"score": 1.0, "comment": "Incomplete outfit or selfie"},
+  "silhouette_proportions": {"score": 1.0, "comment": "Incomplete outfit or selfie"},
+  "coherence_styling": {"score": 1.0, "comment": "Incomplete outfit or selfie"},
+  "overall": 1.0,
+  "summary": "Photo does not show a complete outfit",
+  "improvement_tip": "N/A"
+}
+
+If is_ai_generated is FALSE and is_complete_outfit is TRUE:
+{
+  "is_ai_generated": false,
+  "ai_generated_confidence": "low",
+  "is_complete_outfit": true,
+  "rejection_reason": "",
   "style_archetype": "string — the classified archetype from the list",
   "color_harmony": {"score": 1.0-10.0, "comment": "string"},
   "silhouette_proportions": {"score": 1.0-10.0, "comment": "string"},
@@ -110,7 +150,6 @@ serve(async (req: Request) => {
 
     // ── Env var check ──────────────────────────────────────────────────────────
     console.log('[rate-outfit] ENV check — GEMINI_API_KEY present:', !!GEMINI_API_KEY);
-    // Log key prefix only (never log full key)
     if (GEMINI_API_KEY) {
       console.log('[rate-outfit] GEMINI_API_KEY prefix:', GEMINI_API_KEY.slice(0, 8) + '...');
     }
@@ -162,7 +201,7 @@ serve(async (req: Request) => {
     userCallHistory.set(user.id, userTimestamps);
 
     // 2. Query rate_limit_log table if present
-    const { data: dbLogRows, count: recentCallCount, error: countError } = await supabase
+    const { data: dbLogRows, error: countError } = await supabase
       .from('rate_limit_log')
       .select('called_at', { count: 'exact' })
       .eq('user_id', user.id)
@@ -279,7 +318,6 @@ serve(async (req: Request) => {
         topK: 1,
         topP: 0,
         seed: 42,
-        // thinkingBudget: 0 disables extended thinking, keeping latency low on gemini-3.1-flash-lite
         thinkingConfig: { thinkingBudget: 0 },
         responseMimeType: 'application/json',
         responseSchema: {
@@ -293,6 +331,14 @@ serve(async (req: Request) => {
               type: 'STRING',
               enum: ['low', 'medium', 'high'],
               description: 'Confidence level if is_ai_generated is true.',
+            },
+            is_complete_outfit: {
+              type: 'BOOLEAN',
+              description: 'Whether the image shows a complete outfit (both upper and lower body garments visible). Must be false for selfies, portraits, or incomplete outfits.',
+            },
+            rejection_reason: {
+              type: 'STRING',
+              description: 'Reason for rejection if image is a selfie, incomplete outfit, or AI-generated. Empty string if accepted.',
             },
             style_archetype: {
               type: 'STRING',
@@ -337,6 +383,8 @@ serve(async (req: Request) => {
           },
           required: [
             'is_ai_generated',
+            'is_complete_outfit',
+            'rejection_reason',
             'style_archetype',
             'color_harmony',
             'silhouette_proportions',
@@ -377,7 +425,6 @@ serve(async (req: Request) => {
     console.log('[rate-outfit] Gemini response status:', geminiResponse.status);
 
     if (!geminiResponse.ok) {
-      // Try to parse body as JSON to detect quota/rate-limit errors from Gemini
       let errBody: { error?: { status?: string; code?: number; message?: string } } | null = null;
       let errText = '';
       try {
@@ -388,8 +435,6 @@ serve(async (req: Request) => {
       }
       console.error('[rate-outfit] Gemini API error response:', geminiResponse.status, errText);
 
-      // Gemini quota exhausted — return 429 so the client can surface a proper message
-      // Gemini signals this as HTTP 429 with status RESOURCE_EXHAUSTED
       if (
         geminiResponse.status === 429 ||
         errBody?.error?.status === 'RESOURCE_EXHAUSTED'
@@ -417,13 +462,11 @@ serve(async (req: Request) => {
     console.log('[rate-outfit] Extracted text from Gemini:', rawText);
 
     // ── Parse Gemini JSON response ───────────────────────────────────────────
-    type AIFlaggedResult = {
-      is_ai_generated: true;
+    type ParsedGeminiResult = {
+      is_ai_generated: boolean;
       ai_generated_confidence?: 'low' | 'medium' | 'high';
-      style_archetype?: string;
-    };
-    type RatingResult = {
-      is_ai_generated: false;
+      is_complete_outfit: boolean;
+      rejection_reason?: string;
       style_archetype: string;
       color_harmony: { score: number; comment: string };
       silhouette_proportions: { score: number; comment: string };
@@ -432,7 +475,8 @@ serve(async (req: Request) => {
       summary: string;
       improvement_tip: string;
     };
-    let result: AIFlaggedResult | RatingResult;
+
+    let result: ParsedGeminiResult;
 
     try {
       result = JSON.parse(rawText);
@@ -445,7 +489,40 @@ serve(async (req: Request) => {
       );
     }
 
-    // ── Log this call to cooldown history ──────────────────────────────────
+    // ── AI-generated gate: reject before publishing ──────────────────────────
+    if (result.is_ai_generated === true) {
+      console.warn(
+        '[rate-outfit] Image flagged as AI-generated — confidence:',
+        result.ai_generated_confidence,
+      );
+      return new Response(
+        JSON.stringify({
+          error: 'ai_generated',
+          message: 'This image appears to be AI-generated and cannot be submitted.',
+          ai_generated_confidence: result.ai_generated_confidence,
+        }),
+        { status: 422, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    // ── Complete outfit gate: reject selfies and incomplete outfits ──────────
+    if (result.is_complete_outfit === false) {
+      console.warn(
+        '[rate-outfit] Image rejected: not a complete outfit or selfie. Reason:',
+        result.rejection_reason,
+      );
+      return new Response(
+        JSON.stringify({
+          error: 'incomplete_outfit',
+          message:
+            result.rejection_reason ||
+            'Only photos showing your entire outfit from head to toe are accepted. Selfies and incomplete outfits cannot be rated or posted.',
+        }),
+        { status: 422, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    // ── Log this valid rating call to cooldown history ───────────────────────
     console.log('[rate-outfit] Step: updating cooldown call history');
     const activeCalls = (userCallHistory.get(user.id) || []).filter(
       (t) => t > Date.now() - RATE_LIMIT_WINDOW_MS,
@@ -462,27 +539,11 @@ serve(async (req: Request) => {
       console.warn('[rate-outfit] rate_limit_log insert notice (non-fatal):', insertError.message, insertError.code);
     }
 
-    // ── AI-generated gate: reject before publishing ──────────────────────────
-    if (result.is_ai_generated === true) {
-      console.warn(
-        '[rate-outfit] Image flagged as AI-generated — confidence:',
-        (result as AIFlaggedResult).ai_generated_confidence,
-      );
-      return new Response(
-        JSON.stringify({
-          error: 'ai_generated',
-          message: 'This image appears to be AI-generated and cannot be submitted.',
-          ai_generated_confidence: (result as AIFlaggedResult).ai_generated_confidence,
-        }),
-        { status: 422, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
-      );
-    }
-
     console.log(
       '[rate-outfit] Success — style_archetype:',
-      (result as RatingResult).style_archetype,
+      result.style_archetype,
       '| overall score:',
-      (result as RatingResult).overall,
+      result.overall,
     );
     return new Response(JSON.stringify(result), {
       status: 200,

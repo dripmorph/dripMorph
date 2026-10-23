@@ -71,7 +71,8 @@ export default function PostUpload({ showToast, onPostCreated }) {
   const [pipelineStep, setPipelineStep]   = useState(null); // 'uploading' | 'moderating' | 'rating'
   const [analysisResult, setAnalysisResult] = useState(null);
   const [analysisError, setAnalysisError] = useState(null);   // string | null — generic errors
-  const [aiGeneratedError, setAiGeneratedError] = useState(null); // string | null — AI-image rejection
+  const [aiGeneratedError, setAiGeneratedError] = useState(null);
+  const [incompleteOutfitError, setIncompleteOutfitError] = useState(null); // string | null — Selfie / incomplete outfit rejection
   const [postLimitError, setPostLimitError] = useState(null); // string | null — 24h limit reached
   const [cooldownStatus, setCooldownStatus] = useState(() => getRatingCooldownStatus(user?.id));
 
@@ -144,6 +145,7 @@ export default function PostUpload({ showToast, onPostCreated }) {
     setAnalysisResult(null);
     setAnalysisError(null);
     setAiGeneratedError(null);
+    setIncompleteOutfitError(null);
     setUploadedUrl(null);
     setSelectedStyle('');
     setAiSuggestedStyle('');
@@ -190,6 +192,7 @@ export default function PostUpload({ showToast, onPostCreated }) {
     setAnalysisResult(null);
     setAnalysisError(null);
     setAiGeneratedError(null);
+    setIncompleteOutfitError(null);
 
     try {
       // ── Step 1: Upload to Supabase Storage ──────────────────────────────────
@@ -202,8 +205,8 @@ export default function PostUpload({ showToast, onPostCreated }) {
       const moderationResult = await moderateImage(publicUrl);
 
       if (!moderationResult.is_appropriate) {
-        setAnalysisError(
-          'This photo doesn\'t meet our content guidelines. Please upload a photo showing your outfit.',
+        setIncompleteOutfitError(
+          moderationResult.reason || 'Only photos showing your entire outfit are accepted. Selfies and incomplete outfits cannot be rated or posted.',
         );
         setIsAnalyzing(false);
         setPipelineStep(null);
@@ -274,7 +277,10 @@ export default function PostUpload({ showToast, onPostCreated }) {
       showToast(`Analyzed! Match: ${finalStyle}`);
     } catch (err) {
       console.error('[PostUpload] pipeline error:', err);
-      if (err.code === 'AI_GENERATED') {
+      if (err.code === 'INCOMPLETE_OUTFIT') {
+        // Distinct branch: full outfit required (no selfies / incomplete fits)
+        setIncompleteOutfitError(err.message);
+      } else if (err.code === 'AI_GENERATED') {
         // Distinct branch: surface a clear rejection, keep user on upload step
         setAiGeneratedError(err.message);
       } else if (err.code === 'RATE_LIMITED') {
@@ -484,7 +490,7 @@ export default function PostUpload({ showToast, onPostCreated }) {
               <span style={{ fontSize: '2rem', fontWeight: '500', color: 'var(--accent-solid)', lineHeight: 1 }}>+</span>
             </div>
             <span className="placeholder-title">Tap + to snap fit with camera</span>
-            <span className="placeholder-subtitle">Or choose photo from device below</span>
+            <span className="placeholder-subtitle">Full outfit required • No selfies or incomplete fits</span>
           </div>
         )}
 
@@ -507,7 +513,7 @@ export default function PostUpload({ showToast, onPostCreated }) {
           <>
             <h3 className="sheet-title">Analyze Fit</h3>
             <p className="sheet-subtitle">
-              Our AI will review your silhouette, color blocking, and details to provide a real-time rating.
+              Our AI analyzes your complete silhouette, color harmony, and styling. Only photos showing your entire outfit are accepted — no selfies or incomplete looks.
             </p>
 
             {/* AI Rating 20-min / 2-pic Cooldown Card with live timer */}
@@ -543,6 +549,55 @@ export default function PostUpload({ showToast, onPostCreated }) {
                 <span>1 of 2 AI ratings used in this 20-min window</span>
               </div>
             ) : null}
+
+            {/* Incomplete outfit / selfie rejection banner */}
+            {incompleteOutfitError && (
+              <div
+                style={{
+                  background: 'rgba(255, 65, 84, 0.10)',
+                  border: '1px solid rgba(255, 65, 84, 0.40)',
+                  borderRadius: '10px',
+                  padding: '12px 14px',
+                  marginBottom: '12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '6px',
+                }}
+              >
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#ff4d6d', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>🚫</span> Full Outfit Required
+                </span>
+                <span style={{ fontSize: '0.80rem', color: 'rgba(255,255,255,0.85)', lineHeight: 1.5 }}>
+                  {incompleteOutfitError}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIncompleteOutfitError(null);
+                    setAnalysisResult(null);
+                    setSelectedFile(null);
+                    if (selectedImage && selectedImage.startsWith('blob:')) URL.revokeObjectURL(selectedImage);
+                    setSelectedImage(null);
+                    setUploadedUrl(null);
+                    galleryInputRef.current?.click();
+                  }}
+                  style={{
+                    marginTop: '4px',
+                    alignSelf: 'flex-start',
+                    background: 'rgba(255,77,109,0.18)',
+                    border: '1px solid rgba(255,77,109,0.4)',
+                    borderRadius: '6px',
+                    color: '#ff4d6d',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    padding: '5px 10px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Choose Full Outfit Photo
+                </button>
+              </div>
+            )}
 
             {/* AI-generated rejection banner — distinct from generic errors */}
             {aiGeneratedError && (

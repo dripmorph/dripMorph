@@ -14,12 +14,16 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const MODERATION_SYSTEM_PROMPT = `You are a content moderation system. Your ONLY job is a safety pass/fail check.
+const MODERATION_SYSTEM_PROMPT = `You are a content moderation and outfit completeness validation system for an outfit-rating app (DripMorph).
 
-Evaluate whether the image is appropriate for a college outfit-rating app by checking ALL of the following:
-1. The image must contain real clothing being worn by a person.
-2. The image must NOT contain explicit, sexual, or NSFW content.
-3. The image must NOT be irrelevant (e.g. landscapes, food, animals, memes, screenshots, objects without clothing).
+Evaluate whether the image is appropriate for an outfit-rating app by checking ALL of the following:
+1. The image MUST contain a real person wearing a COMPLETE outfit (full-body or near full-body showing both upper and lower body garments clearly, e.g. top and pants/skirt/shorts).
+2. The image must NOT be a selfie, close-up face/headshot, portrait, or incomplete/cropped outfit where the entire outfit cannot be seen.
+3. The image must NOT contain explicit, sexual, or NSFW content.
+4. The image must NOT be irrelevant (e.g. landscapes, food, animals, memes, screenshots, clothes on hangers without a person).
+
+If the image is a selfie or does not show the entire outfit, set "is_appropriate" to false and set "reason" to:
+"Only photos showing your entire outfit are accepted. Selfies and incomplete outfits cannot be rated or posted."
 
 Do NOT comment on style, quality, trends, or aesthetics — that is not your job.
 
