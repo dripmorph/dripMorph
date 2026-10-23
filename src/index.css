@@ -6184,16 +6184,17 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  max-height: 58vh;
+  max-height: 72vh;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
   cursor: pointer;
   user-select: none;
 }
 
 .fit-detail-image {
-  width: 100%;
+  width: auto;
   height: auto;
-  max-height: 58vh;
+  max-width: 100%;
+  max-height: 72vh;
   object-fit: contain;
   display: block;
 }
