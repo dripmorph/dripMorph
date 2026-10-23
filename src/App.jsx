@@ -645,24 +645,6 @@ export default function App() {
     setActiveTab('profile');
   };
 
-  const scrollToFeedTop = () => {
-    // Smoothly scroll the feed container and window to the top
-    const scrollTargets = document.querySelectorAll('.feed-container, .pinterest-grid, .desktop-center-content');
-    scrollTargets.forEach(el => {
-      try {
-        el.scrollTo({ top: 0, behavior: 'smooth' });
-      } catch (e) {
-        el.scrollTop = 0;
-      }
-    });
-    try {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (e) {
-      window.scrollTo(0, 0);
-    }
-    window.dispatchEvent(new CustomEvent('dripmorph:scroll-to-top'));
-  };
-
   const handleBackNavigation = () => {
     if (profileBackStack.length > 0) {
       const previous = profileBackStack[profileBackStack.length - 1];
@@ -671,15 +653,11 @@ export default function App() {
       setActiveTab(previous.tab);
     } else {
       setViewedProfileUser(null);
-      scrollToFeedTop();
       setActiveTab('feed');
     }
   };
 
   const handleTabChange = (tab) => {
-    if (tab === 'feed') {
-      scrollToFeedTop();
-    }
     setViewedProfileUser(null);
     setProfileBackStack([]);
     setActiveTab(tab);

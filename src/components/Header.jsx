@@ -19,100 +19,45 @@ export default function Header({
   const [loadingFits, setLoadingFits] = useState(false);
   const dropdownRef = useRef(null);
   const buttonRef = useRef(null);
-  const scrollPositions = useRef(new WeakMap());
-  const lastScrollY = useRef(0);
-  const ticking = useRef(false);
 
   // Always show header when tab changes or trending dropdown is toggled
   useEffect(() => {
     setIsHeaderVisible(true);
-    scrollPositions.current = new WeakMap();
-    lastScrollY.current = 0;
   }, [activeTab, showTrendingDropdown]);
 
-  // Smart hide-and-reveal on scroll behavior (delta-based direction tracking)
+  // Instagram-style scroll direction detector (Scroll Down -> Hide, Scroll Up -> Show)
   useEffect(() => {
-    const SCROLL_THRESHOLD = 5; // 5px threshold to prevent jitter from micro-touches
-
-    const getTargetKey = (target) => {
-      if (!target || target === document || target === window || target === document.documentElement || target === document.body) {
-        return window;
-      }
-      return target;
-    };
+    let lastY = 0;
+    let ticking = false;
 
     const handleScroll = (e) => {
-      const target = e.target;
-      // Skip inner overlays, modals, and dropdowns so they don't affect main navbar
-      if (
-        target && 
-        target.closest && 
-        target.closest('.mobile-trending-dropdown-list, .comments-modal-container, .modal-backdrop, .stl-overlay, .menu-drawer-overlay, .settings-modal-overlay, .report-modal-overlay, .emoji-picker-container, .emoji-picker-grid')
-      ) {
-        return;
-      }
+      const target = e.target === document ? (document.documentElement || document.body) : e.target;
+      const currentY = target && target.scrollTop !== undefined 
+        ? target.scrollTop 
+        : (window.scrollY || window.pageYOffset || 0);
 
-      if (showTrendingDropdown) {
-        setIsHeaderVisible(true);
-        return;
-      }
-
-      if (!ticking.current) {
+      if (!ticking) {
         window.requestAnimationFrame(() => {
-          let currentY = 0;
-          let maxScroll = Infinity;
+          const diff = currentY - lastY;
 
-          if (
-            !target || 
-            target === document || 
-            target === window || 
-            target === document.documentElement || 
-            target === document.body
-          ) {
-            currentY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || (document.body ? document.body.scrollTop : 0) || 0;
-            const docEl = document.documentElement;
-            const body = document.body;
-            const scrollHeight = Math.max(docEl.scrollHeight, body ? body.scrollHeight : 0);
-            const clientHeight = window.innerHeight || docEl.clientHeight || 0;
-            maxScroll = Math.max(0, scrollHeight - clientHeight);
-          } else if (target && typeof target.scrollTop === 'number') {
-            currentY = target.scrollTop;
-            if (target.scrollHeight && target.clientHeight) {
-              maxScroll = Math.max(0, target.scrollHeight - target.clientHeight);
-            }
-          }
-
-          // Handle rubber-banding / momentum overscroll (clamped between 0 and maxScroll)
-          const normalizedY = Math.min(Math.max(0, currentY), maxScroll);
-          const targetKey = getTargetKey(target);
-          const prevY = scrollPositions.current.get(targetKey) ?? normalizedY;
-          const deltaY = normalizedY - prevY;
-
-          // 1. Near the very top of the page (<= 10px): always show navbar
-          if (normalizedY <= 10) {
+          // Always show header at top of feed
+          if (currentY <= 20) {
             setIsHeaderVisible(true);
-            scrollPositions.current.set(targetKey, normalizedY);
-            lastScrollY.current = normalizedY;
-            ticking.current = false;
-            return;
-          }
-
-          // 2. Scrolling DOWN by > 5px and past initial header threshold (> 60px): hide navbar
-          if (deltaY > SCROLL_THRESHOLD && normalizedY > 60) {
+          } else if (showTrendingDropdown) {
+            // Keep header visible while trending modal is open
+            setIsHeaderVisible(true);
+          } else if (diff > 8 && currentY > 40) {
+            // Scrolling down -> hide header
             setIsHeaderVisible(false);
-            scrollPositions.current.set(targetKey, normalizedY);
-            lastScrollY.current = normalizedY;
-          }
-          // 3. Scrolling UP by > 5px at ANY position: immediately reveal navbar
-          else if (deltaY < -SCROLL_THRESHOLD) {
+          } else if (diff < -8) {
+            // Scrolling up -> show header
             setIsHeaderVisible(true);
-            scrollPositions.current.set(targetKey, normalizedY);
-            lastScrollY.current = normalizedY;
           }
 
-          ticking.current = false;
+          lastY = Math.max(0, currentY);
+          ticking = false;
         });
-        ticking.current = true;
+        ticking = true;
       }
     };
 
@@ -151,14 +96,7 @@ export default function Header({
       loadTrending();
       setTimeout(loadTrending, 500);
     };
-    const handleScrollToTop = () => {
-      setIsHeaderVisible(true);
-      scrollPositions.current = new WeakMap();
-      lastScrollY.current = 0;
-    };
-
     window.addEventListener('dripmorph:refresh-feed', handleGlobalRefresh);
-    window.addEventListener('dripmorph:scroll-to-top', handleScrollToTop);
 
     const channel = supabase
       .channel('public:header-trending-realtime')
@@ -177,7 +115,6 @@ export default function Header({
 
     return () => {
       window.removeEventListener('dripmorph:refresh-feed', handleGlobalRefresh);
-      window.removeEventListener('dripmorph:scroll-to-top', handleScrollToTop);
       supabase.removeChannel(channel);
     };
   }, []);
@@ -213,7 +150,7 @@ export default function Header({
   };
 
   return (
-    <header className={`app-header transition-transform duration-300 ease-in-out ${isHeaderVisible ? 'header-visible translate-y-0' : 'header-hidden -translate-y-full'}`}>
+    <header className={`app-header ${isHeaderVisible ? 'header-visible' : 'header-hidden'}`}>
       <button className="header-btn" onClick={onMenuClick} aria-label="Menu">
         <Menu size={22} strokeWidth={2} />
       </button>

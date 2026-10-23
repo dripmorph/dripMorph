@@ -229,103 +229,120 @@ serve(async (req: Request) => {
     console.log('[rate-outfit] Step: calling Gemini API');
     const geminiUrl = `${GEMINI_ENDPOINT}?key=${GEMINI_API_KEY}`;
     console.log('[rate-outfit] Gemini URL (key masked):', geminiUrl.replace(GEMINI_API_KEY!, 'REDACTED'));
-    let geminiResponse: Response;
-    try {
-      geminiResponse = await fetch(geminiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: {
-            parts: [{ text: RATING_SYSTEM_PROMPT }],
-          },
-          contents: [
+    let geminiResponse!: Response;
+
+    const requestPayload = {
+      system_instruction: {
+        parts: [{ text: RATING_SYSTEM_PROMPT }],
+      },
+      contents: [
+        {
+          role: 'user',
+          parts: [
             {
-              role: 'user',
-              parts: [
-                {
-                  inline_data: {
-                    mime_type: imageMimeType,
-                    data: imageBase64,
-                  },
-                },
-                {
-                  text: 'Rate the outfit in this image.',
-                },
-              ],
+              inline_data: {
+                mime_type: imageMimeType,
+                data: imageBase64,
+              },
+            },
+            {
+              text: 'Rate the outfit in this image.',
             },
           ],
-          generationConfig: {
-            temperature: 0.4,
-            // thinkingBudget: 0 disables extended thinking, keeping latency low on gemini-3.1-flash-lite
-            thinkingConfig: { thinkingBudget: 0 },
-            responseMimeType: 'application/json',
-            responseSchema: {
+        },
+      ],
+      generationConfig: {
+        temperature: 0,
+        topK: 1,
+        topP: 0,
+        seed: 42,
+        // thinkingBudget: 0 disables extended thinking, keeping latency low on gemini-3.1-flash-lite
+        thinkingConfig: { thinkingBudget: 0 },
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: 'OBJECT',
+          properties: {
+            is_ai_generated: {
+              type: 'BOOLEAN',
+              description: 'Whether the image is AI-generated or synthetic.',
+            },
+            ai_generated_confidence: {
+              type: 'STRING',
+              enum: ['low', 'medium', 'high'],
+              description: 'Confidence level if is_ai_generated is true.',
+            },
+            style_archetype: {
+              type: 'STRING',
+              description: 'Classified style archetype from the specified list (e.g. Classic Streetwear, Techwear, Quiet Luxury, etc.).',
+            },
+            color_harmony: {
               type: 'OBJECT',
               properties: {
-                is_ai_generated: {
-                  type: 'BOOLEAN',
-                  description: 'Whether the image is AI-generated or synthetic.',
-                },
-                ai_generated_confidence: {
-                  type: 'STRING',
-                  enum: ['low', 'medium', 'high'],
-                  description: 'Confidence level if is_ai_generated is true.',
-                },
-                style_archetype: {
-                  type: 'STRING',
-                  description: 'Classified style archetype from the specified list (e.g. Classic Streetwear, Techwear, Quiet Luxury, etc.).',
-                },
-                color_harmony: {
-                  type: 'OBJECT',
-                  properties: {
-                    score: { type: 'NUMBER', description: 'Score between 1.0 and 10.0' },
-                    comment: { type: 'STRING', description: 'Specific critique comment' },
-                  },
-                  required: ['score', 'comment'],
-                },
-                silhouette_proportions: {
-                  type: 'OBJECT',
-                  properties: {
-                    score: { type: 'NUMBER', description: 'Score between 1.0 and 10.0' },
-                    comment: { type: 'STRING', description: 'Specific critique comment' },
-                  },
-                  required: ['score', 'comment'],
-                },
-                coherence_styling: {
-                  type: 'OBJECT',
-                  properties: {
-                    score: { type: 'NUMBER', description: 'Score between 1.0 and 10.0' },
-                    comment: { type: 'STRING', description: 'Specific critique comment' },
-                  },
-                  required: ['score', 'comment'],
-                },
-                overall: {
-                  type: 'NUMBER',
-                  description: 'Overall outfit score between 1.0 and 10.0',
-                },
-                summary: {
-                  type: 'STRING',
-                  description: 'One sentence summarizing the outfit and naming the style archetype',
-                },
-                improvement_tip: {
-                  type: 'STRING',
-                  description: 'Archetype-specific improvement tip naming exact garment + change + why',
-                },
+                score: { type: 'NUMBER', description: 'Score between 1.0 and 10.0' },
+                comment: { type: 'STRING', description: 'Specific critique comment' },
               },
-              required: [
-                'is_ai_generated',
-                'style_archetype',
-                'color_harmony',
-                'silhouette_proportions',
-                'coherence_styling',
-                'overall',
-                'summary',
-                'improvement_tip',
-              ],
+              required: ['score', 'comment'],
+            },
+            silhouette_proportions: {
+              type: 'OBJECT',
+              properties: {
+                score: { type: 'NUMBER', description: 'Score between 1.0 and 10.0' },
+                comment: { type: 'STRING', description: 'Specific critique comment' },
+              },
+              required: ['score', 'comment'],
+            },
+            coherence_styling: {
+              type: 'OBJECT',
+              properties: {
+                score: { type: 'NUMBER', description: 'Score between 1.0 and 10.0' },
+                comment: { type: 'STRING', description: 'Specific critique comment' },
+              },
+              required: ['score', 'comment'],
+            },
+            overall: {
+              type: 'NUMBER',
+              description: 'Overall outfit score between 1.0 and 10.0',
+            },
+            summary: {
+              type: 'STRING',
+              description: 'One sentence summarizing the outfit and naming the style archetype',
+            },
+            improvement_tip: {
+              type: 'STRING',
+              description: 'Archetype-specific improvement tip naming exact garment + change + why',
             },
           },
-        }),
-      });
+          required: [
+            'is_ai_generated',
+            'style_archetype',
+            'color_harmony',
+            'silhouette_proportions',
+            'coherence_styling',
+            'overall',
+            'summary',
+            'improvement_tip',
+          ],
+        },
+      },
+    };
+
+    try {
+      const MAX_RETRIES = 3;
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        geminiResponse = await fetch(geminiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestPayload),
+        });
+
+        // Retry if model is experiencing temporary 503 high demand
+        if (geminiResponse.status === 503 && attempt < MAX_RETRIES) {
+          console.warn(`[rate-outfit] Gemini 503 spike on attempt ${attempt}. Retrying in ${attempt * 1500}ms...`);
+          await new Promise((resolve) => setTimeout(resolve, attempt * 1500));
+          continue;
+        }
+        break;
+      }
     } catch (err) {
       console.error('DETAILED ERROR:', err.message, err.stack);
       return new Response(JSON.stringify({ error: `Failed to reach Gemini API: ${err.message}` }), {
