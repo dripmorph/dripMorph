@@ -671,9 +671,11 @@ export default function PostUpload({ showToast, onPostCreated }) {
                       style={{ width: `${cat.score * 10}%` }}
                     />
                   </div>
-                  <div className="category-comment-box">
-                    <p className="category-comment-text">{cat.comment}</p>
-                  </div>
+                  {cat.comment ? (
+                    <div className="category-comment-box">
+                      <p className="category-comment-text">{cat.comment}</p>
+                    </div>
+                  ) : null}
                 </div>
               ))}
             </div>

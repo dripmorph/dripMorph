@@ -21,75 +21,41 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const RATING_SYSTEM_PROMPT = `You are an expert fashion critic rating an outfit photo for a style-rating app (DripMorph).
+const RATING_SYSTEM_PROMPT = `You are DripMorph's outfit rater. You rate ONE outfit photo honestly but constructively. Never mock, never comment on body, face or skin. Judge clothes only.
 
-## STEP 0 — AI-Generated Image Detection (always run first)
-Before rating, assess whether this image is AI-generated or synthetic (not a real photo of a real person in real clothes).
-Look for these tells:
-- Unnatural fabric physics: fabric that folds impossibly, floats, or has no weight
-- Inconsistent or impossible lighting/shadows: light sources that contradict each other, shadows in wrong directions
-- Warped or physically impossible garment details: buttons that blur into fabric, zippers that don't align, seams that vanish
-- Artificial skin/hair rendering: overly smooth skin with no texture variation, hair strands that merge unnaturally
-- Background incoherence: objects or surfaces that don't obey perspective or gravity
-- Over-idealized proportions that no real garment could produce
+STEP 0 - AI IMAGE CHECK
+If the image looks AI-generated, return {"rejected": true, "reason": "ai_generated"} and nothing else.
 
-Set "is_ai_generated" to true if you observe clear, concrete evidence of synthesis. Set it to false if the image reads as a genuine photograph.
-If is_ai_generated is true, also set "ai_generated_confidence" to one of: "low", "medium", or "high".
+STEP 1 - VISIBILITY
+Decide how much of the outfit is visible:
+- "full": head to shoes visible
+- "partial": cut off at waist/thigh/knee, or footwear not visible
+- "upper_only": torso and above only
 
-## STEP 1 — Classify Style Archetype (if is_ai_generated is false)
-Classify the outfit's dominant style archetype from this list (pick the single best match, or the closest blend if genuinely mixed):
-Old Money, Quiet Luxury, Preppy/Ivy League, Sartorial/Classic Menswear, Dark Academia, Light Academia, Smart Casual, Minimalist/Clean Fit, Normcore/Elevated Basics, Classic Streetwear, Techwear, Gorpcore, Y2K/Cyberpunk, Skater, Grunge, Indie Sleaze, Punk, Goth, Whimsigoth, Biker/Rocker, Workwear/Americana, Cottagecore, Bohemian, Athleisure, Blokecore
+STEP 2 - SCORE THE VISIBLE OUTFIT (1.0 to 10.0, one decimal)
+Judge the fit of the VISIBLE garments first: shoulders, sleeves, length, drape, layering. A well-fitted visible outfit must still score well.
+- color_harmony: palette, contrast, tone matching, accessories
+- silhouette_proportions: fit, shape, balance of what is visible
+- coherence_styling: does it feel like one intentional look (occasion, layering, accessories, grooming of the outfit)
 
-## STEP 2 — Score Against Specific Archetype Conventions
-Score the outfit AGAINST THE CONVENTIONS OF THAT SPECIFIC ARCHETYPE, not a generic universal standard.
-Example: a boxy, oversized silhouette is a FLAW in Sartorial/Classic Menswear but CORRECT EXECUTION in Gorpcore or Skater. A muted, minimal palette is ideal for Quiet Luxury but a missed opportunity in Y2K/Cyberpunk. Judge each outfit by how well it executes ITS OWN style's rules — not by comparing it to a different aesthetic.
+Calibration: most outfits land 5.5 to 7.5. 9.0+ is for exceptional looks only. Use the full range. Do not compress everything into 7-8.
 
-## STEP 3 — Occasion-Fit & Coherence
-Also weigh apparent occasion-fit as part of coherence: does the outfit read as suited for a plausible context (date, gym/active, party/night out, casual outing, work) — an outfit that's internally consistent for its implied occasion scores better on coherence than one that's confused about where it's going.
+STEP 3 - VISIBILITY DEDUCTION (apply after Step 2)
+- full: no deduction
+- partial: silhouette_proportions -0.8, coherence_styling -0.3
+- upper_only: silhouette_proportions -1.5, coherence_styling -0.5
+Never push a category below 4.0 because of this deduction alone.
+Do not invent or assume what the hidden lower half looks like.
 
-Score 3 categories, 1.0-10.0 each:
-- color_harmony: palette coordination judged against the archetype's own color conventions
-- silhouette_proportions: fit/tailoring judged against the archetype's own silhouette conventions
-- coherence_styling: how intentional and archetype-consistent the whole look reads, including occasion-fit
+STEP 4 - OVERALL
+overall = average of the three final category scores, rounded to 1 decimal.
 
-## CRITIQUE & SCORING RULES:
-- Be brutally honest and direct — vague praise helps no one.
-- Never insult the person's body, face, or weight; critique only the clothing and styling choices.
-- Calibrate scores strictly across the FULL 1-10 range based on genuine execution quality:
-  * Most outfits should now land in the 4.0-6.0 range (this is the new 'solid, unremarkable execution' baseline).
-  * A merely 'fine, nothing wrong with it' outfit should score around 5.0, not 7.0 — only outfits with real intention, precision, and archetype-correct execution should clear 6.5+.
-  * Reserve 8.0+ for genuinely excellent archetype execution (outfits that nail their archetype's conventions with true precision and distinction).
-- Every category needs a specific comment referencing what you actually see.
-- The improvement_tip must name the exact garment, the exact change, and why — framed within the outfit's own archetype (e.g. 'swap the crew socks for no-show — visible socks break the clean-lined silhouette Quiet Luxury depends on', not a generic 'wear better shoes').
+STEP 5 - FEEDBACK
+- style_archetype: dominant style archetype (e.g. Classic Streetwear, Minimalist, Old Money, Techwear, Smart Casual, Y2K/Cyberpunk, Preppy, Grunge, Athleisure, etc.)
+- summary: 1-2 honest, non-mocking sentences about the look.
+- improvement_tip: tied to the lowest-scoring category. Name the exact garment, the exact change, and why it helps. If visibility is not "full", the tip must also ask the user to post a full-body photo (pants and shoes visible) for a fairer rating.
 
-## OUTPUT FORMAT:
-Return ONLY valid JSON matching the schema, with no markdown formatting or preamble.
-
-If is_ai_generated is TRUE:
-{
-  "is_ai_generated": true,
-  "ai_generated_confidence": "low" | "medium" | "high",
-  "style_archetype": "N/A",
-  "color_harmony": {"score": 1.0, "comment": "AI-generated image detected"},
-  "silhouette_proportions": {"score": 1.0, "comment": "AI-generated image detected"},
-  "coherence_styling": {"score": 1.0, "comment": "AI-generated image detected"},
-  "overall": 1.0,
-  "summary": "AI-generated image detected",
-  "improvement_tip": "N/A"
-}
-
-If is_ai_generated is FALSE:
-{
-  "is_ai_generated": false,
-  "style_archetype": "string — the classified archetype from the list",
-  "color_harmony": {"score": 1.0-10.0, "comment": "string"},
-  "silhouette_proportions": {"score": 1.0-10.0, "comment": "string"},
-  "coherence_styling": {"score": 1.0-10.0, "comment": "string"},
-  "overall": 1.0-10.0,
-  "summary": "one sentence, naming the archetype",
-  "improvement_tip": "string, archetype-specific, naming exact garment + change + why"
-}
-`;
+OUTPUT: return ONLY valid JSON matching the schema, no markdown, no extra text.`;
 
 serve(async (req: Request) => {
   // Handle CORS preflight
@@ -110,7 +76,6 @@ serve(async (req: Request) => {
 
     // ── Env var check ──────────────────────────────────────────────────────────
     console.log('[rate-outfit] ENV check — GEMINI_API_KEY present:', !!GEMINI_API_KEY);
-    // Log key prefix only (never log full key)
     if (GEMINI_API_KEY) {
       console.log('[rate-outfit] GEMINI_API_KEY prefix:', GEMINI_API_KEY.slice(0, 8) + '...');
     }
@@ -279,72 +244,54 @@ serve(async (req: Request) => {
         topK: 1,
         topP: 0,
         seed: 42,
-        // thinkingBudget: 0 disables extended thinking, keeping latency low on gemini-3.1-flash-lite
         thinkingConfig: { thinkingBudget: 0 },
         responseMimeType: 'application/json',
         responseSchema: {
           type: 'OBJECT',
           properties: {
-            is_ai_generated: {
+            rejected: {
               type: 'BOOLEAN',
-              description: 'Whether the image is AI-generated or synthetic.',
+              description: 'True if image is AI-generated, false otherwise.',
             },
-            ai_generated_confidence: {
+            reason: {
               type: 'STRING',
-              enum: ['low', 'medium', 'high'],
-              description: 'Confidence level if is_ai_generated is true.',
+              description: 'Reason if rejected is true (e.g. ai_generated).',
+            },
+            visibility: {
+              type: 'STRING',
+              enum: ['full', 'partial', 'upper_only'],
+              description: 'Visibility level of the outfit: full, partial, or upper_only.',
             },
             style_archetype: {
               type: 'STRING',
-              description: 'Classified style archetype from the specified list (e.g. Classic Streetwear, Techwear, Quiet Luxury, etc.).',
+              description: 'Dominant style archetype (e.g. Classic Streetwear, Minimalist, Old Money, etc.).',
             },
             color_harmony: {
-              type: 'OBJECT',
-              properties: {
-                score: { type: 'NUMBER', description: 'Score between 1.0 and 10.0' },
-                comment: { type: 'STRING', description: 'Specific critique comment' },
-              },
-              required: ['score', 'comment'],
+              type: 'NUMBER',
+              description: 'Color harmony score between 1.0 and 10.0',
             },
             silhouette_proportions: {
-              type: 'OBJECT',
-              properties: {
-                score: { type: 'NUMBER', description: 'Score between 1.0 and 10.0' },
-                comment: { type: 'STRING', description: 'Specific critique comment' },
-              },
-              required: ['score', 'comment'],
+              type: 'NUMBER',
+              description: 'Silhouette and proportions score between 1.0 and 10.0',
             },
             coherence_styling: {
-              type: 'OBJECT',
-              properties: {
-                score: { type: 'NUMBER', description: 'Score between 1.0 and 10.0' },
-                comment: { type: 'STRING', description: 'Specific critique comment' },
-              },
-              required: ['score', 'comment'],
+              type: 'NUMBER',
+              description: 'Coherence and styling score between 1.0 and 10.0',
             },
             overall: {
               type: 'NUMBER',
-              description: 'Overall outfit score between 1.0 and 10.0',
+              description: 'Overall score between 1.0 and 10.0',
             },
             summary: {
               type: 'STRING',
-              description: 'One sentence summarizing the outfit and naming the style archetype',
+              description: '1-2 honest, non-mocking sentences about the look.',
             },
             improvement_tip: {
               type: 'STRING',
-              description: 'Archetype-specific improvement tip naming exact garment + change + why',
+              description: 'Improvement tip tied to lowest-scoring category.',
             },
           },
-          required: [
-            'is_ai_generated',
-            'style_archetype',
-            'color_harmony',
-            'silhouette_proportions',
-            'coherence_styling',
-            'overall',
-            'summary',
-            'improvement_tip',
-          ],
+          required: ['rejected'],
         },
       },
     };
@@ -358,7 +305,6 @@ serve(async (req: Request) => {
           body: JSON.stringify(requestPayload),
         });
 
-        // Retry if model is experiencing temporary 503 high demand
         if (geminiResponse.status === 503 && attempt < MAX_RETRIES) {
           console.warn(`[rate-outfit] Gemini 503 spike on attempt ${attempt}. Retrying in ${attempt * 1500}ms...`);
           await new Promise((resolve) => setTimeout(resolve, attempt * 1500));
@@ -377,7 +323,6 @@ serve(async (req: Request) => {
     console.log('[rate-outfit] Gemini response status:', geminiResponse.status);
 
     if (!geminiResponse.ok) {
-      // Try to parse body as JSON to detect quota/rate-limit errors from Gemini
       let errBody: { error?: { status?: string; code?: number; message?: string } } | null = null;
       let errText = '';
       try {
@@ -388,8 +333,6 @@ serve(async (req: Request) => {
       }
       console.error('[rate-outfit] Gemini API error response:', geminiResponse.status, errText);
 
-      // Gemini quota exhausted — return 429 so the client can surface a proper message
-      // Gemini signals this as HTTP 429 with status RESOURCE_EXHAUSTED
       if (
         geminiResponse.status === 429 ||
         errBody?.error?.status === 'RESOURCE_EXHAUSTED'
@@ -417,23 +360,21 @@ serve(async (req: Request) => {
     console.log('[rate-outfit] Extracted text from Gemini:', rawText);
 
     // ── Parse Gemini JSON response ───────────────────────────────────────────
-    type AIFlaggedResult = {
-      is_ai_generated: true;
-      ai_generated_confidence?: 'low' | 'medium' | 'high';
+    type ParsedResult = {
+      rejected?: boolean;
+      reason?: string;
+      is_ai_generated?: boolean;
+      visibility?: 'full' | 'partial' | 'upper_only';
       style_archetype?: string;
+      color_harmony?: number | { score: number; comment?: string };
+      silhouette_proportions?: number | { score: number; comment?: string };
+      coherence_styling?: number | { score: number; comment?: string };
+      overall?: number;
+      summary?: string;
+      improvement_tip?: string;
     };
-    type RatingResult = {
-      is_ai_generated: false;
-      style_archetype: string;
-      color_harmony: { score: number; comment: string };
-      silhouette_proportions: { score: number; comment: string };
-      coherence_styling: { score: number; comment: string };
-      overall: number;
-      summary: string;
-      improvement_tip: string;
-    };
-    let result: AIFlaggedResult | RatingResult;
 
+    let result: ParsedResult;
     try {
       result = JSON.parse(rawText);
     } catch (err) {
@@ -444,6 +385,41 @@ serve(async (req: Request) => {
         { status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
       );
     }
+
+    // ── AI-generated gate: reject before publishing ──────────────────────────
+    if (result.rejected === true || result.is_ai_generated === true) {
+      console.warn('[rate-outfit] Image rejected as AI-generated:', result.reason || 'ai_generated');
+      return new Response(
+        JSON.stringify({
+          error: 'ai_generated',
+          message: 'This image appears to be AI-generated and cannot be submitted.',
+          ai_generated_confidence: 'high',
+        }),
+        { status: 422, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    // ── Edge Function safety net (do not trust model arithmetic) ─────────────
+    const VIS = ['full', 'partial', 'upper_only'];
+    const clamp = (n: number) => Math.min(10, Math.max(1, isNaN(n) ? 5 : n));
+    const r1 = (n: number) => Math.round(n * 10) / 10;
+
+    const extractNum = (val: unknown): number => {
+      if (typeof val === 'number') return val;
+      if (typeof val === 'object' && val !== null && 'score' in val) {
+        return Number((val as { score: unknown }).score) || 5;
+      }
+      const parsed = Number(val);
+      return isNaN(parsed) ? 5 : parsed;
+    };
+
+    const visibility = (result.visibility && VIS.includes(result.visibility)) ? result.visibility : 'full';
+    const color = clamp(extractNum(result.color_harmony));
+    const sil = clamp(extractNum(result.silhouette_proportions));
+    const coh = clamp(extractNum(result.coherence_styling));
+
+    // Recompute overall server-side
+    const overall = r1((color + sil + coh) / 3);
 
     // ── Log this call to cooldown history ──────────────────────────────────
     console.log('[rate-outfit] Step: updating cooldown call history');
@@ -462,29 +438,30 @@ serve(async (req: Request) => {
       console.warn('[rate-outfit] rate_limit_log insert notice (non-fatal):', insertError.message, insertError.code);
     }
 
-    // ── AI-generated gate: reject before publishing ──────────────────────────
-    if (result.is_ai_generated === true) {
-      console.warn(
-        '[rate-outfit] Image flagged as AI-generated — confidence:',
-        (result as AIFlaggedResult).ai_generated_confidence,
-      );
-      return new Response(
-        JSON.stringify({
-          error: 'ai_generated',
-          message: 'This image appears to be AI-generated and cannot be submitted.',
-          ai_generated_confidence: (result as AIFlaggedResult).ai_generated_confidence,
-        }),
-        { status: 422, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
-      );
-    }
+    const finalResponse = {
+      rejected: false,
+      visibility,
+      style_archetype: result.style_archetype || 'Classic Streetwear',
+      color_harmony: color,
+      silhouette_proportions: sil,
+      coherence_styling: coh,
+      color_harmony_score: color,
+      silhouette_proportions_score: sil,
+      coherence_styling_score: coh,
+      overall,
+      summary: result.summary || '',
+      improvement_tip: result.improvement_tip || '',
+    };
 
     console.log(
-      '[rate-outfit] Success — style_archetype:',
-      (result as RatingResult).style_archetype,
+      '[rate-outfit] Success — visibility:',
+      visibility,
+      '| style_archetype:',
+      finalResponse.style_archetype,
       '| overall score:',
-      (result as RatingResult).overall,
+      overall,
     );
-    return new Response(JSON.stringify(result), {
+    return new Response(JSON.stringify(finalResponse), {
       status: 200,
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
     });
