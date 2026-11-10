@@ -245,8 +245,17 @@ export default function PostUpload({ showToast, onPostCreated }) {
       setAiSuggestedStyle(finalStyle);
       setCaption(finalStyle);
 
+      const parseCatScore = (val) => {
+        if (typeof val === "object" && val !== null && typeof val.score !== "undefined") {
+          return Number(val.score).toFixed(1);
+        }
+        const num = Number(val);
+        return (!isNaN(num) ? num : 0).toFixed(1);
+      };
+
       setAnalysisResult({
-        overall: rating.overall.toFixed(1),
+        overall: Number(rating.overall || 0).toFixed(1),
+        visibility: rating.visibility || "full",
         summary: rating.summary,
         suggestion: rating.improvement_tip,
         style_archetype: finalStyle,
@@ -254,19 +263,19 @@ export default function PostUpload({ showToast, onPostCreated }) {
         _raw: rating,
         categories: [
           {
-            name: 'Color Harmony',
-            score: rating.color_harmony.score.toFixed(1),
-            comment: rating.color_harmony.comment,
+            name: "Color Harmony",
+            score: parseCatScore(rating.color_harmony),
+            comment: rating.color_harmony?.comment || "",
           },
           {
-            name: 'Silhouette & Proportions',
-            score: rating.silhouette_proportions.score.toFixed(1),
-            comment: rating.silhouette_proportions.comment,
+            name: "Silhouette & Proportions",
+            score: parseCatScore(rating.silhouette_proportions),
+            comment: rating.silhouette_proportions?.comment || "",
           },
           {
-            name: 'Coherence & Styling',
-            score: rating.coherence_styling.score.toFixed(1),
-            comment: rating.coherence_styling.comment,
+            name: "Coherence & Styling",
+            score: parseCatScore(rating.coherence_styling),
+            comment: rating.coherence_styling?.comment || "",
           },
         ],
       });
