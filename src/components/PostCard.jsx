@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Heart, Star } from 'lucide-react';
+import { Heart, Star, MoreVertical, Trash2 } from 'lucide-react';
 import { FaHeart } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
-import { toggleOutfitLike } from '../lib/outfitService';
+import { toggleOutfitLike, isAppAdmin } from '../lib/outfitService';
 
 export default function PostCard({
   post,
@@ -22,7 +22,12 @@ export default function PostCard({
   const [likeCount, setLikeCount] = useState(post.likes_count ?? post.likes ?? 0);
   const [animateLike, setAnimateLike] = useState(false);
   const [showHeartAnim, setShowHeartAnim] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const timerRef = useRef(null);
+
+  const isOwner = Boolean(user?.id && (post.poster_id === user.id || post.user_id === user.id));
+  const isAdmin = isAppAdmin(user);
+  const canManagePost = isOwner || isAdmin;
 
   useEffect(() => {
     setLiked(Boolean(post.user_has_liked));
@@ -34,6 +39,14 @@ export default function PostCard({
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, []);
+
+  // Close 3-dots dropdown when clicking outside
+  useEffect(() => {
+    if (!showMenu) return;
+    const handleDocClick = () => setShowMenu(false);
+    document.addEventListener('click', handleDocClick);
+    return () => document.removeEventListener('click', handleDocClick);
+  }, [showMenu]);
 
   const toggleLike = async () => {
     if (!user?.id) {
@@ -141,13 +154,86 @@ export default function PostCard({
           </div>
         )}
 
-        {/* Top Badges Bar: Clean AI Score Badge only */}
+        {/* Top Badges Bar: Score Badge on Left, 3-Dots Menu on Right (Owner or Admin) */}
         <div className="pinterest-top-bar" onClick={(e) => e.stopPropagation()}>
           <div className="pinterest-score-badge">
             <Star size={10} className="star-icon" fill="#fbbf24" color="#fbbf24" />
             <span className="score-text">{scoreVal}</span>
             <span className="ai-label">AI</span>
           </div>
+
+          {canManagePost && (
+            <div style={{ position: 'relative' }}>
+              <button
+                type="button"
+                className="post-more-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMenu(prev => !prev);
+                }}
+                aria-label="Post options"
+                title="Post options"
+                style={{
+                  position: 'static',
+                  background: 'rgba(0, 0, 0, 0.55)',
+                  backdropFilter: 'blur(8px)',
+                  WebkitBackdropFilter: 'blur(8px)',
+                  border: '1px solid rgba(255, 255, 255, 0.16)',
+                  borderRadius: '50%',
+                  width: '28px',
+                  height: '28px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  padding: 0,
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <MoreVertical size={14} />
+              </button>
+
+              {showMenu && (
+                <div
+                  className="post-menu-dropdown"
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    position: 'absolute',
+                    top: '34px',
+                    right: 0,
+                    zIndex: 40,
+                    minWidth: '135px',
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="post-menu-item delete"
+                    onClick={() => {
+                      setShowMenu(false);
+                      if (onDeletePost) onDeletePost(post);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      color: '#ef4444',
+                      padding: '10px 14px',
+                      width: '100%',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '0.82rem',
+                      fontWeight: 600,
+                    }}
+                  >
+                    <Trash2 size={13} />
+                    <span>Delete Post</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Bottom Vignette Overlay: User PFP + Name on left, Like Button on right */}

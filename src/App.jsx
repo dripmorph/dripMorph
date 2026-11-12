@@ -1033,6 +1033,10 @@ export default function App() {
             }}
             onToggleLike={handleToggleLike}
             showToast={showToast}
+            onDeletePost={(fitToDelete) => {
+              setSelectedFitForDetail(null);
+              setDeletingPost(fitToDelete);
+            }}
           />
         )}
 

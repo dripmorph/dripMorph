@@ -572,9 +572,29 @@ export async function publishOutfit({ userId, imageUrl, imageHash, imageFile, ci
   return outfit;
 }
 
+// ── Admin Authorization Helper ───────────────────────────────────────────────
+export const ADMIN_USER_IDS = [
+  'bc00cfb3-288f-4a22-8425-b40a3a8f923b', // Ash
+];
+
+export const ADMIN_EMAILS = [
+  'ayushagarwal2006.9@gmail.com',
+  'ayushagarwal21.11.06@gmail.com',
+];
+
+export const isAppAdmin = (u) => {
+  if (!u) return false;
+  if (ADMIN_USER_IDS.includes(u.id)) return true;
+  if (u.username && u.username.toLowerCase() === 'ash') return true;
+  const email = (u.email || '').toLowerCase();
+  if (email && ADMIN_EMAILS.includes(email)) return true;
+  return false;
+};
+
 // ── 4.2. Delete Outfit ────────────────────────────────────────────────────────
 /**
- * Deletes an outfit and its associated ratings/products using poster_id.
+ * Deletes an outfit and its associated ratings/products/likes/comments.
+ * If performed by the owner or app admin (Ash), deletes the post completely.
  */
 export const deleteOutfit = async (outfitId) => {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -582,7 +602,37 @@ export const deleteOutfit = async (outfitId) => {
     throw new Error("You must be logged in to delete a post.");
   }
 
-  // 1. Delete associated child records first (safety fallbacks)
+  // 1. Try deleting via delete-outfit Edge Function (service-role admin authority)
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+
+  if (token) {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/delete-outfit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ outfitId })
+      });
+
+      if (res.ok) {
+        return true;
+      }
+
+      const errData = await res.json().catch(() => ({}));
+      if (res.status === 403) {
+        throw new Error(errData.error || "You do not have permission to delete this post.");
+      }
+      console.warn('[outfitService] delete-outfit function status:', res.status, errData);
+    } catch (e) {
+      if (e.message?.includes("permission") || e.message?.includes("Forbidden")) throw e;
+      console.warn('[outfitService] delete-outfit function fallback to direct delete:', e);
+    }
+  }
+
+  // 2. Client-side fallback deletion
   try {
     await Promise.allSettled([
       supabase.from('outfit_ratings').delete().eq('outfit_id', outfitId),
@@ -594,12 +644,12 @@ export const deleteOutfit = async (outfitId) => {
     console.warn("[outfitService] Child rows delete warning:", childErr);
   }
 
-  // 2. Delete main outfit row using poster_id
-  const { error: outfitDeleteErr } = await supabase
-    .from('outfits')
-    .delete()
-    .eq('id', outfitId)
-    .eq('poster_id', user.id);
+  let deleteQuery = supabase.from('outfits').delete().eq('id', outfitId);
+  if (!isAppAdmin(user)) {
+    deleteQuery = deleteQuery.eq('poster_id', user.id);
+  }
+
+  const { error: outfitDeleteErr } = await deleteQuery;
 
   if (outfitDeleteErr) {
     console.error("[outfitService] Delete outfit failed:", outfitDeleteErr);

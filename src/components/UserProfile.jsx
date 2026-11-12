@@ -5,7 +5,7 @@ import { FaStar } from 'react-icons/fa';
 import { useChat } from '../context/ChatContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
-import { fetchUserOutfits, uploadAvatarImage, fetchUserProfile } from '../lib/outfitService';
+import { fetchUserOutfits, uploadAvatarImage, fetchUserProfile, isAppAdmin } from '../lib/outfitService';
 import { INDIAN_CITIES } from '../lib/cities';
 import { parseProfileLinksData, serializeProfileLinksData } from '../lib/linkUtils';
 import ProfileShoppingModal from './ProfileShoppingModal';
@@ -166,6 +166,7 @@ export default function UserProfile({
 
   const { openChat } = useChat();
   const { user, updateProfileDetails } = useAuth();
+  const canManageFits = isOwnProfile || isAppAdmin(user);
 
   useEffect(() => {
     setAvatarUrl(avatar);
@@ -755,7 +756,7 @@ export default function UserProfile({
                 </div>
 
                 {/* Three-dot options menu */}
-                {isOwnProfile && (
+                {canManageFits && (
                   <button 
                     className="post-more-btn"
                     onClick={(e) => {
@@ -770,7 +771,7 @@ export default function UserProfile({
 
                 {activeFitMenuId === fit.id && (
                   <div className="post-menu-dropdown" onClick={(e) => e.stopPropagation()}>
-                    <button 
+                    {isOwnProfile && (<button 
                       className="post-menu-item"
                       onClick={() => {
                         setActiveFitMenuId(null);
@@ -778,7 +779,7 @@ export default function UserProfile({
                       }}
                     >
                       <span>Edit Caption/Tags</span>
-                    </button>
+                    </button>)}
                     <button 
                       className="post-menu-item delete"
                       onClick={() => {
@@ -872,7 +873,7 @@ export default function UserProfile({
                 </div>
 
                 {/* Three-dot menu */}
-                {isOwnProfile && (
+                {canManageFits && (
                   <button
                     className="post-more-btn"
                     onClick={(e) => {
@@ -887,7 +888,7 @@ export default function UserProfile({
 
                 {activeRecentMenuId === post.id && (
                   <div className="post-menu-dropdown" onClick={(e) => e.stopPropagation()}>
-                    <button
+                    {isOwnProfile && (<button
                       className="post-menu-item"
                       onClick={() => {
                         setActiveRecentMenuId(null);
@@ -895,7 +896,7 @@ export default function UserProfile({
                       }}
                     >
                       <span>Edit Caption/Tags</span>
-                    </button>
+                    </button>)}
                     <button
                       className="post-menu-item delete"
                       onClick={() => {

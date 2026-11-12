@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Star, ShoppingBag, MapPin, Heart, MessageSquare, Share2, ZoomIn, ZoomOut, Maximize2, RotateCcw } from 'lucide-react';
+import { X, Star, ShoppingBag, MapPin, Heart, MessageSquare, Share2, ZoomIn, ZoomOut, Maximize2, RotateCcw, MoreVertical, Trash2 } from 'lucide-react';
 import { FaHeart } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
-import { toggleOutfitLike } from '../lib/outfitService';
+import { toggleOutfitLike, isAppAdmin } from '../lib/outfitService';
 
 export default function FitDetailModal({
   fit,
@@ -12,6 +12,7 @@ export default function FitDetailModal({
   onCommentClick,
   onShareClick,
   onToggleLike,
+  onDeletePost,
   showToast
 }) {
   const { user } = useAuth();
@@ -20,6 +21,18 @@ export default function FitDetailModal({
   const [commentCount, setCommentCount] = useState(fit?.comments_count ?? fit?.comments ?? 0);
   const [animateLike, setAnimateLike] = useState(false);
   const [showHeartAnim, setShowHeartAnim] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+
+  const isOwner = Boolean(user?.id && (fit?.poster_id === user.id || fit?.user_id === user.id));
+  const isAdmin = isAppAdmin(user);
+  const canManagePost = isOwner || isAdmin;
+
+  useEffect(() => {
+    if (!showMenu) return;
+    const handleDocClick = () => setShowMenu(false);
+    document.addEventListener('click', handleDocClick);
+    return () => document.removeEventListener('click', handleDocClick);
+  }, [showMenu]);
 
   // Enlarged fullscreen lightbox state (for PC click & mobile enlarge)
   const [isEnlarged, setIsEnlarged] = useState(false);
@@ -408,11 +421,64 @@ export default function FitDetailModal({
             </div>
 
             {/* Header Actions: AI Score Badge + Close Button */}
-            <div className="fit-detail-header-actions">
+            <div className="fit-detail-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div className="fit-modal-score-badge">
                 <span>{score}</span>
                 <Star size={12} className="star-icon" fill="currentColor" />
               </div>
+              {canManagePost && (
+                <div style={{ position: 'relative' }}>
+                  <button 
+                    className="fit-detail-close-btn" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMenu(prev => !prev);
+                    }} 
+                    aria-label="Post options"
+                    title="Post options"
+                  >
+                    <MoreVertical size={16} />
+                  </button>
+                  {showMenu && (
+                    <div
+                      className="post-menu-dropdown"
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        position: 'absolute',
+                        top: '40px',
+                        right: 0,
+                        zIndex: 100,
+                        minWidth: '140px',
+                      }}
+                    >
+                      <button
+                        type="button"
+                        className="post-menu-item delete"
+                        onClick={() => {
+                          setShowMenu(false);
+                          if (onDeletePost) onDeletePost(fit);
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          color: '#ef4444',
+                          padding: '10px 14px',
+                          width: '100%',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: '0.85rem',
+                          fontWeight: 600,
+                        }}
+                      >
+                        <Trash2 size={14} />
+                        <span>Delete Post</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
               <button className="fit-detail-close-btn" onClick={onClose} aria-label="Close modal">
                 <X size={18} />
               </button>
