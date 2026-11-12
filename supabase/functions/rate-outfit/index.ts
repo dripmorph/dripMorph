@@ -38,7 +38,19 @@ Judge the fit of the VISIBLE garments first: shoulders, sleeves, length, drape, 
 - silhouette_proportions: fit, shape, balance of what is visible
 - coherence_styling: does it feel like one intentional look (occasion, layering, accessories, grooming of the outfit)
 
-Calibration: most outfits land 5.5 to 7.5. 9.0+ is for exceptional looks only. Use the full range. Do not compress everything into 7-8.
+SCORING CALIBRATION (important):
+- Score like a friendly but honest stylist, not a harsh judge.
+- Most intentional, put-together outfits should land 6.0-7.5.
+- Reserve below 5.0 for outfits with clear clashes, poor fit, or no visible effort.
+- 5.0 = "average, nothing wrong but nothing intentional".
+- Give credit for: layering, tonal/monochrome palettes, good accessories,
+  intentional proportions (e.g. wide trousers with a fitted top), and confident styling.
+- Pose, lighting and photo quality must NOT lower the score.
+- Do not subtract points for minimalism. Simple and clean outfits can score 7+.
+- 9.0+ stays reserved for truly exceptional outfits.
+- The weakest category drives the improvement_tip, but keep the tone encouraging
+  and non-mocking. Never body-shame.
+- Reference: black knit + white shirt layered + wide trousers + watch = ~6.5-7.0.
 
 STEP 3 - VISIBILITY DEDUCTION (apply after Step 2)
 - full: no deduction
@@ -401,16 +413,17 @@ serve(async (req: Request) => {
 
     // ── Edge Function safety net (do not trust model arithmetic) ─────────────
     const VIS = ['full', 'partial', 'upper_only'];
-    const clamp = (n: number) => Math.min(10, Math.max(1, isNaN(n) ? 5 : n));
+    const clamp = (n: number) => Math.min(10, Math.max(4.0, Number(n.toFixed(1))));
     const r1 = (n: number) => Math.round(n * 10) / 10;
 
     const extractNum = (val: unknown): number => {
-      if (typeof val === 'number') return val;
+      if (typeof val === 'number' && !isNaN(val)) return val;
       if (typeof val === 'object' && val !== null && 'score' in val) {
-        return Number((val as { score: unknown }).score) || 5;
+        const s = Number((val as { score: unknown }).score);
+        return !isNaN(s) ? s : 6.0;
       }
       const parsed = Number(val);
-      return isNaN(parsed) ? 5 : parsed;
+      return !isNaN(parsed) ? parsed : 6.0;
     };
 
     const visibility = (result.visibility && VIS.includes(result.visibility)) ? result.visibility : 'full';
@@ -418,8 +431,8 @@ serve(async (req: Request) => {
     const sil = clamp(extractNum(result.silhouette_proportions));
     const coh = clamp(extractNum(result.coherence_styling));
 
-    // Recompute overall server-side
-    const overall = r1((color + sil + coh) / 3);
+    // Recompute overall server-side with clamp
+    const overall = clamp(r1((color + sil + coh) / 3));
 
     // ── Log this call to cooldown history ──────────────────────────────────
     console.log('[rate-outfit] Step: updating cooldown call history');
